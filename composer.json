@@ -26,7 +26,8 @@
     },
     "require-dev": {
         "phpdocumentor/phpdocumentor": "2.*",
-        "phpunit/phpunit": "^5.7"
+        "phpunit/phpunit": "^5.7",
+        "league/oauth2-client": "^2.4"
     },
     "suggest": {
         "psr/log": "For optional PSR-3 debug logging",
