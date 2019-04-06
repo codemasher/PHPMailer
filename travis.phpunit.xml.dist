@@ -24,9 +24,6 @@
         <const name="TEST_MAIL_HOST" value="localhost"/>
         <const name="TEST_MAIL_PORT" value="2500"/>
     </php>
-    <listeners>
-        <listener class="PHPMailer\Test\DebugLogTestListener" />
-    </listeners>
     <groups>
         <exclude>
             <group>languages</group>
@@ -39,6 +36,6 @@
         </whitelist>
     </filter>
     <logging>
-        <log type="junit" target="build/logs/junit.xml" logIncompleteSkipped="false"/>
+        <log type="coverage-clover" target="./clover.xml"/>
     </logging>
 </phpunit>

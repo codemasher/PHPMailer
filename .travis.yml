@@ -15,28 +15,21 @@ install:
 before_script:
   - sudo service postfix stop
   - smtp-sink -d "%d.%H.%M.%S" localhost:2500 1000 &
-  - mkdir -p build/logs
   - chmod +x scripts/fakesendmail.sh
   - sudo mkdir -p /var/qmail/bin
   - sudo cp scripts/fakesendmail.sh /var/qmail/bin/sendmail
   - sudo cp scripts/fakesendmail.sh /usr/sbin/sendmail
   - echo 'sendmail_path = "/usr/sbin/sendmail -t -i "' > $(php --ini|grep -m 1 "ini files in:"|cut -d ":" -f 2)/sendmail.ini
 
-script: ./vendor/bin/phpunit --configuration ./travis.phpunit.xml.dist --coverage-clover clover.xml
+script: ./vendor/bin/phpunit --configuration ./travis.phpunit.xml.dist
 
 after_script: bash <(curl -s https://codecov.io/bash)
 
-stages:
-  - coding-standard
-  - test
-
-jobs:
+matrix:
   include:
     - php: 7.2
     - php: 7.3
     - php: 7.4snapshot
     - php: nightly
-
-matrix:
   allow_failures:
     - php: nightly
