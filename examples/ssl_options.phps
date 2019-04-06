@@ -35,15 +35,15 @@ $mail->SMTPSecure = 'tls';
 
 //Custom connection options
 //Note that these settings are INSECURE
-$mail->SMTPOptions = array(
-    'ssl' => [
-        'verify_peer' => true,
-        'verify_depth' => 3,
-        'allow_self_signed' => true,
-        'peer_name' => 'smtp.example.com',
-        'cafile' => '/etc/ssl/ca_cert.pem',
-    ],
-);
+$mail->SMTPOptions = [
+	'ssl' => [
+		'verify_peer'       => true,
+		'verify_depth'      => 3,
+		'allow_self_signed' => true,
+		'peer_name'         => 'smtp.example.com',
+		'cafile'            => '/etc/ssl/ca_cert.pem',
+	],
+];
 
 //Whether to use SMTP authentication
 $mail->SMTPAuth = true;
@@ -68,8 +68,9 @@ $mail->Subject = 'PHPMailer SMTP options test';
 $mail->msgHTML(file_get_contents('contents.html'), __DIR__);
 
 //Send the message, check for errors
-if (!$mail->send()) {
-    echo 'Mailer Error: ' . $mail->ErrorInfo;
-} else {
-    echo 'Message sent!';
+if(!$mail->send()){
+	echo 'Mailer Error: '.$mail->ErrorInfo;
+}
+else{
+	echo 'Message sent!';
 }

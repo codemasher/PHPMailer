@@ -4,11 +4,11 @@
  */
 
 //Import PHPMailer classes into the global namespace
-use PHPMailer\PHPMailer\PHPMailer;
+use League\OAuth2\Client\Provider\Google;
 use PHPMailer\PHPMailer\OAuth;
+use PHPMailer\PHPMailer\PHPMailer;
 
 // Alias the League Google OAuth2 provider class
-use League\OAuth2\Client\Provider\Google;
 
 //SMTP needs accurate times, and the PHP time zone MUST be set
 //This should be done in your php.ini, but this is how to do it if you don't have access to that
@@ -47,8 +47,8 @@ $mail->AuthType = 'XOAUTH2';
 
 //Fill in authentication details here
 //Either the gmail account owner, or the user that gave consent
-$email = 'someone@gmail.com';
-$clientId = 'RANDOMCHARS-----duv1n2.apps.googleusercontent.com';
+$email        = 'someone@gmail.com';
+$clientId     = 'RANDOMCHARS-----duv1n2.apps.googleusercontent.com';
 $clientSecret = 'RANDOMCHARS-----lGyjPcRtvP';
 
 //Obtained by configuring and running get_oauth_token.php
@@ -57,23 +57,23 @@ $refreshToken = 'RANDOMCHARS-----DWxgOvPT003r-yFUV49TQYag7_Aod7y0';
 
 //Create a new OAuth2 provider instance
 $provider = new Google(
-    [
-        'clientId' => $clientId,
-        'clientSecret' => $clientSecret,
-    ]
+	[
+		'clientId'     => $clientId,
+		'clientSecret' => $clientSecret,
+	]
 );
 
 //Pass the OAuth provider instance to PHPMailer
 $mail->setOAuth(
-    new OAuth(
-        [
-            'provider' => $provider,
-            'clientId' => $clientId,
-            'clientSecret' => $clientSecret,
-            'refreshToken' => $refreshToken,
-            'userName' => $email,
-        ]
-    )
+	new OAuth(
+		[
+			'provider'     => $provider,
+			'clientId'     => $clientId,
+			'clientSecret' => $clientSecret,
+			'refreshToken' => $refreshToken,
+			'userName'     => $email,
+		]
+	)
 );
 
 //Set who the message is to be sent from
@@ -98,8 +98,9 @@ $mail->AltBody = 'This is a plain-text message body';
 $mail->addAttachment('images/phpmailer_mini.png');
 
 //send the message, check for errors
-if (!$mail->send()) {
-    echo "Mailer Error: " . $mail->ErrorInfo;
-} else {
-    echo "Message sent!";
+if(!$mail->send()){
+	echo "Mailer Error: ".$mail->ErrorInfo;
+}
+else{
+	echo "Message sent!";
 }

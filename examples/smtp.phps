@@ -48,8 +48,9 @@ $mail->AltBody = 'This is a plain-text message body';
 $mail->addAttachment('images/phpmailer_mini.png');
 
 //send the message, check for errors
-if (!$mail->send()) {
-    echo 'Mailer Error: ' . $mail->ErrorInfo;
-} else {
-    echo 'Message sent!';
+if(!$mail->send()){
+	echo 'Mailer Error: '.$mail->ErrorInfo;
+}
+else{
+	echo 'Message sent!';
 }

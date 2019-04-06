@@ -22,7 +22,7 @@
  */
 
 //Set these to match your domain and chosen DKIM selector
-$domain = 'example.com';
+$domain   = 'example.com';
 $selector = 'phpmailer';
 
 //Path to your private key:
@@ -30,29 +30,30 @@ $privatekeyfile = 'dkim_private.pem';
 //Path to your public key:
 $publickeyfile = 'dkim_public.pem';
 
-if (file_exists($privatekeyfile)) {
-    echo "Using existing keys - if you want to generate new keys, delete old key files first.\n\n";
-    $privatekey = file_get_contents($privatekeyfile);
-    $publickey = file_get_contents($publickeyfile);
-} else {
-    //Create a 2048-bit RSA key with an SHA256 digest
-    $pk = openssl_pkey_new(
-        [
-            'digest_alg' => 'sha256',
-            'private_key_bits' => 2048,
-            'private_key_type' => OPENSSL_KEYTYPE_RSA,
-        ]
-    );
-    //Save private key
-    openssl_pkey_export_to_file($pk, $privatekeyfile);
-    //Save public key
-    $pubKey = openssl_pkey_get_details($pk);
-    $publickey = $pubKey['key'];
-    file_put_contents($publickeyfile, $publickey);
-    $privatekey = file_get_contents($privatekeyfile);
+if(file_exists($privatekeyfile)){
+	echo "Using existing keys - if you want to generate new keys, delete old key files first.\n\n";
+	$privatekey = file_get_contents($privatekeyfile);
+	$publickey  = file_get_contents($publickeyfile);
 }
-echo "Private key (keep this private!):\n\n" . $privatekey;
-echo "\n\nPublic key:\n\n" . $publickey;
+else{
+	//Create a 2048-bit RSA key with an SHA256 digest
+	$pk = openssl_pkey_new(
+		[
+			'digest_alg'       => 'sha256',
+			'private_key_bits' => 2048,
+			'private_key_type' => OPENSSL_KEYTYPE_RSA,
+		]
+	);
+	//Save private key
+	openssl_pkey_export_to_file($pk, $privatekeyfile);
+	//Save public key
+	$pubKey    = openssl_pkey_get_details($pk);
+	$publickey = $pubKey['key'];
+	file_put_contents($publickeyfile, $publickey);
+	$privatekey = file_get_contents($privatekeyfile);
+}
+echo "Private key (keep this private!):\n\n".$privatekey;
+echo "\n\nPublic key:\n\n".$publickey;
 
 //Prep public key for DNS, e.g.
 //phpmailer._domainkey.example.com IN TXT "v=DKIM1; h=sha256; t=s; p=" "MIIBIjANBg...oXlwIDAQAB"...
@@ -70,8 +71,8 @@ $publickey = str_replace(["\r", "\n"], '', $publickey);
 //Split into chunks
 $keyparts = str_split($publickey, 253); //Becomes 255 when quotes are included
 //Quote each chunk
-foreach ($keyparts as $keypart) {
-    $dnsvalue .= '"' . trim($keypart) . '" ';
+foreach($keyparts as $keypart){
+	$dnsvalue .= '"'.trim($keypart).'" ';
 }
-echo "\n\nDNS key:\n\n" . trim($dnskey);
-echo "\n\nDNS value:\n\n" . trim($dnsvalue);
+echo "\n\nDNS key:\n\n".trim($dnskey);
+echo "\n\nDNS value:\n\n".trim($dnsvalue);

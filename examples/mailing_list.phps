@@ -17,12 +17,12 @@ $mail = new PHPMailer;
 $body = file_get_contents('contents.html');
 
 $mail->isSMTP();
-$mail->Host = 'smtp.example.com';
-$mail->SMTPAuth = true;
+$mail->Host          = 'smtp.example.com';
+$mail->SMTPAuth      = true;
 $mail->SMTPKeepAlive = true; // SMTP connection will not close after each email sent, reduces SMTP overhead
-$mail->Port = 25;
-$mail->Username = 'yourname@example.com';
-$mail->Password = 'yourpassword';
+$mail->Port          = 25;
+$mail->Username      = 'yourname@example.com';
+$mail->Password      = 'yourpassword';
 $mail->setFrom('list@example.com', 'List manager');
 $mail->addReplyTo('list@example.com', 'List manager');
 
@@ -41,25 +41,26 @@ $mysql = mysqli_connect('localhost', 'username', 'password');
 mysqli_select_db($mysql, 'mydb');
 $result = mysqli_query($mysql, 'SELECT full_name, email, photo FROM mailinglist WHERE sent = FALSE');
 
-foreach ($result as $row) {
-    $mail->addAddress($row['email'], $row['full_name']);
-    if (!empty($row['photo'])) {
-        $mail->addStringAttachment($row['photo'], 'YourPhoto.jpg'); //Assumes the image data is stored in the DB
-    }
+foreach($result as $row){
+	$mail->addAddress($row['email'], $row['full_name']);
+	if(!empty($row['photo'])){
+		$mail->addStringAttachment($row['photo'], 'YourPhoto.jpg'); //Assumes the image data is stored in the DB
+	}
 
-    if (!$mail->send()) {
-        echo "Mailer Error (" . str_replace("@", "&#64;", $row["email"]) . ') ' . $mail->ErrorInfo . '<br />';
-        break; //Abandon sending
-    } else {
-        echo "Message sent to :" . $row['full_name'] . ' (' . str_replace("@", "&#64;", $row['email']) . ')<br />';
-        //Mark it as sent in the DB
-        mysqli_query(
-            $mysql,
-            "UPDATE mailinglist SET sent = TRUE WHERE email = '" .
-            mysqli_real_escape_string($mysql, $row['email']) . "'"
-        );
-    }
-    // Clear all addresses and attachments for next loop
-    $mail->clearAddresses();
-    $mail->clearAttachments();
+	if(!$mail->send()){
+		echo "Mailer Error (".str_replace("@", "&#64;", $row["email"]).') '.$mail->ErrorInfo.'<br />';
+		break; //Abandon sending
+	}
+	else{
+		echo "Message sent to :".$row['full_name'].' ('.str_replace("@", "&#64;", $row['email']).')<br />';
+		//Mark it as sent in the DB
+		mysqli_query(
+			$mysql,
+			"UPDATE mailinglist SET sent = TRUE WHERE email = '".
+			mysqli_real_escape_string($mysql, $row['email'])."'"
+		);
+	}
+	// Clear all addresses and attachments for next loop
+	$mail->clearAddresses();
+	$mail->clearAttachments();
 }

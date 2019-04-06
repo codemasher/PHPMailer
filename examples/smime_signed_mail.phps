@@ -75,19 +75,20 @@ $mail->addAttachment('images/phpmailer_mini.png');
 
 //Configure message signing (the actual signing does not occur until sending)
 $mail->sign(
-    '/path/to/cert.crt', //The location of your certificate file
-    '/path/to/cert.key', //The location of your private key file
-    //The password you protected your private key with (not the Import Password!
-    //May be empty but the parameter must not be omitted!
-    'yourSecretPrivateKeyPassword',
-    '/path/to/certchain.pem' //The location of your chain file
+	'/path/to/cert.crt', //The location of your certificate file
+	'/path/to/cert.key', //The location of your private key file
+	//The password you protected your private key with (not the Import Password!
+	//May be empty but the parameter must not be omitted!
+	'yourSecretPrivateKeyPassword',
+	'/path/to/certchain.pem' //The location of your chain file
 );
 
 //Send the message, check for errors
-if (!$mail->send()) {
-    echo "Mailer Error: " . $mail->ErrorInfo;
-} else {
-    echo "Message sent!";
+if(!$mail->send()){
+	echo "Mailer Error: ".$mail->ErrorInfo;
+}
+else{
+	echo "Message sent!";
 }
 /*
  * REMARKS:

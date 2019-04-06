@@ -3,6 +3,7 @@
  * This example shows sending a DKIM-signed message with PHPMailer.
  * More info about DKIM can be found here: http://www.dkim.org/info/dkim-faq.html
  * There's more to using DKIM than just this code - check out this article:
+ *
  * @see https://yomotherboard.com/how-to-setup-email-server-dkim-keys/
  * See also the DKIM_gen_keys example code in the examples folder,
  * which shows how to make a key pair from PHP.
@@ -38,8 +39,9 @@ $mail->DKIM_copyHeaderFields = false;
 $mail->DKIM_extraHeaders = ['List-Unsubscribe', 'List-Help'];
 
 //When you send, the DKIM settings will be used to sign the message
-if (!$mail->send()) {
-    echo "Mailer Error: " . $mail->ErrorInfo;
-} else {
-    echo "Message sent!";
+if(!$mail->send()){
+	echo "Mailer Error: ".$mail->ErrorInfo;
+}
+else{
+	echo "Message sent!";
 }

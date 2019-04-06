@@ -32,107 +32,103 @@ use League\OAuth2\Client\Token\AccessToken;
  *
  * @author  Marcus Bointon (Synchro/coolbru) <phpmailer@synchromedia.co.uk>
  */
-class OAuth
-{
-    /**
-     * An instance of the League OAuth Client Provider.
-     *
-     * @var AbstractProvider
-     */
-    protected $provider;
+class OAuth{
 
-    /**
-     * The current OAuth access token.
-     *
-     * @var AccessToken
-     */
-    protected $oauthToken;
+	/**
+	 * An instance of the League OAuth Client Provider.
+	 *
+	 * @var AbstractProvider
+	 */
+	protected $provider;
 
-    /**
-     * The user's email address, usually used as the login ID
-     * and also the from address when sending email.
-     *
-     * @var string
-     */
-    protected $oauthUserEmail = '';
+	/**
+	 * The current OAuth access token.
+	 *
+	 * @var AccessToken
+	 */
+	protected $oauthToken;
 
-    /**
-     * The client secret, generated in the app definition of the service you're connecting to.
-     *
-     * @var string
-     */
-    protected $oauthClientSecret = '';
+	/**
+	 * The user's email address, usually used as the login ID
+	 * and also the from address when sending email.
+	 *
+	 * @var string
+	 */
+	protected $oauthUserEmail = '';
 
-    /**
-     * The client ID, generated in the app definition of the service you're connecting to.
-     *
-     * @var string
-     */
-    protected $oauthClientId = '';
+	/**
+	 * The client secret, generated in the app definition of the service you're connecting to.
+	 *
+	 * @var string
+	 */
+	protected $oauthClientSecret = '';
 
-    /**
-     * The refresh token, used to obtain new AccessTokens.
-     *
-     * @var string
-     */
-    protected $oauthRefreshToken = '';
+	/**
+	 * The client ID, generated in the app definition of the service you're connecting to.
+	 *
+	 * @var string
+	 */
+	protected $oauthClientId = '';
 
-    /**
-     * OAuth constructor.
-     *
-     * @param array $options Associative array containing
-     *                       `provider`, `userName`, `clientSecret`, `clientId` and `refreshToken` elements
-     */
-    public function __construct($options)
-    {
-        $this->provider = $options['provider'];
-        $this->oauthUserEmail = $options['userName'];
-        $this->oauthClientSecret = $options['clientSecret'];
-        $this->oauthClientId = $options['clientId'];
-        $this->oauthRefreshToken = $options['refreshToken'];
-    }
+	/**
+	 * The refresh token, used to obtain new AccessTokens.
+	 *
+	 * @var string
+	 */
+	protected $oauthRefreshToken = '';
 
-    /**
-     * Get a new RefreshToken.
-     *
-     * @return RefreshToken
-     */
-    protected function getGrant()
-    {
-        return new RefreshToken();
-    }
+	/**
+	 * OAuth constructor.
+	 *
+	 * @param array $options Associative array containing
+	 *                       `provider`, `userName`, `clientSecret`, `clientId` and `refreshToken` elements
+	 */
+	public function __construct($options){
+		$this->provider          = $options['provider'];
+		$this->oauthUserEmail    = $options['userName'];
+		$this->oauthClientSecret = $options['clientSecret'];
+		$this->oauthClientId     = $options['clientId'];
+		$this->oauthRefreshToken = $options['refreshToken'];
+	}
 
-    /**
-     * Get a new AccessToken.
-     *
-     * @return AccessToken
-     */
-    protected function getToken()
-    {
-        return $this->provider->getAccessToken(
-            $this->getGrant(),
-            ['refresh_token' => $this->oauthRefreshToken]
-        );
-    }
+	/**
+	 * Get a new RefreshToken.
+	 *
+	 * @return RefreshToken
+	 */
+	protected function getGrant(){
+		return new RefreshToken();
+	}
 
-    /**
-     * Generate a base64-encoded OAuth token.
-     *
-     * @return string
-     */
-    public function getOauth64()
-    {
-        // Get a new token if it's not available or has expired
-        if (null === $this->oauthToken or $this->oauthToken->hasExpired()) {
-            $this->oauthToken = $this->getToken();
-        }
+	/**
+	 * Get a new AccessToken.
+	 *
+	 * @return AccessToken
+	 */
+	protected function getToken(){
+		return $this->provider->getAccessToken(
+			$this->getGrant(),
+			['refresh_token' => $this->oauthRefreshToken]
+		);
+	}
 
-        return base64_encode(
-            'user=' .
-            $this->oauthUserEmail .
-            "\001auth=Bearer " .
-            $this->oauthToken .
-            "\001\001"
-        );
-    }
+	/**
+	 * Generate a base64-encoded OAuth token.
+	 *
+	 * @return string
+	 */
+	public function getOauth64(){
+		// Get a new token if it's not available or has expired
+		if(null === $this->oauthToken or $this->oauthToken->hasExpired()){
+			$this->oauthToken = $this->getToken();
+		}
+
+		return base64_encode(
+			'user='.
+			$this->oauthUserEmail.
+			"\001auth=Bearer ".
+			$this->oauthToken.
+			"\001\001"
+		);
+	}
 }

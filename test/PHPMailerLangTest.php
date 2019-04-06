@@ -19,54 +19,52 @@ use PHPUnit\Framework\TestCase;
 /**
  * Check language files for missing or excess translations.
  */
-final class PHPMailerLangTest extends TestCase
-{
-    /**
-     * Holds a PHPMailer instance.
-     *
-     * @var PHPMailer
-     */
-    private $Mail;
+final class PHPMailerLangTest extends TestCase{
 
-    /**
-     * Run before each test is started.
-     */
-    protected function setUp()
-    {
-        $this->Mail = new PHPMailer();
-    }
+	/**
+	 * Holds a PHPMailer instance.
+	 *
+	 * @var PHPMailer
+	 */
+	private $Mail;
 
-    /**
-     * Test language files for missing and excess translations.
-     * All languages are compared with English.
-     *
-     * @group languages
-     */
-    public function testTranslations()
-    {
-        $this->Mail->setLanguage('en');
-        $definedStrings = $this->Mail->getTranslations();
-        $err = '';
-        foreach (new \DirectoryIterator(__DIR__ . '/../language') as $fileInfo) {
-            if ($fileInfo->isDot()) {
-                continue;
-            }
-            $matches = [];
-            //Only look at language files, ignore anything else in there
-            if (preg_match('/^phpmailer\.lang-([a-z_]{2,})\.php$/', $fileInfo->getFilename(), $matches)) {
-                $lang = $matches[1]; //Extract language code
-                $PHPMAILER_LANG = []; //Language strings get put in here
-                include $fileInfo->getPathname(); //Get language strings
-                $missing = array_diff(array_keys($definedStrings), array_keys($PHPMAILER_LANG));
-                $extra = array_diff(array_keys($PHPMAILER_LANG), array_keys($definedStrings));
-                if (!empty($missing)) {
-                    $err .= "\nMissing translations in $lang: " . implode(', ', $missing);
-                }
-                if (!empty($extra)) {
-                    $err .= "\nExtra translations in $lang: " . implode(', ', $extra);
-                }
-            }
-        }
-        $this->assertEmpty($err, $err);
-    }
+	/**
+	 * Run before each test is started.
+	 */
+	protected function setUp(){
+		$this->Mail = new PHPMailer();
+	}
+
+	/**
+	 * Test language files for missing and excess translations.
+	 * All languages are compared with English.
+	 *
+	 * @group languages
+	 */
+	public function testTranslations(){
+		$this->Mail->setLanguage('en');
+		$definedStrings = $this->Mail->getTranslations();
+		$err            = '';
+		foreach(new \DirectoryIterator(__DIR__.'/../language') as $fileInfo){
+			if($fileInfo->isDot()){
+				continue;
+			}
+			$matches = [];
+			//Only look at language files, ignore anything else in there
+			if(preg_match('/^phpmailer\.lang-([a-z_]{2,})\.php$/', $fileInfo->getFilename(), $matches)){
+				$lang           = $matches[1]; //Extract language code
+				$PHPMAILER_LANG = []; //Language strings get put in here
+				include $fileInfo->getPathname(); //Get language strings
+				$missing = array_diff(array_keys($definedStrings), array_keys($PHPMAILER_LANG));
+				$extra   = array_diff(array_keys($PHPMAILER_LANG), array_keys($definedStrings));
+				if(!empty($missing)){
+					$err .= "\nMissing translations in $lang: ".implode(', ', $missing);
+				}
+				if(!empty($extra)){
+					$err .= "\nExtra translations in $lang: ".implode(', ', $extra);
+				}
+			}
+		}
+		$this->assertEmpty($err, $err);
+	}
 }
