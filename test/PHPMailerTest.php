@@ -2471,7 +2471,7 @@ EOT;
         $pid = shell_exec(
             '/usr/bin/nohup ' .
             $this->INCLUDE_DIR .
-            '/test/runfakepopserver.sh 1100 >/dev/null 2>/dev/null & printf "%u" $!'
+            '/scripts/runfakepopserver.sh 1100 >/dev/null 2>/dev/null & printf "%u" $!'
         );
         $this->pids[] = $pid;
 
@@ -2499,7 +2499,7 @@ EOT;
         $pid = shell_exec(
             '/usr/bin/nohup ' .
             $this->INCLUDE_DIR .
-            '/test/runfakepopserver.sh 1101 >/dev/null 2>/dev/null & printf "%u" $!'
+            '/scripts/runfakepopserver.sh 1101 >/dev/null 2>/dev/null & printf "%u" $!'
         );
         $this->pids[] = $pid;
 
