@@ -72,7 +72,7 @@ final class PHPMailerTest extends TestCase{
 		$this->INCLUDE_DIR       = dirname(__DIR__); //Default to the dir above the test dir, i.e. the project home dir
 		$this->Mail              = new PHPMailer();
 		$this->Mail->SMTPDebug   = SMTP::DEBUG_CONNECTION; //Full debug output
-		$this->Mail->Debugoutput = ['PHPMailer\Test\DebugLogTestListener', 'debugLog'];
+#		$this->Mail->Debugoutput = ['PHPMailer\Test\DebugLogTestListener', 'debugLog'];
 		$this->Mail->Priority    = 3;
 		$this->Mail->Encoding    = '8bit';
 		$this->Mail->CharSet     = 'iso-8859-1';
