@@ -21,7 +21,7 @@ before_script:
   - sudo cp scripts/fakesendmail.sh /usr/sbin/sendmail
   - echo 'sendmail_path = "/usr/sbin/sendmail -t -i "' > $(php --ini|grep -m 1 "ini files in:"|cut -d ":" -f 2)/sendmail.ini
 
-script: ./vendor/bin/phpunit --configuration ./travis.phpunit.xml.dist
+script: ./vendor/bin/phpunit --configuration ./travis.phpunit.xml
 
 after_script: bash <(curl -s https://codecov.io/bash)
 
