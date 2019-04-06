@@ -17,6 +17,13 @@
             <directory>./test/</directory>
         </testsuite>
     </testsuites>
+    <php>
+        <const name="TEST_MAIL_TO" value="somebody@example.com"/>
+        <const name="TEST_MAIL_FROM" value="phpunit@example.com"/>
+        <const name="TEST_MAIL_CC" value="cc@example.com"/>
+        <const name="TEST_MAIL_HOST" value="localhost"/>
+        <const name="TEST_MAIL_PORT" value="2500"/>
+    </php>
     <listeners>
         <listener class="PHPMailer\Test\DebugLogTestListener" />
     </listeners>

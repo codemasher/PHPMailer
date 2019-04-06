@@ -71,52 +71,37 @@ final class PHPMailerTest extends TestCase
     protected function setUp()
     {
         $this->INCLUDE_DIR = dirname(__DIR__); //Default to the dir above the test dir, i.e. the project home dir
-        if (file_exists($this->INCLUDE_DIR . '/test/testbootstrap.php')) {
-            include $this->INCLUDE_DIR . '/test/testbootstrap.php'; //Overrides go in here
-        }
         $this->Mail = new PHPMailer();
         $this->Mail->SMTPDebug = SMTP::DEBUG_CONNECTION; //Full debug output
         $this->Mail->Debugoutput = ['PHPMailer\Test\DebugLogTestListener', 'debugLog'];
         $this->Mail->Priority = 3;
         $this->Mail->Encoding = '8bit';
         $this->Mail->CharSet = 'iso-8859-1';
-        if (array_key_exists('mail_from', $_REQUEST)) {
-            $this->Mail->From = $_REQUEST['mail_from'];
-        } else {
-            $this->Mail->From = 'unit_test@phpmailer.example.com';
-        }
+        $this->Mail->From = defined('TEST_MAIL_FROM') ? TEST_MAIL_FROM : 'unit_test@phpmailer.example.com';
         $this->Mail->FromName = 'Unit Tester';
         $this->Mail->Sender = '';
         $this->Mail->Subject = 'Unit Test';
         $this->Mail->Body = '';
         $this->Mail->AltBody = '';
         $this->Mail->WordWrap = 0;
-        if (array_key_exists('mail_host', $_REQUEST)) {
-            $this->Mail->Host = $_REQUEST['mail_host'];
-        } else {
-            $this->Mail->Host = 'mail.example.com';
-        }
-        if (array_key_exists('mail_port', $_REQUEST)) {
-            $this->Mail->Port = $_REQUEST['mail_port'];
-        } else {
-            $this->Mail->Port = 25;
-        }
+        $this->Mail->Host = defined('TEST_MAIL_HOST') ? TEST_MAIL_HOST : 'mail.example.com';
+        $this->Mail->Port = defined('TEST_MAIL_PORT') && !empty(TEST_MAIL_PORT) ? intval(TEST_MAIL_PORT) : 25;
         $this->Mail->Helo = 'localhost.localdomain';
         $this->Mail->SMTPAuth = false;
         $this->Mail->Username = '';
         $this->Mail->Password = '';
         $this->Mail->addReplyTo('no_reply@phpmailer.example.com', 'Reply Guy');
         $this->Mail->Sender = 'unit_test@phpmailer.example.com';
-        if (strlen($this->Mail->Host) > 0) {
-            $this->Mail->isSMTP();
-        } else {
-            $this->Mail->isMail();
+
+        strlen($this->Mail->Host) > 0
+            ? $this->Mail->isSMTP()
+            : $this->Mail->isMail();
+
+        if (defined('TEST_MAIL_TO') && !empty(TEST_MAIL_TO)) {
+            $this->setAddress(TEST_MAIL_TO, 'Test User', 'to');
         }
-        if (array_key_exists('mail_to', $_REQUEST)) {
-            $this->setAddress($_REQUEST['mail_to'], 'Test User', 'to');
-        }
-        if (array_key_exists('mail_cc', $_REQUEST) and strlen($_REQUEST['mail_cc']) > 0) {
-            $this->setAddress($_REQUEST['mail_cc'], 'Carbon User', 'cc');
+        if (defined('TEST_MAIL_CC') && !empty(TEST_MAIL_CC)) {
+            $this->setAddress(TEST_MAIL_CC, 'Carbon User', 'cc');
         }
     }
 
@@ -289,18 +274,6 @@ final class PHPMailerTest extends TestCase
         }
 
         return false;
-    }
-
-    /**
-     * Check that we have loaded default test params.
-     * Pretty much everything will fail due to unset recipient if this is not done.
-     */
-    public function testBootstrap()
-    {
-        $this->assertFileExists(
-            $this->INCLUDE_DIR . '/test/testbootstrap.php',
-            'Test config params missing - copy testbootstrap.php to testbootstrap-dist.php and change as appropriate'
-        );
     }
 
     /**
@@ -1584,7 +1557,7 @@ EOT;
         $this->assertTrue($this->Mail->send() == false, 'send succeeded');
         $this->assertTrue($this->Mail->isError(), 'No error found');
         $this->assertEquals('You must provide at least one recipient email address.', $this->Mail->ErrorInfo);
-        $this->Mail->addAddress($_REQUEST['mail_to']);
+        $this->Mail->addAddress(TEST_MAIL_TO);
         $this->assertTrue($this->Mail->send(), 'send failed');
     }
 
@@ -2553,24 +2526,24 @@ EOT;
         $this->assertTrue($this->Mail->smtpConnect(), 'SMTP single connect failed');
         $this->Mail->smtpClose();
 
-        // $this->Mail->Host = 'localhost:12345;10.10.10.10:54321;' . $_REQUEST['mail_host'];
+        // $this->Mail->Host = 'localhost:12345;10.10.10.10:54321;' . TEST_MAIL_HOST;
         // $this->assertTrue($this->Mail->smtpConnect(), 'SMTP multi-connect failed');
         // $this->Mail->smtpClose();
-        // $this->Mail->Host = '[::1]:' . $this->Mail->Port . ';' . $_REQUEST['mail_host'];
+        // $this->Mail->Host = '[::1]:' . $this->Mail->Port . ';' . TEST_MAIL_HOST;
         // $this->assertTrue($this->Mail->smtpConnect(), 'SMTP IPv6 literal multi-connect failed');
         // $this->Mail->smtpClose();
 
         // All these hosts are expected to fail
-        // $this->Mail->Host = 'xyz://bogus:25;tls://[bogus]:25;ssl://localhost:12345;tls://localhost:587;10.10.10.10:54321;localhost:12345;10.10.10.10'. $_REQUEST['mail_host'].' ';
+        // $this->Mail->Host = 'xyz://bogus:25;tls://[bogus]:25;ssl://localhost:12345;tls://localhost:587;10.10.10.10:54321;localhost:12345;10.10.10.10'. TEST_MAIL_HOST.' ';
         // $this->assertFalse($this->Mail->smtpConnect());
         // $this->Mail->smtpClose();
 
-        $this->Mail->Host = ' localhost:12345 ; ' . $_REQUEST['mail_host'] . ' ';
+        $this->Mail->Host = ' localhost:12345 ; ' . TEST_MAIL_HOST . ' ';
         $this->assertTrue($this->Mail->smtpConnect(), 'SMTP hosts with stray spaces failed');
         $this->Mail->smtpClose();
 
         // Need to pick a harmless option so as not cause problems of its own! socket:bind doesn't work with Travis-CI
-        $this->Mail->Host = $_REQUEST['mail_host'];
+        $this->Mail->Host = TEST_MAIL_HOST;
         $this->assertTrue($this->Mail->smtpConnect(['ssl' => ['verify_depth' => 10]]));
 
         $this->Smtp = $this->Mail->getSMTPInstance();
