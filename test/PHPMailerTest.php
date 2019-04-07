@@ -68,13 +68,26 @@ final class PHPMailerTest extends TestCase{
 	private $pids = [];
 
 	/**
+	 * determines whether the tests run on a CI environment (Travis, Scrunitizer etc.)
+	 *
+	 * @var bool
+	 */
+	private $IS_CI;
+
+	/**
 	 * Run before each test is started.
 	 */
 	protected function setUp():void{
-		$this->INCLUDE_DIR       = dirname(__DIR__); //Default to the dir above the test dir, i.e. the project home dir
-		$this->Mail              = new PHPMailer();
-		$this->Mail->setLogger($this->getDebugLogger());
-		$this->Mail->loglevel = SMTP::DEBUG_CONNECTION; //Full debug output
+		$this->IS_CI       = defined('TEST_IS_CI') && TEST_IS_CI === 'true';
+		$this->INCLUDE_DIR = dirname(__DIR__); //Default to the dir above the test dir, i.e. the project home dir
+		$this->Mail        = new PHPMailer;
+
+		// avoid console spam on CI
+		if(!$this->IS_CI){
+			$this->Mail->setLogger($this->getDebugLogger());
+		}
+
+		$this->Mail->loglevel = $this->Mail::DEBUG_CONNECTION; //Full debug output
 		$this->Mail->Priority = 3;
 		$this->Mail->Encoding = '8bit';
 		$this->Mail->CharSet  = 'iso-8859-1';

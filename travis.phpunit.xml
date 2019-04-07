@@ -23,6 +23,7 @@
 		<const name="TEST_MAIL_CC" value="cc@example.com"/>
 		<const name="TEST_MAIL_HOST" value="localhost"/>
 		<const name="TEST_MAIL_PORT" value="2500"/>
+		<const name="TEST_IS_CI" value="true"/>
 	</php>
 	<groups>
 		<exclude>
