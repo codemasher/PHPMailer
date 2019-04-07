@@ -8,9 +8,7 @@ before_install:
   - sudo apt update -qq
   - sudo apt install -y -qq postfix
 
-install:
-  - composer remove --no-update --no-scripts --dev phpdocumentor/phpdocumentor
-  - composer install --no-interaction --prefer-source
+install: composer install --no-interaction --prefer-source
 
 before_script:
   - sudo service postfix stop
