@@ -58,8 +58,8 @@ if(array_key_exists('to', $_POST)){
 	if(!$err){
 		$mail = new PHPMailer;
 		$mail->isSMTP();
-		$mail->Host    = 'localhost';
-		$mail->Port    = 2500;
+		$mail->host    = 'localhost';
+		$mail->port    = 2500;
 		$mail->CharSet = 'utf-8';
 		//It's important not to use the submitter's address as the from address as it's forgery,
 		//which will cause your messages to fail SPF checks.

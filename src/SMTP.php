@@ -29,26 +29,6 @@ namespace PHPMailer\PHPMailer;
  */
 class SMTP extends MailerAbstract{
 
-	/**
-	 * Whether to use VERP.
-	 *
-	 * @see http://en.wikipedia.org/wiki/Variable_envelope_return_path
-	 * @see http://www.postfix.org/VERP_README.html Info on VERP
-	 *
-	 * @var bool
-	 */
-	public $do_verp = false;
-
-	/**
-	 * The timeout value for connection, in seconds.
-	 * Default of 5 minutes (300sec) is from RFC2821 section 4.5.3.2.
-	 * This needs to be quite high to function correctly with hosts using greetdelay as an anti-spam measure.
-	 *
-	 * @see http://tools.ietf.org/html/rfc2821#section-4.5.3.2
-	 *
-	 * @var int
-	 */
-	public $Timeout = 300;
 
 	/**
 	 * How long to wait for commands to complete, in seconds.
@@ -65,16 +45,15 @@ class SMTP extends MailerAbstract{
 	 *
 	 * @var string[]
 	 */
-	protected $smtp_transaction_id_patterns
-		= [
-			'exim'            => '/[\d]{3} OK id=(.*)/',
-			'sendmail'        => '/[\d]{3} 2.0.0 (.*) Message/',
-			'postfix'         => '/[\d]{3} 2.0.0 Ok: queued as (.*)/',
-			'Microsoft_ESMTP' => '/[0-9]{3} 2.[\d].0 (.*)@(?:.*) Queued mail for delivery/',
-			'Amazon_SES'      => '/[\d]{3} Ok (.*)/',
-			'SendGrid'        => '/[\d]{3} Ok: queued as (.*)/',
-			'CampaignMonitor' => '/[\d]{3} 2.0.0 OK:([a-zA-Z\d]{48})/',
-		];
+	protected $smtp_transaction_id_patterns = [
+		'exim'            => '/[\d]{3} OK id=(.*)/',
+		'sendmail'        => '/[\d]{3} 2.0.0 (.*) Message/',
+		'postfix'         => '/[\d]{3} 2.0.0 Ok: queued as (.*)/',
+		'Microsoft_ESMTP' => '/[0-9]{3} 2.[\d].0 (.*)@(?:.*) Queued mail for delivery/',
+		'Amazon_SES'      => '/[\d]{3} Ok (.*)/',
+		'SendGrid'        => '/[\d]{3} Ok: queued as (.*)/',
+		'CampaignMonitor' => '/[\d]{3} 2.0.0 OK:([a-zA-Z\d]{48})/',
+	];
 
 	/**
 	 * The last transaction ID issued in response to a DATA command,
@@ -85,24 +64,16 @@ class SMTP extends MailerAbstract{
 	protected $last_smtp_transaction_id;
 
 	/**
-	 * The socket for the server connection.
-	 *
-	 * @var ?resource
-	 */
-	protected $smtp_conn;
-
-	/**
 	 * Error information, if any, for the last SMTP command.
 	 *
 	 * @var array
 	 */
-	protected $error
-		= [
-			'error'        => '',
-			'detail'       => '',
-			'smtp_code'    => '',
-			'smtp_code_ex' => '',
-		];
+	protected $error = [
+		'error'        => '',
+		'detail'       => '',
+		'smtp_code'    => '',
+		'smtp_code_ex' => '',
+	];
 
 	/**
 	 * The reply the server sent to us for HELO.
@@ -142,12 +113,6 @@ class SMTP extends MailerAbstract{
 	 * @return bool
 	 */
 	public function connect($host, $port = null, $timeout = 30, $options = []){
-		static $streamok;
-		//This is enabled by default since 5.0.0 but some providers disable it
-		//Check this once and cache the result
-		if(null === $streamok){
-			$streamok = function_exists('stream_socket_client');
-		}
 		// Clear errors to avoid confusion
 		$this->setError('');
 		// Make sure we are __not__ connected
@@ -173,10 +138,10 @@ class SMTP extends MailerAbstract{
 		);
 		$errno  = 0;
 		$errstr = '';
-		if($streamok){
+		if($this->streamOK){
 			$socket_context = stream_context_create($options);
 			set_error_handler([$this, 'errorHandler']);
-			$this->smtp_conn = stream_socket_client(
+			$this->socket = stream_socket_client(
 				$host.':'.$port,
 				$errno,
 				$errstr,
@@ -193,7 +158,7 @@ class SMTP extends MailerAbstract{
 				$this::DEBUG_CONNECTION
 			);
 			set_error_handler([$this, 'errorHandler']);
-			$this->smtp_conn = fsockopen(
+			$this->socket = fsockopen(
 				$host,
 				$port,
 				$errno,
@@ -203,7 +168,7 @@ class SMTP extends MailerAbstract{
 			restore_error_handler();
 		}
 		// Verify we connected properly
-		if(!is_resource($this->smtp_conn)){
+		if(!is_resource($this->socket)){
 			$this->setError(
 				'Failed to connect to server',
 				'',
@@ -226,7 +191,7 @@ class SMTP extends MailerAbstract{
 			if(0 != $max and $timeout > $max){
 				@set_time_limit($timeout);
 			}
-			stream_set_timeout($this->smtp_conn, $timeout, 0);
+			stream_set_timeout($this->socket, $timeout, 0);
 		}
 		// Get any announcement
 		$announce = $this->get_lines();
@@ -258,7 +223,7 @@ class SMTP extends MailerAbstract{
 		// Begin encrypted connection
 		set_error_handler([$this, 'errorHandler']);
 		$crypto_ok = stream_socket_enable_crypto(
-			$this->smtp_conn,
+			$this->socket,
 			true,
 			$crypto_method
 		);
@@ -444,8 +409,8 @@ class SMTP extends MailerAbstract{
 	 * @return bool True if connected
 	 */
 	public function connected(){
-		if(is_resource($this->smtp_conn)){
-			$sock_status = stream_get_meta_data($this->smtp_conn);
+		if(is_resource($this->socket)){
+			$sock_status = stream_get_meta_data($this->socket);
 			if($sock_status['eof']){
 				// The socket is valid but we are not connected
 				$this->edebug(
@@ -473,10 +438,10 @@ class SMTP extends MailerAbstract{
 		$this->setError('');
 		$this->server_caps = null;
 		$this->helo_rply   = null;
-		if(is_resource($this->smtp_conn)){
+		if(is_resource($this->socket)){
 			// close the connection and cleanup
-			fclose($this->smtp_conn);
-			$this->smtp_conn = null; //Makes for cleaner serialization
+			fclose($this->socket);
+			$this->socket = null; //Makes for cleaner serialization
 			$this->edebug('Connection: closed', $this::DEBUG_CONNECTION);
 		}
 	}
@@ -890,7 +855,7 @@ class SMTP extends MailerAbstract{
 			$this->edebug('CLIENT -> SERVER: '.$data, $this::DEBUG_CLIENT);
 		}
 		set_error_handler([$this, 'errorHandler']);
-		$result = fwrite($this->smtp_conn, $data);
+		$result = fwrite($this->socket, $data);
 		restore_error_handler();
 
 		return $result;
@@ -973,28 +938,28 @@ class SMTP extends MailerAbstract{
 	 */
 	protected function get_lines(){
 		// If the connection is bad, give up straight away
-		if(!is_resource($this->smtp_conn)){
+		if(!is_resource($this->socket)){
 			return '';
 		}
 		$data    = '';
 		$endtime = 0;
-		stream_set_timeout($this->smtp_conn, $this->Timeout);
+		stream_set_timeout($this->socket, $this->timeout);
 		if($this->Timelimit > 0){
 			$endtime = time() + $this->Timelimit;
 		}
-		$selR = [$this->smtp_conn];
+		$selR = [$this->socket];
 		$selW = null;
-		while(is_resource($this->smtp_conn) and !feof($this->smtp_conn)){
+		while(is_resource($this->socket) and !feof($this->socket)){
 			//Must pass vars in here as params are by reference
 			if(!stream_select($selR, $selW, $selW, $this->Timelimit)){
 				$this->edebug(
-					'SMTP -> get_lines(): timed-out ('.$this->Timeout.' sec)',
+					'SMTP -> get_lines(): timed-out ('.$this->timeout.' sec)',
 					$this::DEBUG_LOWLEVEL
 				);
 				break;
 			}
 			//Deliberate noise suppression - errors are handled afterwards
-			$str = @fgets($this->smtp_conn, 515);
+			$str = @fgets($this->socket, 515);
 			$this->edebug('SMTP INBOUND: "'.trim($str).'"', $this::DEBUG_LOWLEVEL);
 			$data .= $str;
 			// If response is only 3 chars (not valid, but RFC5321 S4.2 says it must be handled),
@@ -1004,10 +969,10 @@ class SMTP extends MailerAbstract{
 				break;
 			}
 			// Timed-out? Log and break
-			$info = stream_get_meta_data($this->smtp_conn);
+			$info = stream_get_meta_data($this->socket);
 			if($info['timed_out']){
 				$this->edebug(
-					'SMTP -> get_lines(): timed-out ('.$this->Timeout.' sec)',
+					'SMTP -> get_lines(): timed-out ('.$this->timeout.' sec)',
 					$this::DEBUG_LOWLEVEL
 				);
 				break;
@@ -1066,7 +1031,7 @@ class SMTP extends MailerAbstract{
 	 * @param int $timeout The timeout duration in seconds
 	 */
 	public function setTimeout($timeout = 0){
-		$this->Timeout = $timeout;
+		$this->timeout = $timeout;
 	}
 
 	/**
@@ -1075,7 +1040,7 @@ class SMTP extends MailerAbstract{
 	 * @return int
 	 */
 	public function getTimeout(){
-		return $this->Timeout;
+		return $this->timeout;
 	}
 
 	/**

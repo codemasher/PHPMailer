@@ -74,27 +74,27 @@ final class PHPMailerTest extends TestCase{
 		$this->INCLUDE_DIR       = dirname(__DIR__); //Default to the dir above the test dir, i.e. the project home dir
 		$this->Mail              = new PHPMailer();
 		$this->Mail->setLogger($this->getDebugLogger());
-		$this->Mail->loglevel    = SMTP::DEBUG_CONNECTION; //Full debug output
-		$this->Mail->Priority    = 3;
-		$this->Mail->Encoding    = '8bit';
-		$this->Mail->CharSet     = 'iso-8859-1';
-		$this->Mail->From        = defined('TEST_MAIL_FROM') ? TEST_MAIL_FROM : 'unit_test@phpmailer.example.com';
-		$this->Mail->FromName    = 'Unit Tester';
-		$this->Mail->Sender      = '';
-		$this->Mail->Subject     = 'Unit Test';
-		$this->Mail->Body        = '';
-		$this->Mail->AltBody     = '';
-		$this->Mail->WordWrap    = 0;
-		$this->Mail->Host        = defined('TEST_MAIL_HOST') ? TEST_MAIL_HOST : 'mail.example.com';
-		$this->Mail->Port        = defined('TEST_MAIL_PORT') && !empty(TEST_MAIL_PORT) ? intval(TEST_MAIL_PORT) : 25;
-		$this->Mail->Helo        = 'localhost.localdomain';
-		$this->Mail->SMTPAuth    = false;
-		$this->Mail->Username    = '';
-		$this->Mail->Password    = '';
+		$this->Mail->loglevel = SMTP::DEBUG_CONNECTION; //Full debug output
+		$this->Mail->Priority = 3;
+		$this->Mail->Encoding = '8bit';
+		$this->Mail->CharSet  = 'iso-8859-1';
+		$this->Mail->From     = defined('TEST_MAIL_FROM') ? TEST_MAIL_FROM : 'unit_test@phpmailer.example.com';
+		$this->Mail->FromName = 'Unit Tester';
+		$this->Mail->Sender   = '';
+		$this->Mail->Subject  = 'Unit Test';
+		$this->Mail->Body     = '';
+		$this->Mail->AltBody  = '';
+		$this->Mail->WordWrap = 0;
+		$this->Mail->host     = defined('TEST_MAIL_HOST') ? TEST_MAIL_HOST : 'mail.example.com';
+		$this->Mail->port     = defined('TEST_MAIL_PORT') && !empty(TEST_MAIL_PORT) ? intval(TEST_MAIL_PORT) : 25;
+		$this->Mail->Helo     = 'localhost.localdomain';
+		$this->Mail->SMTPAuth = false;
+		$this->Mail->username = '';
+		$this->Mail->password = '';
 		$this->Mail->addReplyTo('no_reply@phpmailer.example.com', 'Reply Guy');
 		$this->Mail->Sender = 'unit_test@phpmailer.example.com';
 
-		strlen($this->Mail->Host) > 0
+		strlen($this->Mail->host) > 0
 			? $this->Mail->isSMTP()
 			: $this->Mail->isMail();
 
@@ -180,8 +180,8 @@ final class PHPMailerTest extends TestCase{
 		$ReportBody .= 'Content Type: '.$this->Mail->ContentType.$eol;
 		$ReportBody .= 'CharSet: '.$this->Mail->CharSet.$eol;
 
-		if(strlen($this->Mail->Host) > 0){
-			$ReportBody .= 'Host: '.$this->Mail->Host.$eol;
+		if(strlen($this->Mail->host) > 0){
+			$ReportBody .= 'Host: '.$this->Mail->host.$eol;
 		}
 
 		// If attachments then create an attachment list
@@ -248,8 +248,8 @@ final class PHPMailerTest extends TestCase{
 		if('mail' != $this->Mail->Mailer){
 			$this->addChange('Mailer', $this->Mail->Mailer);
 		}
-		if(25 != $this->Mail->Port){
-			$this->addChange('Port', $this->Mail->Port);
+		if(25 != $this->Mail->port){
+			$this->addChange('Port', $this->Mail->port);
 		}
 		if('localhost.localdomain' != $this->Mail->Helo){
 			$this->addChange('Helo', $this->Mail->Helo);
@@ -306,13 +306,13 @@ final class PHPMailerTest extends TestCase{
 	public function testAuthCRAMMD5(){
 		$this->markTestIncomplete('Needs a connection to a server that supports this auth mechanism, so disabled out by default.');
 
-		$this->Mail->Host       = 'hostname';
-		$this->Mail->Port       = 587;
+		$this->Mail->host       = 'hostname';
+		$this->Mail->port       = 587;
 		$this->Mail->SMTPAuth   = true;
 		$this->Mail->SMTPSecure = 'tls';
 		$this->Mail->AuthType   = 'CRAM-MD5';
-		$this->Mail->Username   = 'username';
-		$this->Mail->Password   = 'password';
+		$this->Mail->username   = 'username';
+		$this->Mail->password   = 'password';
 		$this->Mail->Body       = 'Test body';
 		$this->Mail->Subject    .= ': Auth CRAM-MD5';
 		$this->Mail->From       = 'from@example.com';
@@ -2076,12 +2076,12 @@ EOT;
 		// $this->assertFalse($this->Mail->smtpConnect());
 		// $this->Mail->smtpClose();
 
-		$this->Mail->Host = ' localhost:12345 ; '.TEST_MAIL_HOST.' ';
+		$this->Mail->host = ' localhost:12345 ; '.TEST_MAIL_HOST.' ';
 		$this->assertTrue($this->Mail->smtpConnect(), 'SMTP hosts with stray spaces failed');
 		$this->Mail->smtpClose();
 
 		// Need to pick a harmless option so as not cause problems of its own! socket:bind doesn't work with Travis-CI
-		$this->Mail->Host = TEST_MAIL_HOST;
+		$this->Mail->host = TEST_MAIL_HOST;
 		$this->assertTrue($this->Mail->smtpConnect(['ssl' => ['verify_depth' => 10]]));
 
 		$this->Smtp = $this->Mail->getSMTPInstance();

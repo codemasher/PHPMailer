@@ -27,9 +27,9 @@ try{
 	// 2 = client and server messages
 	$mail->loglevel = 2;
 	//Set the hostname of the mail server
-	$mail->Host = 'mail.example.com';
+	$mail->host = 'mail.example.com';
 	//Set the SMTP port number - likely to be 25, 465 or 587
-	$mail->Port = 25;
+	$mail->port = 25;
 	//Whether to use SMTP authentication
 	$mail->SMTPAuth = false;
 	//Set who the message is to be sent from

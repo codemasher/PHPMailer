@@ -221,27 +221,6 @@ class PHPMailer extends MailerAbstract{
 	public $MessageDate = '';
 
 	/**
-	 * SMTP hosts.
-	 * Either a single hostname or multiple semicolon-delimited hostnames.
-	 * You can also specify a different port
-	 * for each host by using this format: [hostname:port]
-	 * (e.g. "smtp1.example.com:25;smtp2.example.com").
-	 * You can also specify encryption type, for example:
-	 * (e.g. "tls://smtp1.example.com:587;ssl://smtp2.example.com:465").
-	 * Hosts will be tried in order.
-	 *
-	 * @var string
-	 */
-	public $Host = 'localhost';
-
-	/**
-	 * The default SMTP server port.
-	 *
-	 * @var int
-	 */
-	public $Port = 25;
-
-	/**
 	 * The SMTP HELO of the message.
 	 * Default is $Hostname. If $Hostname is empty, PHPMailer attempts to find
 	 * one with the same method described above for $Hostname.
@@ -273,8 +252,8 @@ class PHPMailer extends MailerAbstract{
 	 * Whether to use SMTP authentication.
 	 * Uses the Username and Password properties.
 	 *
-	 * @see PHPMailer::$Username
-	 * @see PHPMailer::$Password
+	 * @see PHPMailer::$username
+	 * @see PHPMailer::$password
 	 *
 	 * @var bool
 	 */
@@ -286,20 +265,6 @@ class PHPMailer extends MailerAbstract{
 	 * @var array
 	 */
 	public $SMTPOptions = [];
-
-	/**
-	 * SMTP username.
-	 *
-	 * @var string
-	 */
-	public $Username = '';
-
-	/**
-	 * SMTP password.
-	 *
-	 * @var string
-	 */
-	public $Password = '';
 
 	/**
 	 * SMTP auth type.
@@ -315,14 +280,6 @@ class PHPMailer extends MailerAbstract{
 	 * @var OAuth
 	 */
 	protected $oauth;
-
-	/**
-	 * The SMTP server timeout in seconds.
-	 * Default of 5 minutes (300sec) is from RFC2821 section 4.5.3.2.
-	 *
-	 * @var int
-	 */
-	public $Timeout = 300;
 
 	/**
 	 * Comma separated list of DSN notifications
@@ -361,17 +318,6 @@ class PHPMailer extends MailerAbstract{
 	 * @var array
 	 */
 	protected $SingleToArray = [];
-
-	/**
-	 * Whether to generate VERP addresses on send.
-	 * Only applicable when sending via SMTP.
-	 *
-	 * @see https://en.wikipedia.org/wiki/Variable_envelope_return_path
-	 * @see http://www.postfix.org/VERP_README.html Postfix VERP info
-	 *
-	 * @var bool
-	 */
-	public $do_verp = false;
 
 	/**
 	 * Whether to allow sending messages with an empty body.
@@ -638,31 +584,11 @@ class PHPMailer extends MailerAbstract{
 	protected $sign_key_pass = '';
 
 	/**
-	 * Whether to throw exceptions for errors.
-	 *
-	 * @var bool
-	 */
-	protected $exceptions = false;
-
-	/**
 	 * Unique ID used for message ID and boundaries.
 	 *
 	 * @var string
 	 */
 	protected $uniqueid = '';
-
-	/**
-	 * Constructor.
-	 *
-	 * @param bool $exceptions Should we throw external exceptions?
-	 */
-	public function __construct($exceptions = null){
-		parent::__construct();
-
-		if(null !== $exceptions){
-			$this->exceptions = (bool)$exceptions;
-		}
-	}
 
 	/**
 	 * Destructor.
@@ -1066,9 +992,7 @@ class PHPMailer extends MailerAbstract{
 	 *
 	 */
 	public function preSend(){
-		if('smtp' == $this->Mailer or
-		   ('mail' == $this->Mailer and stripos(PHP_OS, 'WIN') === 0)
-		){
+		if($this->Mailer === 'smtp' || ($this->Mailer === 'mail' && stripos(PHP_OS, 'WIN') === 0)){
 			//SMTP mandates RFC-compliant line endings
 			//and it's also used with mail() on Windows
 			$this->setLE("\r\n");
@@ -1076,22 +1000,6 @@ class PHPMailer extends MailerAbstract{
 		else{
 			//Maintain backward compatibility with legacy Linux command line mailers
 			$this->setLE(PHP_EOL);
-		}
-		//Check for buggy PHP versions that add a header with an incorrect line break
-		if(ini_get('mail.add_x_header') == 1
-		   and 'mail' == $this->Mailer
-		       and stripos(PHP_OS, 'WIN') === 0
-		           and ((version_compare(PHP_VERSION, '7.0.0', '>=')
-		                 and version_compare(PHP_VERSION, '7.0.17', '<'))
-		                or (version_compare(PHP_VERSION, '7.1.0', '>=')
-		                    and version_compare(PHP_VERSION, '7.1.3', '<')))
-		){
-			trigger_error(
-				'Your version of PHP is affected by a bug that may result in corrupted messages.'.
-				' To fix it, switch to sending using SMTP, disable the mail.add_x_header option in'.
-				' your php.ini, switch to MacOS or Linux, or upgrade your PHP to version 7.0.17+ or 7.1.3+.',
-				E_USER_WARNING
-			);
 		}
 
 		try{
@@ -1525,11 +1433,11 @@ class PHPMailer extends MailerAbstract{
 			return true;
 		}
 
-		$this->smtp->setTimeout($this->Timeout);
+		$this->smtp->setTimeout($this->timeout);
 		$this->smtp->setDebugLevel($this->loglevel);
 		$this->smtp->setLogger($this->logger);
 		$this->smtp->setVerp($this->do_verp);
-		$hosts         = explode(';', $this->Host);
+		$hosts         = explode(';', $this->host);
 		$lastexception = null;
 
 		foreach($hosts as $hostentry){
@@ -1576,12 +1484,12 @@ class PHPMailer extends MailerAbstract{
 				}
 			}
 			$host  = $hostinfo[3];
-			$port  = $this->Port;
+			$port  = $this->port ?? $this::DEFAULT_PORT_SMTP;
 			$tport = (int)$hostinfo[4];
 			if($tport > 0 and $tport < 65536){
 				$port = $tport;
 			}
-			if($this->smtp->connect($prefix.$host, $port, $this->Timeout, $options)){
+			if($this->smtp->connect($prefix.$host, $port, $this->timeout, $options)){
 				try{
 					if($this->Helo){
 						$hello = $this->Helo;
@@ -1607,8 +1515,8 @@ class PHPMailer extends MailerAbstract{
 					}
 					if($this->SMTPAuth){
 						if(!$this->smtp->authenticate(
-							$this->Username,
-							$this->Password,
+							$this->username,
+							$this->password,
 							$this->AuthType,
 							$this->oauth
 						)

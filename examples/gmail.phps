@@ -24,13 +24,13 @@ $mail->isSMTP();
 $mail->loglevel = 2;
 
 //Set the hostname of the mail server
-$mail->Host = 'smtp.gmail.com';
+$mail->host = 'smtp.gmail.com';
 // use
 // $mail->Host = gethostbyname('smtp.gmail.com');
 // if your network does not support SMTP over IPv6
 
 //Set the SMTP port number - 587 for authenticated TLS, a.k.a. RFC4409 SMTP submission
-$mail->Port = 587;
+$mail->port = 587;
 
 //Set the encryption system to use - ssl (deprecated) or tls
 $mail->SMTPSecure = 'tls';
@@ -39,10 +39,10 @@ $mail->SMTPSecure = 'tls';
 $mail->SMTPAuth = true;
 
 //Username to use for SMTP authentication - use full email address for gmail
-$mail->Username = "username@gmail.com";
+$mail->username = "username@gmail.com";
 
 //Password to use for SMTP authentication
-$mail->Password = "yourpassword";
+$mail->password = "yourpassword";
 
 //Set who the message is to be sent from
 $mail->setFrom('from@example.com', 'First Last');

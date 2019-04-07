@@ -41,46 +41,11 @@ namespace PHPMailer\PHPMailer;
 class POP3 extends MailerAbstract{
 
 	/**
-	 * POP3 mail server hostname.
-	 *
-	 * @var string
-	 */
-	public $host;
-
-	/**
-	 * POP3 port number.
-	 *
-	 * @var int
-	 */
-	public $port;
-
-	/**
 	 * POP3 Timeout Value in seconds.
 	 *
 	 * @var int
 	 */
 	public $tval;
-
-	/**
-	 * POP3 username.
-	 *
-	 * @var string
-	 */
-	public $username;
-
-	/**
-	 * POP3 password.
-	 *
-	 * @var string
-	 */
-	public $password;
-
-	/**
-	 * Resource handle for the POP3 connection socket.
-	 *
-	 * @var resource
-	 */
-	protected $pop_conn;
 
 	/**
 	 * Are we connected?
@@ -171,7 +136,7 @@ class POP3 extends MailerAbstract{
 		}
 
 		//  connect to the POP3 server
-		$this->pop_conn = fsockopen(
+		$this->socket = fsockopen(
 			$host, //  POP3 Host
 			$port, //  Port #
 			$errno, //  Error Number
@@ -182,7 +147,7 @@ class POP3 extends MailerAbstract{
 		restore_error_handler();
 
 		//  Did we connect?
-		if(false === $this->pop_conn){
+		if(false === $this->socket){
 			//  It would appear not...
 			$this->setError(
 				"Failed to connect to server $host on port $port. errno: $errno; errstr: $errstr"
@@ -192,7 +157,7 @@ class POP3 extends MailerAbstract{
 		}
 
 		//  Increase the stream time-out
-		stream_set_timeout($this->pop_conn, $tval, 0);
+		stream_set_timeout($this->socket, $tval, 0);
 
 		//  Get the POP3 server response
 		$pop3_response = $this->getResponse();
@@ -250,7 +215,7 @@ class POP3 extends MailerAbstract{
 		//The QUIT command may cause the daemon to exit, which will kill our connection
 		//So ignore errors here
 		try{
-			@fclose($this->pop_conn);
+			@fclose($this->socket);
 		}
 		catch(PHPMailerException $e){
 			//Do nothing
@@ -265,7 +230,7 @@ class POP3 extends MailerAbstract{
 	 * @return string
 	 */
 	protected function getResponse($size = 128){
-		$response = fgets($this->pop_conn, $size);
+		$response = fgets($this->socket, $size);
 		$this->edebug('Server -> Client: '. $response, $this::DEBUG_CLIENT);
 
 		return $response;
@@ -279,10 +244,10 @@ class POP3 extends MailerAbstract{
 	 * @return int
 	 */
 	protected function sendString($string){
-		if($this->pop_conn){
+		if($this->socket){
 			$this->edebug('Client -> Server: '. $string, $this::DEBUG_SERVER);
 
-			return fwrite($this->pop_conn, $string, strlen($string));
+			return fwrite($this->socket, $string, strlen($string));
 		}
 
 		return 0;

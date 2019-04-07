@@ -97,14 +97,14 @@ abstract class MailerAbstract implements LoggerAwareInterface{
 	 *
 	 * @var int
 	 */
-	protected const DEFAULT_PORT_SMTP = 25;
+	public const DEFAULT_PORT_SMTP = 25;
 
 	/**
 	 * Default POP3 port number.
 	 *
 	 * @var int
 	 */
-	protected const DEFAULT_PORT_POP3 = 110;
+	public const DEFAULT_PORT_POP3 = 110;
 
 	/**
 	 * Default timeout in seconds.
@@ -135,11 +135,68 @@ abstract class MailerAbstract implements LoggerAwareInterface{
 	protected const STOP_CRITICAL = 2;
 
 	/**
-	 * SMTP RFC standard line ending.
+	 * SMTP/POP3 host(s).
+	 * Either a single hostname or multiple semicolon-delimited hostnames.
+	 * You can also specify a different port
+	 * for each host by using this format: [hostname:port]
+	 * (e.g. "smtp1.example.com:25;smtp2.example.com").
+	 * You can also specify encryption type, for example:
+	 * (e.g. "tls://smtp1.example.com:587;ssl://smtp2.example.com:465").
+	 * Hosts will be tried in order.
 	 *
 	 * @var string
 	 */
-	protected $LE = "\r\n";
+	public $host = 'localhost';
+
+	/**
+	 * The SMTP/POP3 server port.
+	 *
+	 * @var int
+	 */
+	public $port;
+
+	/**
+	 * SMTP/POP3 username.
+	 *
+	 * @var string
+	 */
+	public $username = '';
+
+	/**
+	 * SMTP/POP3 password.
+	 *
+	 * @var string
+	 */
+	public $password = '';
+
+	/**
+	 * Whether to generate VERP addresses on send.
+	 * Only applicable when sending via SMTP.
+	 *
+	 * @see https://en.wikipedia.org/wiki/Variable_envelope_return_path
+	 * @see http://www.postfix.org/VERP_README.html Postfix VERP info
+	 *
+	 * @var bool
+	 */
+	public $do_verp = false;
+
+	/**
+	 * The timeout value for connection, in seconds.
+	 * Default of 5 minutes (300sec) is from RFC2821 section 4.5.3.2.
+	 * This needs to be quite high to function correctly with hosts using greetdelay as an anti-spam measure.
+	 *
+	 * @see http://tools.ietf.org/html/rfc2821#section-4.5.3.2
+	 *
+	 * @var int
+	 */
+	public $timeout = 300;
+
+	/**
+	 * Whether to throw exceptions for errors.
+	 *
+	 * @var bool
+	 */
+	public $exceptions = false;
 
 	/**
 	 * Debug output level.
@@ -155,10 +212,36 @@ abstract class MailerAbstract implements LoggerAwareInterface{
 	public $loglevel = self::DEBUG_OFF;
 
 	/**
+	 * The socket for the server connection.
+	 *
+	 * @var ?resource
+	 */
+	protected $socket;
+
+	/**
+	 * SMTP RFC standard line ending.
+	 *
+	 * @var string
+	 */
+	protected $LE = "\r\n";
+
+	/**
+	 * @var bool
+	 */
+	protected $streamOK = null;
+
+	/**
 	 * MailerAbstract constructor.
 	 */
 	public function __construct(){
 		$this->logger = new NullLogger;
+
+		// This is enabled by default since 5.0.0 but some providers disable it
+		// Check this once and cache the result
+		if($this->streamOK === null){
+			$this->streamOK = function_exists('stream_socket_client');
+		}
+
 	}
 
 	/**

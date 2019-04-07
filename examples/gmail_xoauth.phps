@@ -31,10 +31,10 @@ $mail->isSMTP();
 $mail->loglevel = 2;
 
 //Set the hostname of the mail server
-$mail->Host = 'smtp.gmail.com';
+$mail->host = 'smtp.gmail.com';
 
 //Set the SMTP port number - 587 for authenticated TLS, a.k.a. RFC4409 SMTP submission
-$mail->Port = 587;
+$mail->port = 587;
 
 //Set the encryption system to use - ssl (deprecated) or tls
 $mail->SMTPSecure = 'tls';

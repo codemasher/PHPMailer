@@ -21,18 +21,17 @@ class myPHPMailer extends PHPMailer{
 	/**
 	 * myPHPMailer constructor.
 	 *
-	 * @param bool|null $exceptions
-	 * @param string    $body A default HTML message body
+	 * @param string $body A default HTML message body
 	 */
-	public function __construct($exceptions, $body = ''){
+	public function __construct($body = ''){
 		//Don't forget to do this or other things may not be set correctly!
-		parent::__construct($exceptions);
+		parent::__construct();
 		//Set a default 'From' address
 		$this->setFrom('joe@example.com', 'Joe User');
 		//Send via SMTP
 		$this->isSMTP();
 		//Equivalent to setting `Host`, `Port` and `SMTPSecure` all at once
-		$this->Host = 'tls://smtp.example.com:587';
+		$this->host = 'tls://smtp.example.com:587';
 		//Set an HTML and plain-text body, import relative image references
 		$this->msgHTML($body, './images/');
 		//Show debug output
@@ -52,7 +51,7 @@ class myPHPMailer extends PHPMailer{
 //Now creating and sending a message becomes simpler when you use this class in your app code
 try{
 	//Instantiate your new class, making use of the new `$body` parameter
-	$mail = new myPHPMailer(true, '<strong>This is the message body</strong>');
+	$mail = new myPHPMailer('<strong>This is the message body</strong>');
 	// Now you only need to set things that are different from the defaults you defined
 	$mail->addAddress('jane@example.com', 'Jane User');
 	$mail->Subject = 'Here is the subject';

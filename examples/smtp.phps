@@ -22,15 +22,15 @@ $mail->isSMTP();
 // 2 = client and server messages
 $mail->loglevel = 2;
 //Set the hostname of the mail server
-$mail->Host = 'mail.example.com';
+$mail->host = 'mail.example.com';
 //Set the SMTP port number - likely to be 25, 465 or 587
-$mail->Port = 25;
+$mail->port = 25;
 //Whether to use SMTP authentication
 $mail->SMTPAuth = true;
 //Username to use for SMTP authentication
-$mail->Username = 'yourname@example.com';
+$mail->username = 'yourname@example.com';
 //Password to use for SMTP authentication
-$mail->Password = 'yourpassword';
+$mail->password = 'yourpassword';
 //Set who the message is to be sent from
 $mail->setFrom('from@example.com', 'First Last');
 //Set an alternative reply-to address

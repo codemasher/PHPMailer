@@ -22,9 +22,9 @@ $mail->isSMTP();
 // 2 = client and server messages
 $mail->loglevel = 2;
 //Set the hostname of the mail server
-$mail->Host = 'mail.example.com';
+$mail->host = 'mail.example.com';
 //Set the SMTP port number - likely to be 25, 465 or 587
-$mail->Port = 25;
+$mail->port = 25;
 //We don't need to set this as it's the default value
 //$mail->SMTPAuth = false;
 //Set who the message is to be sent from

@@ -17,12 +17,12 @@ $mail = new PHPMailer;
 $body = file_get_contents('contents.html');
 
 $mail->isSMTP();
-$mail->Host          = 'smtp.example.com';
+$mail->host          = 'smtp.example.com';
 $mail->SMTPAuth      = true;
 $mail->SMTPKeepAlive = true; // SMTP connection will not close after each email sent, reduces SMTP overhead
-$mail->Port          = 25;
-$mail->Username      = 'yourname@example.com';
-$mail->Password      = 'yourpassword';
+$mail->port          = 25;
+$mail->username      = 'yourname@example.com';
+$mail->password      = 'yourpassword';
 $mail->setFrom('list@example.com', 'List manager');
 $mail->addReplyTo('list@example.com', 'List manager');
 
