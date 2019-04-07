@@ -1810,7 +1810,7 @@ EOT;
 		$this->Mail->Sender = '';
 		$this->Mail->createHeader();
 		$this->assertFalse($this->Mail->set('x', 'y'), 'Invalid property set succeeded');
-		$this->assertTrue($this->Mail->set('Timeout', 11), 'Valid property set failed');
+		$this->assertTrue($this->Mail->set('timeout', 11), 'Valid property set failed');
 		$this->assertTrue($this->Mail->set('AllowEmpty', null), 'Null property set failed');
 		$this->assertTrue($this->Mail->set('AllowEmpty', false), 'Valid property set of null property failed');
 
