@@ -1813,6 +1813,7 @@ EOT;
 
 	/**
 	 * Miscellaneous calls to improve test coverage and some small tests.
+	 * @todo
 	 */
 	public function testMiscellaneous(){
 		$this->Mail->addCustomHeader('SomeHeader: Some Value');
@@ -1826,11 +1827,6 @@ EOT;
 		$this->Mail->setLanguage('fr');
 		$this->Mail->Sender = '';
 		$this->Mail->createHeader();
-		$this->assertFalse($this->Mail->set('x', 'y'), 'Invalid property set succeeded');
-		$this->assertTrue($this->Mail->set('timeout', 11), 'Valid property set failed');
-		$this->assertTrue($this->Mail->set('AllowEmpty', null), 'Null property set failed');
-		$this->assertTrue($this->Mail->set('AllowEmpty', false), 'Valid property set of null property failed');
-
 
 		//Line break normalization
 		$eol = $this->Mail->getLE();

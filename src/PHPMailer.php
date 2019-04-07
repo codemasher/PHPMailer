@@ -3368,31 +3368,6 @@ class PHPMailer extends MailerAbstract{
 	}
 
 	/**
-	 * Set or reset instance properties.
-	 * You should avoid this function - it's more verbose, less efficient, more error-prone and
-	 * harder to debug than setting properties directly.
-	 * Usage Example:
-	 * `$mail->set('SMTPSecure', 'tls');`
-	 *   is the same as:
-	 * `$mail->SMTPSecure = 'tls';`.
-	 *
-	 * @param string $name  The property name to set
-	 * @param mixed  $value The value to set the property to
-	 *
-	 * @return bool
-	 */
-	public function set($name, $value = ''){
-		if(property_exists($this, $name)){
-			$this->$name = $value;
-
-			return true;
-		}
-		$this->setError($this->lang('variable_set').$name);
-
-		return false;
-	}
-
-	/**
 	 * Strip newlines to prevent header injection.
 	 *
 	 * @param string $str
