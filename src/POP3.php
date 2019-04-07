@@ -41,27 +41,6 @@ namespace PHPMailer\PHPMailer;
 class POP3 extends MailerAbstract{
 
 	/**
-	 * The POP3 PHPMailer Version number.
-	 *
-	 * @var string
-	 */
-	const VERSION = '6.0.7';
-
-	/**
-	 * Default POP3 port number.
-	 *
-	 * @var int
-	 */
-	const DEFAULT_PORT = 110;
-
-	/**
-	 * Default timeout in seconds.
-	 *
-	 * @var int
-	 */
-	const DEFAULT_TIMEOUT = 30;
-
-	/**
 	 * POP3 mail server hostname.
 	 *
 	 * @var string
@@ -118,11 +97,6 @@ class POP3 extends MailerAbstract{
 	protected $errors = [];
 
 	/**
-	 * Line break constant.
-	 */
-	const LE = "\r\n";
-
-	/**
 	 * Authenticate with a POP3 server.
 	 * A connect, login, disconnect sequence
 	 * appropriate for POP-before SMTP authorisation.
@@ -140,14 +114,14 @@ class POP3 extends MailerAbstract{
 		$this->host = $host;
 		// If no port value provided, use default
 		if(false === $port){
-			$this->port = static::DEFAULT_PORT;
+			$this->port = $this::DEFAULT_PORT_POP3;
 		}
 		else{
 			$this->port = (int)$port;
 		}
 		// If no timeout value provided, use default
 		if(false === $timeout){
-			$this->tval = static::DEFAULT_TIMEOUT;
+			$this->tval = $this::DEFAULT_TIMEOUT;
 		}
 		else{
 			$this->tval = (int)$timeout;
@@ -193,7 +167,7 @@ class POP3 extends MailerAbstract{
 		set_error_handler([$this, 'catchWarning']);
 
 		if(false === $port){
-			$port = static::DEFAULT_PORT;
+			$port = $this::DEFAULT_PORT_POP3;
 		}
 
 		//  connect to the POP3 server
@@ -254,11 +228,11 @@ class POP3 extends MailerAbstract{
 		}
 
 		// Send the Username
-		$this->sendString("USER $username".static::LE);
+		$this->sendString("USER $username".$this->LE);
 		$pop3_response = $this->getResponse();
 		if($this->checkResponse($pop3_response)){
 			// Send the Password
-			$this->sendString("PASS $password".static::LE);
+			$this->sendString("PASS $password".$this->LE);
 			$pop3_response = $this->getResponse();
 			if($this->checkResponse($pop3_response)){
 				return true;
@@ -292,7 +266,7 @@ class POP3 extends MailerAbstract{
 	 */
 	protected function getResponse($size = 128){
 		$response = fgets($this->pop_conn, $size);
-		$this->edebug('Server -> Client: '. $response, self::DEBUG_CLIENT);
+		$this->edebug('Server -> Client: '. $response, $this::DEBUG_CLIENT);
 
 		return $response;
 	}
@@ -306,7 +280,7 @@ class POP3 extends MailerAbstract{
 	 */
 	protected function sendString($string){
 		if($this->pop_conn){
-			$this->edebug('Client -> Server: '. $string, self::DEBUG_SERVER);
+			$this->edebug('Client -> Server: '. $string, $this::DEBUG_SERVER);
 
 			return fwrite($this->pop_conn, $string, strlen($string));
 		}
@@ -340,7 +314,7 @@ class POP3 extends MailerAbstract{
 	 */
 	protected function setError($error){
 		$this->errors[] = $error;
-		$this->edebug(implode(PHP_EOL, $this->errors), self::DEBUG_CLIENT);
+		$this->edebug(implode(PHP_EOL, $this->errors), $this::DEBUG_CLIENT);
 	}
 
 	/**

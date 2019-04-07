@@ -30,34 +30,6 @@ namespace PHPMailer\PHPMailer;
 class SMTP extends MailerAbstract{
 
 	/**
-	 * The PHPMailer SMTP version number.
-	 *
-	 * @var string
-	 */
-	const VERSION = '6.0.7';
-
-	/**
-	 * SMTP line break constant.
-	 *
-	 * @var string
-	 */
-	const LE = "\r\n";
-
-	/**
-	 * The SMTP port to use if one is not specified.
-	 *
-	 * @var int
-	 */
-	const DEFAULT_PORT = 25;
-
-	/**
-	 * The maximum line length allowed by RFC 2822 section 2.1.1.
-	 *
-	 * @var int
-	 */
-	const MAX_LINE_LENGTH = 998;
-
-	/**
 	 * Whether to use VERP.
 	 *
 	 * @see http://en.wikipedia.org/wiki/Variable_envelope_return_path
@@ -186,7 +158,7 @@ class SMTP extends MailerAbstract{
 			return false;
 		}
 		if(empty($port)){
-			$port = self::DEFAULT_PORT;
+			$port = $this::DEFAULT_PORT_SMTP;
 		}
 		// Connect to the SMTP server
 		$this->edebug(
@@ -197,7 +169,7 @@ class SMTP extends MailerAbstract{
 				$timeout,
 				!empty($options) ? var_export($options, true) : '[]'
 			),
-			self::DEBUG_CONNECTION
+			$this::DEBUG_CONNECTION
 		);
 		$errno  = 0;
 		$errstr = '';
@@ -218,7 +190,7 @@ class SMTP extends MailerAbstract{
 			//Fall back to fsockopen which should work in more places, but is missing some features
 			$this->edebug(
 				'Connection: stream_socket_client not available, falling back to fsockopen',
-				self::DEBUG_CONNECTION
+				$this::DEBUG_CONNECTION
 			);
 			set_error_handler([$this, 'errorHandler']);
 			$this->smtp_conn = fsockopen(
@@ -240,12 +212,12 @@ class SMTP extends MailerAbstract{
 			);
 			$this->edebug(
 				sprintf('SMTP ERROR: %s: %s (%s)', $this->error['error'], $errstr, $errno),
-				self::DEBUG_CLIENT
+				$this::DEBUG_CLIENT
 			);
 
 			return false;
 		}
-		$this->edebug('Connection: opened', self::DEBUG_CONNECTION);
+		$this->edebug('Connection: opened', $this::DEBUG_CONNECTION);
 		// SMTP server can take longer to respond, give longer timeout for first read
 		// Windows does not have support for this timeout function
 		if(substr(PHP_OS, 0, 3) != 'WIN'){
@@ -258,7 +230,7 @@ class SMTP extends MailerAbstract{
 		}
 		// Get any announcement
 		$announce = $this->get_lines();
-		$this->edebug('SERVER -> CLIENT: '.$announce, self::DEBUG_SERVER);
+		$this->edebug('SERVER -> CLIENT: '.$announce, $this::DEBUG_SERVER);
 
 		return true;
 	}
@@ -330,15 +302,15 @@ class SMTP extends MailerAbstract{
 				return false;
 			}
 
-			$this->edebug('Auth method requested: '.($authtype ? $authtype : 'UNSPECIFIED'), self::DEBUG_LOWLEVEL);
+			$this->edebug('Auth method requested: '.($authtype ? $authtype : 'UNSPECIFIED'), $this::DEBUG_LOWLEVEL);
 			$this->edebug(
 				'Auth methods available on the server: '.implode(',', $this->server_caps['AUTH']),
-				self::DEBUG_LOWLEVEL
+				$this::DEBUG_LOWLEVEL
 			);
 
 			//If we have requested a specific auth type, check the server supports it before trying others
 			if(null !== $authtype and !in_array($authtype, $this->server_caps['AUTH'])){
-				$this->edebug('Requested auth method not available: '.$authtype, self::DEBUG_LOWLEVEL);
+				$this->edebug('Requested auth method not available: '.$authtype, $this::DEBUG_LOWLEVEL);
 				$authtype = null;
 			}
 
@@ -356,7 +328,7 @@ class SMTP extends MailerAbstract{
 
 					return false;
 				}
-				self::edebug('Auth method selected: '.$authtype, self::DEBUG_LOWLEVEL);
+				$this->edebug('Auth method selected: '.$authtype, $this::DEBUG_LOWLEVEL);
 			}
 
 			if(!in_array($authtype, $this->server_caps['AUTH'])){
@@ -478,7 +450,7 @@ class SMTP extends MailerAbstract{
 				// The socket is valid but we are not connected
 				$this->edebug(
 					'SMTP NOTICE: EOF caught while checking if connected',
-					self::DEBUG_CLIENT
+					$this::DEBUG_CLIENT
 				);
 				$this->close();
 
@@ -505,7 +477,7 @@ class SMTP extends MailerAbstract{
 			// close the connection and cleanup
 			fclose($this->smtp_conn);
 			$this->smtp_conn = null; //Makes for cleaner serialization
-			$this->edebug('Connection: closed', self::DEBUG_CONNECTION);
+			$this->edebug('Connection: closed', $this::DEBUG_CONNECTION);
 		}
 	}
 
@@ -557,14 +529,14 @@ class SMTP extends MailerAbstract{
 			}
 			//Break this line up into several smaller lines if it's too long
 			//Micro-optimisation: isset($str[$len]) is faster than (strlen($str) > $len),
-			while(isset($line[self::MAX_LINE_LENGTH])){
+			while(isset($line[$this::LINE_LENGTH_MAX])){
 				//Working backwards, try to find a space within the last MAX_LINE_LENGTH chars of the line to break on
 				//so as to avoid breaking in the middle of a word
-				$pos = strrpos(substr($line, 0, self::MAX_LINE_LENGTH), ' ');
+				$pos = strrpos(substr($line, 0, $this::LINE_LENGTH_MAX), ' ');
 				//Deliberately matches both false and 0
 				if(!$pos){
 					//No nice break found, add a hard break
-					$pos         = self::MAX_LINE_LENGTH - 1;
+					$pos         = $this::LINE_LENGTH_MAX - 1;
 					$lines_out[] = substr($line, 0, $pos);
 					$line        = substr($line, $pos);
 				}
@@ -587,7 +559,7 @@ class SMTP extends MailerAbstract{
 				if(!empty($line_out) and $line_out[0] == '.'){
 					$line_out = '.'.$line_out;
 				}
-				$this->client_send($line_out.static::LE, 'DATA');
+				$this->client_send($line_out.$this->LE, 'DATA');
 			}
 		}
 
@@ -800,7 +772,7 @@ class SMTP extends MailerAbstract{
 
 			return false;
 		}
-		$this->client_send($commandstring.static::LE, $command);
+		$this->client_send($commandstring.$this->LE, $command);
 
 		$this->last_reply = $this->get_lines();
 		// Fetch SMTP code and possible error code explanation
@@ -823,7 +795,7 @@ class SMTP extends MailerAbstract{
 			$detail  = substr($this->last_reply, 4);
 		}
 
-		$this->edebug('SERVER -> CLIENT: '.$this->last_reply, self::DEBUG_SERVER);
+		$this->edebug('SERVER -> CLIENT: '.$this->last_reply, $this::DEBUG_SERVER);
 
 		if(!in_array($code, (array)$expect)){
 			$this->setError(
@@ -834,7 +806,7 @@ class SMTP extends MailerAbstract{
 			);
 			$this->edebug(
 				sprintf('SMTP ERROR: %s: %s', $this->error['error'], $this->last_reply),
-				self::DEBUG_CLIENT
+				$this::DEBUG_CLIENT
 			);
 
 			return false;
@@ -895,7 +867,7 @@ class SMTP extends MailerAbstract{
 	 */
 	public function turn(){
 		$this->setError('The SMTP TURN command is not implemented');
-		$this->edebug('SMTP NOTICE: '.$this->error['error'], self::DEBUG_CLIENT);
+		$this->edebug('SMTP NOTICE: '.$this->error['error'], $this::DEBUG_CLIENT);
 
 		return false;
 	}
@@ -911,11 +883,11 @@ class SMTP extends MailerAbstract{
 	public function client_send($data, $command = ''){
 		//If SMTP transcripts are left enabled, or debug output is posted online
 		//it can leak credentials, so hide credentials in all but lowest level
-		if($this->loglevel <= self::DEBUG_LOWLEVEL && in_array($command, ['User & Password', 'Username', 'Password'], true)){
-			$this->edebug('CLIENT -> SERVER: <credentials hidden>', self::DEBUG_CLIENT);
+		if($this->loglevel <= $this::DEBUG_LOWLEVEL && in_array($command, ['User & Password', 'Username', 'Password'], true)){
+			$this->edebug('CLIENT -> SERVER: <credentials hidden>', $this::DEBUG_CLIENT);
 		}
 		else{
-			$this->edebug('CLIENT -> SERVER: '.$data, self::DEBUG_CLIENT);
+			$this->edebug('CLIENT -> SERVER: '.$data, $this::DEBUG_CLIENT);
 		}
 		set_error_handler([$this, 'errorHandler']);
 		$result = fwrite($this->smtp_conn, $data);
@@ -1017,13 +989,13 @@ class SMTP extends MailerAbstract{
 			if(!stream_select($selR, $selW, $selW, $this->Timelimit)){
 				$this->edebug(
 					'SMTP -> get_lines(): timed-out ('.$this->Timeout.' sec)',
-					self::DEBUG_LOWLEVEL
+					$this::DEBUG_LOWLEVEL
 				);
 				break;
 			}
 			//Deliberate noise suppression - errors are handled afterwards
 			$str = @fgets($this->smtp_conn, 515);
-			$this->edebug('SMTP INBOUND: "'.trim($str).'"', self::DEBUG_LOWLEVEL);
+			$this->edebug('SMTP INBOUND: "'.trim($str).'"', $this::DEBUG_LOWLEVEL);
 			$data .= $str;
 			// If response is only 3 chars (not valid, but RFC5321 S4.2 says it must be handled),
 			// or 4th character is a space, we are done reading, break the loop,
@@ -1036,7 +1008,7 @@ class SMTP extends MailerAbstract{
 			if($info['timed_out']){
 				$this->edebug(
 					'SMTP -> get_lines(): timed-out ('.$this->Timeout.' sec)',
-					self::DEBUG_LOWLEVEL
+					$this::DEBUG_LOWLEVEL
 				);
 				break;
 			}
@@ -1044,7 +1016,7 @@ class SMTP extends MailerAbstract{
 			if($endtime and time() > $endtime){
 				$this->edebug(
 					'SMTP -> get_lines(): timelimit reached ('.$this->Timelimit.' sec)',
-					self::DEBUG_LOWLEVEL
+					$this::DEBUG_LOWLEVEL
 				);
 				break;
 			}
@@ -1123,7 +1095,7 @@ class SMTP extends MailerAbstract{
 		);
 		$this->edebug(
 			sprintf('%s Error #%s: %s [%s line %s]', $notice, $errno, $errmsg, $errfile, $errline),
-			self::DEBUG_CONNECTION
+			$this::DEBUG_CONNECTION
 		);
 	}
 

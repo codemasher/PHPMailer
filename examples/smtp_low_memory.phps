@@ -63,14 +63,14 @@ class SMTPLowMemory extends SMTP{
 			}
 			//We need to break this line up into several smaller lines
 			//This is a small micro-optimisation: isset($str[$len]) is equivalent to (strlen($str) > $len)
-			while(isset($line[self::MAX_LINE_LENGTH])){
+			while(isset($line[self::LINE_LENGTH_MAX])){
 				//Working backwards, try to find a space within the last MAX_LINE_LENGTH chars of the line to break on
 				//so as to avoid breaking in the middle of a word
-				$pos = strrpos(substr($line, 0, self::MAX_LINE_LENGTH), ' ');
+				$pos = strrpos(substr($line, 0, self::LINE_LENGTH_MAX), ' ');
 				//Deliberately matches both false and 0
 				if(!$pos){
 					//No nice break found, add a hard break
-					$pos         = self::MAX_LINE_LENGTH - 1;
+					$pos         = self::LINE_LENGTH_MAX - 1;
 					$lines_out[] = substr($line, 0, $pos);
 					$line        = substr($line, $pos);
 				}
@@ -93,7 +93,7 @@ class SMTPLowMemory extends SMTP{
 				if(!empty($line_out) and $line_out[0] == '.'){
 					$line_out = '.'.$line_out;
 				}
-				$this->client_send($line_out.self::LE);
+				$this->client_send($line_out.$this->LE);
 			}
 		}
 

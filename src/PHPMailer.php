@@ -30,22 +30,6 @@ namespace PHPMailer\PHPMailer;
  */
 class PHPMailer extends MailerAbstract{
 
-	const CHARSET_ISO88591 = 'iso-8859-1';
-	const CHARSET_UTF8     = 'utf-8';
-
-	const CONTENT_TYPE_PLAINTEXT             = 'text/plain';
-	const CONTENT_TYPE_TEXT_CALENDAR         = 'text/calendar';
-	const CONTENT_TYPE_TEXT_HTML             = 'text/html';
-	const CONTENT_TYPE_MULTIPART_ALTERNATIVE = 'multipart/alternative';
-	const CONTENT_TYPE_MULTIPART_MIXED       = 'multipart/mixed';
-	const CONTENT_TYPE_MULTIPART_RELATED     = 'multipart/related';
-
-	const ENCODING_7BIT             = '7bit';
-	const ENCODING_8BIT             = '8bit';
-	const ENCODING_BASE64           = 'base64';
-	const ENCODING_BINARY           = 'binary';
-	const ENCODING_QUOTED_PRINTABLE = 'quoted-printable';
-
 	/**
 	 * Email priority.
 	 * Options: null (default), 1 = High, 3 = Normal, 5 = low.
@@ -668,58 +652,6 @@ class PHPMailer extends MailerAbstract{
 	protected $uniqueid = '';
 
 	/**
-	 * The PHPMailer Version number.
-	 *
-	 * @var string
-	 */
-	const VERSION = '6.0.7';
-
-	/**
-	 * Error severity: message only, continue processing.
-	 *
-	 * @var int
-	 */
-	const STOP_MESSAGE = 0;
-
-	/**
-	 * Error severity: message, likely ok to continue processing.
-	 *
-	 * @var int
-	 */
-	const STOP_CONTINUE = 1;
-
-	/**
-	 * Error severity: message, plus full stop, critical error reached.
-	 *
-	 * @var int
-	 */
-	const STOP_CRITICAL = 2;
-
-	/**
-	 * SMTP RFC standard line ending.
-	 *
-	 * @var string
-	 */
-	protected $LE = "\r\n";
-
-	/**
-	 * The maximum line length allowed by RFC 2822 section 2.1.1.
-	 *
-	 * @var int
-	 */
-	const MAX_LINE_LENGTH = 998;
-
-	/**
-	 * The lower maximum line length allowed by RFC 2822 section 2.1.1.
-	 * This length does NOT include the line break
-	 * 76 means that lines will be 77 or 78 chars depending on whether
-	 * the line break format is LF or CRLF; both are valid.
-	 *
-	 * @var int
-	 */
-	const STD_LINE_LENGTH = 76;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param bool $exceptions Should we throw external exceptions?
@@ -780,10 +712,10 @@ class PHPMailer extends MailerAbstract{
 	 */
 	public function isHTML($isHtml = true){
 		if($isHtml){
-			$this->ContentType = static::CONTENT_TYPE_TEXT_HTML;
+			$this->ContentType = $this::CONTENT_TYPE_TEXT_HTML;
 		}
 		else{
-			$this->ContentType = static::CONTENT_TYPE_PLAINTEXT;
+			$this->ContentType = $this::CONTENT_TYPE_PLAINTEXT;
 		}
 	}
 
@@ -1172,7 +1104,7 @@ class PHPMailer extends MailerAbstract{
 				call_user_func_array([$this, 'addAnAddress'], $params);
 			}
 			if(count($this->to) + count($this->cc) + count($this->bcc) < 1){
-				throw new PHPMailerException($this->lang('provide_address'), self::STOP_CRITICAL);
+				throw new PHPMailerException($this->lang('provide_address'), $this::STOP_CRITICAL);
 			}
 
 			// Validate From, Sender, and ConfirmReadingTo addresses
@@ -1201,13 +1133,13 @@ class PHPMailer extends MailerAbstract{
 
 			// Set whether the message is multipart/alternative
 			if($this->alternativeExists()){
-				$this->ContentType = static::CONTENT_TYPE_MULTIPART_ALTERNATIVE;
+				$this->ContentType = $this::CONTENT_TYPE_MULTIPART_ALTERNATIVE;
 			}
 
 			$this->setMessageType();
 			// Refuse to send an empty message unless we are specifically allowing it
 			if(!$this->AllowEmpty and empty($this->Body)){
-				throw new PHPMailerException($this->lang('empty_message'), self::STOP_CRITICAL);
+				throw new PHPMailerException($this->lang('empty_message'), $this::STOP_CRITICAL);
 			}
 
 			//Trim subject consistently
@@ -1341,7 +1273,7 @@ class PHPMailer extends MailerAbstract{
 			foreach($this->SingleToArray as $toAddr){
 				$mail = @popen($sendmail, 'w');
 				if(!$mail){
-					throw new PHPMailerException($this->lang('execute').$this->Sendmail, self::STOP_CRITICAL);
+					throw new PHPMailerException($this->lang('execute').$this->Sendmail, $this::STOP_CRITICAL);
 				}
 				fwrite($mail, 'To: '.$toAddr."\n");
 				fwrite($mail, $header);
@@ -1358,14 +1290,14 @@ class PHPMailer extends MailerAbstract{
 					[]
 				);
 				if(0 !== $result){
-					throw new PHPMailerException($this->lang('execute').$this->Sendmail, self::STOP_CRITICAL);
+					throw new PHPMailerException($this->lang('execute').$this->Sendmail, $this::STOP_CRITICAL);
 				}
 			}
 		}
 		else{
 			$mail = @popen($sendmail, 'w');
 			if(!$mail){
-				throw new PHPMailerException($this->lang('execute').$this->Sendmail, self::STOP_CRITICAL);
+				throw new PHPMailerException($this->lang('execute').$this->Sendmail, $this::STOP_CRITICAL);
 			}
 			fwrite($mail, $header);
 			fwrite($mail, $body);
@@ -1381,7 +1313,7 @@ class PHPMailer extends MailerAbstract{
 				[]
 			);
 			if(0 !== $result){
-				throw new PHPMailerException($this->lang('execute').$this->Sendmail, self::STOP_CRITICAL);
+				throw new PHPMailerException($this->lang('execute').$this->Sendmail, $this::STOP_CRITICAL);
 			}
 		}
 
@@ -1440,7 +1372,7 @@ class PHPMailer extends MailerAbstract{
 			ini_set('sendmail_from', $old_from);
 		}
 		if(!$result){
-			throw new PHPMailerException($this->lang('instantiate'), self::STOP_CRITICAL);
+			throw new PHPMailerException($this->lang('instantiate'), $this::STOP_CRITICAL);
 		}
 
 		return true;
@@ -1492,7 +1424,7 @@ class PHPMailer extends MailerAbstract{
 	protected function smtpSend($header, $body){
 		$bad_rcpt = [];
 		if(!$this->smtpConnect($this->SMTPOptions)){
-			throw new PHPMailerException($this->lang('smtp_connect_failed'), self::STOP_CRITICAL);
+			throw new PHPMailerException($this->lang('smtp_connect_failed'), $this::STOP_CRITICAL);
 		}
 		//Sender already validated in preSend()
 		if('' == $this->Sender){
@@ -1503,7 +1435,7 @@ class PHPMailer extends MailerAbstract{
 		}
 		if(!$this->smtp->mail($smtp_from)){
 			$this->setError($this->lang('from_failed').$smtp_from.' : '.implode(',', $this->smtp->getError()));
-			throw new PHPMailerException($this->ErrorInfo, self::STOP_CRITICAL);
+			throw new PHPMailerException($this->ErrorInfo, $this::STOP_CRITICAL);
 		}
 
 		$callbacks = [];
@@ -1525,7 +1457,7 @@ class PHPMailer extends MailerAbstract{
 
 		// Only send the DATA command if we have viable recipients
 		if((count($this->all_recipients) > count($bad_rcpt)) and !$this->smtp->data($header.$body)){
-			throw new PHPMailerException($this->lang('data_not_accepted'), self::STOP_CRITICAL);
+			throw new PHPMailerException($this->lang('data_not_accepted'), $this::STOP_CRITICAL);
 		}
 
 		$smtp_transaction_id = $this->smtp->getLastTransactionID();
@@ -1559,7 +1491,7 @@ class PHPMailer extends MailerAbstract{
 			}
 			throw new PHPMailerException(
 				$this->lang('recipients_failed').$errstr,
-				self::STOP_CONTINUE
+				$this::STOP_CONTINUE
 			);
 		}
 
@@ -1640,7 +1572,7 @@ class PHPMailer extends MailerAbstract{
 			if('tls' === $secure or 'ssl' === $secure){
 				//Check for an OpenSSL constant rather than using extension_loaded, which is sometimes disabled
 				if(!$sslext){
-					throw new PHPMailerException($this->lang('extension_missing').'openssl', self::STOP_CRITICAL);
+					throw new PHPMailerException($this->lang('extension_missing').'openssl', $this::STOP_CRITICAL);
 				}
 			}
 			$host  = $hostinfo[3];
@@ -1860,7 +1792,7 @@ class PHPMailer extends MailerAbstract{
 		}
 		// If utf-8 encoding is used, we will need to make sure we don't
 		// split multibyte characters when we wrap
-		$is_utf8 = static::CHARSET_UTF8 === strtolower($this->CharSet);
+		$is_utf8 = $this::CHARSET_UTF8 === strtolower($this->CharSet);
 		$lelen   = strlen($this->LE);
 		$crlflen = strlen($this->LE);
 
@@ -2091,7 +2023,7 @@ class PHPMailer extends MailerAbstract{
 		if('' == $this->XMailer){
 			$result .= $this->headerLine(
 				'X-Mailer',
-				'PHPMailer '.self::VERSION.' (https://github.com/PHPMailer/PHPMailer)'
+				'PHPMailer '.$this::VERSION.' (https://github.com/PHPMailer/PHPMailer)'
 			);
 		}
 		else{
@@ -2130,19 +2062,19 @@ class PHPMailer extends MailerAbstract{
 		$ismultipart = true;
 		switch($this->message_type){
 			case 'inline':
-				$result .= $this->headerLine('Content-Type', static::CONTENT_TYPE_MULTIPART_RELATED.';');
+				$result .= $this->headerLine('Content-Type', $this::CONTENT_TYPE_MULTIPART_RELATED.';');
 				$result .= $this->textLine("\tboundary=\"".$this->boundary[1].'"');
 				break;
 			case 'attach':
 			case 'inline_attach':
 			case 'alt_attach':
 			case 'alt_inline_attach':
-				$result .= $this->headerLine('Content-Type', static::CONTENT_TYPE_MULTIPART_MIXED.';');
+				$result .= $this->headerLine('Content-Type', $this::CONTENT_TYPE_MULTIPART_MIXED.';');
 				$result .= $this->textLine("\tboundary=\"".$this->boundary[1].'"');
 				break;
 			case 'alt':
 			case 'alt_inline':
-				$result .= $this->headerLine('Content-Type', static::CONTENT_TYPE_MULTIPART_ALTERNATIVE.';');
+				$result .= $this->headerLine('Content-Type', $this::CONTENT_TYPE_MULTIPART_ALTERNATIVE.';');
 				$result .= $this->textLine("\tboundary=\"".$this->boundary[1].'"');
 				break;
 			default:
@@ -2152,11 +2084,11 @@ class PHPMailer extends MailerAbstract{
 				break;
 		}
 		// RFC1341 part 5 says 7bit is assumed if not specified
-		if(static::ENCODING_7BIT != $this->Encoding){
+		if($this::ENCODING_7BIT != $this->Encoding){
 			// RFC 2045 section 6.4 says multipart MIME parts may only use 7bit, 8bit or binary CTE
 			if($ismultipart){
-				if(static::ENCODING_8BIT == $this->Encoding){
-					$result .= $this->headerLine('Content-Transfer-Encoding', static::ENCODING_8BIT);
+				if($this::ENCODING_8BIT == $this->Encoding){
+					$result .= $this->headerLine('Content-Transfer-Encoding', $this::ENCODING_8BIT);
 				}
 				// The only remaining alternatives are quoted-printable and base64, which are both 7bit compatible
 			}
@@ -2232,29 +2164,29 @@ class PHPMailer extends MailerAbstract{
 		$bodyEncoding = $this->Encoding;
 		$bodyCharSet  = $this->CharSet;
 		//Can we do a 7-bit downgrade?
-		if(static::ENCODING_8BIT == $bodyEncoding and !$this->has8bitChars($this->Body)){
-			$bodyEncoding = static::ENCODING_7BIT;
+		if($this::ENCODING_8BIT == $bodyEncoding and !$this->has8bitChars($this->Body)){
+			$bodyEncoding = $this::ENCODING_7BIT;
 			//All ISO 8859, Windows codepage and UTF-8 charsets are ascii compatible up to 7-bit
 			$bodyCharSet = 'us-ascii';
 		}
 		//If lines are too long, and we're not already using an encoding that will shorten them,
 		//change to quoted-printable transfer encoding for the body part only
-		if(static::ENCODING_BASE64 != $this->Encoding and $this->hasLineLongerThanMax($this->Body)){
-			$bodyEncoding = static::ENCODING_QUOTED_PRINTABLE;
+		if($this::ENCODING_BASE64 != $this->Encoding and $this->hasLineLongerThanMax($this->Body)){
+			$bodyEncoding = $this::ENCODING_QUOTED_PRINTABLE;
 		}
 
 		$altBodyEncoding = $this->Encoding;
 		$altBodyCharSet  = $this->CharSet;
 		//Can we do a 7-bit downgrade?
-		if(static::ENCODING_8BIT == $altBodyEncoding and !$this->has8bitChars($this->AltBody)){
-			$altBodyEncoding = static::ENCODING_7BIT;
+		if($this::ENCODING_8BIT == $altBodyEncoding and !$this->has8bitChars($this->AltBody)){
+			$altBodyEncoding = $this::ENCODING_7BIT;
 			//All ISO 8859, Windows codepage and UTF-8 charsets are ascii compatible up to 7-bit
 			$altBodyCharSet = 'us-ascii';
 		}
 		//If lines are too long, and we're not already using an encoding that will shorten them,
 		//change to quoted-printable transfer encoding for the alt body part only
-		if(static::ENCODING_BASE64 != $altBodyEncoding and $this->hasLineLongerThanMax($this->AltBody)){
-			$altBodyEncoding = static::ENCODING_QUOTED_PRINTABLE;
+		if($this::ENCODING_BASE64 != $altBodyEncoding and $this->hasLineLongerThanMax($this->AltBody)){
+			$altBodyEncoding = $this::ENCODING_QUOTED_PRINTABLE;
 		}
 		//Use this as a preamble in all multipart message types
 		$mimepre = 'This is a multi-part message in MIME format.'.$this->LE;
@@ -2276,7 +2208,7 @@ class PHPMailer extends MailerAbstract{
 			case 'inline_attach':
 				$body .= $mimepre;
 				$body .= $this->textLine('--'.$this->boundary[1]);
-				$body .= $this->headerLine('Content-Type', static::CONTENT_TYPE_MULTIPART_RELATED.';');
+				$body .= $this->headerLine('Content-Type', $this::CONTENT_TYPE_MULTIPART_RELATED.';');
 				$body .= $this->textLine("\tboundary=\"".$this->boundary[2].'"');
 				$body .= $this->LE;
 				$body .= $this->getBoundary($this->boundary[2], $bodyCharSet, '', $bodyEncoding);
@@ -2288,14 +2220,14 @@ class PHPMailer extends MailerAbstract{
 				break;
 			case 'alt':
 				$body .= $mimepre;
-				$body .= $this->getBoundary($this->boundary[1], $altBodyCharSet, static::CONTENT_TYPE_PLAINTEXT, $altBodyEncoding);
+				$body .= $this->getBoundary($this->boundary[1], $altBodyCharSet, $this::CONTENT_TYPE_PLAINTEXT, $altBodyEncoding);
 				$body .= $this->encodeString($this->AltBody, $altBodyEncoding);
 				$body .= $this->LE;
-				$body .= $this->getBoundary($this->boundary[1], $bodyCharSet, static::CONTENT_TYPE_TEXT_HTML, $bodyEncoding);
+				$body .= $this->getBoundary($this->boundary[1], $bodyCharSet, $this::CONTENT_TYPE_TEXT_HTML, $bodyEncoding);
 				$body .= $this->encodeString($this->Body, $bodyEncoding);
 				$body .= $this->LE;
 				if(!empty($this->Ical)){
-					$body .= $this->getBoundary($this->boundary[1], '', static::CONTENT_TYPE_TEXT_CALENDAR.'; method=REQUEST', '');
+					$body .= $this->getBoundary($this->boundary[1], '', $this::CONTENT_TYPE_TEXT_CALENDAR.'; method=REQUEST', '');
 					$body .= $this->encodeString($this->Ical, $this->Encoding);
 					$body .= $this->LE;
 				}
@@ -2303,14 +2235,14 @@ class PHPMailer extends MailerAbstract{
 				break;
 			case 'alt_inline':
 				$body .= $mimepre;
-				$body .= $this->getBoundary($this->boundary[1], $altBodyCharSet, static::CONTENT_TYPE_PLAINTEXT, $altBodyEncoding);
+				$body .= $this->getBoundary($this->boundary[1], $altBodyCharSet, $this::CONTENT_TYPE_PLAINTEXT, $altBodyEncoding);
 				$body .= $this->encodeString($this->AltBody, $altBodyEncoding);
 				$body .= $this->LE;
 				$body .= $this->textLine('--'.$this->boundary[1]);
-				$body .= $this->headerLine('Content-Type', static::CONTENT_TYPE_MULTIPART_RELATED.';');
+				$body .= $this->headerLine('Content-Type', $this::CONTENT_TYPE_MULTIPART_RELATED.';');
 				$body .= $this->textLine("\tboundary=\"".$this->boundary[2].'"');
 				$body .= $this->LE;
-				$body .= $this->getBoundary($this->boundary[2], $bodyCharSet, static::CONTENT_TYPE_TEXT_HTML, $bodyEncoding);
+				$body .= $this->getBoundary($this->boundary[2], $bodyCharSet, $this::CONTENT_TYPE_TEXT_HTML, $bodyEncoding);
 				$body .= $this->encodeString($this->Body, $bodyEncoding);
 				$body .= $this->LE;
 				$body .= $this->attachAll('inline', $this->boundary[2]);
@@ -2320,17 +2252,17 @@ class PHPMailer extends MailerAbstract{
 			case 'alt_attach':
 				$body .= $mimepre;
 				$body .= $this->textLine('--'.$this->boundary[1]);
-				$body .= $this->headerLine('Content-Type', static::CONTENT_TYPE_MULTIPART_ALTERNATIVE.';');
+				$body .= $this->headerLine('Content-Type', $this::CONTENT_TYPE_MULTIPART_ALTERNATIVE.';');
 				$body .= $this->textLine("\tboundary=\"".$this->boundary[2].'"');
 				$body .= $this->LE;
-				$body .= $this->getBoundary($this->boundary[2], $altBodyCharSet, static::CONTENT_TYPE_PLAINTEXT, $altBodyEncoding);
+				$body .= $this->getBoundary($this->boundary[2], $altBodyCharSet, $this::CONTENT_TYPE_PLAINTEXT, $altBodyEncoding);
 				$body .= $this->encodeString($this->AltBody, $altBodyEncoding);
 				$body .= $this->LE;
-				$body .= $this->getBoundary($this->boundary[2], $bodyCharSet, static::CONTENT_TYPE_TEXT_HTML, $bodyEncoding);
+				$body .= $this->getBoundary($this->boundary[2], $bodyCharSet, $this::CONTENT_TYPE_TEXT_HTML, $bodyEncoding);
 				$body .= $this->encodeString($this->Body, $bodyEncoding);
 				$body .= $this->LE;
 				if(!empty($this->Ical)){
-					$body .= $this->getBoundary($this->boundary[2], '', static::CONTENT_TYPE_TEXT_CALENDAR.'; method=REQUEST', '');
+					$body .= $this->getBoundary($this->boundary[2], '', $this::CONTENT_TYPE_TEXT_CALENDAR.'; method=REQUEST', '');
 					$body .= $this->encodeString($this->Ical, $this->Encoding);
 				}
 				$body .= $this->endBoundary($this->boundary[2]);
@@ -2340,17 +2272,17 @@ class PHPMailer extends MailerAbstract{
 			case 'alt_inline_attach':
 				$body .= $mimepre;
 				$body .= $this->textLine('--'.$this->boundary[1]);
-				$body .= $this->headerLine('Content-Type', static::CONTENT_TYPE_MULTIPART_ALTERNATIVE.';');
+				$body .= $this->headerLine('Content-Type', $this::CONTENT_TYPE_MULTIPART_ALTERNATIVE.';');
 				$body .= $this->textLine("\tboundary=\"".$this->boundary[2].'"');
 				$body .= $this->LE;
-				$body .= $this->getBoundary($this->boundary[2], $altBodyCharSet, static::CONTENT_TYPE_PLAINTEXT, $altBodyEncoding);
+				$body .= $this->getBoundary($this->boundary[2], $altBodyCharSet, $this::CONTENT_TYPE_PLAINTEXT, $altBodyEncoding);
 				$body .= $this->encodeString($this->AltBody, $altBodyEncoding);
 				$body .= $this->LE;
 				$body .= $this->textLine('--'.$this->boundary[2]);
-				$body .= $this->headerLine('Content-Type', static::CONTENT_TYPE_MULTIPART_RELATED.';');
+				$body .= $this->headerLine('Content-Type', $this::CONTENT_TYPE_MULTIPART_RELATED.';');
 				$body .= $this->textLine("\tboundary=\"".$this->boundary[3].'"');
 				$body .= $this->LE;
-				$body .= $this->getBoundary($this->boundary[3], $bodyCharSet, static::CONTENT_TYPE_TEXT_HTML, $bodyEncoding);
+				$body .= $this->getBoundary($this->boundary[3], $bodyCharSet, $this::CONTENT_TYPE_TEXT_HTML, $bodyEncoding);
 				$body .= $this->encodeString($this->Body, $bodyEncoding);
 				$body .= $this->LE;
 				$body .= $this->attachAll('inline', $this->boundary[3]);
@@ -2370,7 +2302,7 @@ class PHPMailer extends MailerAbstract{
 		if($this->isError()){
 			$body = '';
 			if($this->exceptions){
-				throw new PHPMailerException($this->lang('empty_message'), self::STOP_CRITICAL);
+				throw new PHPMailerException($this->lang('empty_message'), $this::STOP_CRITICAL);
 			}
 		}
 		elseif($this->sign_key_file){
@@ -2453,7 +2385,7 @@ class PHPMailer extends MailerAbstract{
 		$result .= sprintf('Content-Type: %s; charset=%s', $contentType, $charSet);
 		$result .= $this->LE;
 		// RFC1341 part 5 says 7bit is assumed if not specified
-		if(static::ENCODING_7BIT != $encoding){
+		if($this::ENCODING_7BIT != $encoding){
 			$result .= $this->headerLine('Content-Transfer-Encoding', $encoding);
 		}
 		$result .= $this->LE;
@@ -2646,7 +2578,7 @@ class PHPMailer extends MailerAbstract{
 					);
 				}
 				// RFC1341 part 5 says 7bit is assumed if not specified
-				if(static::ENCODING_7BIT != $encoding){
+				if($this::ENCODING_7BIT != $encoding){
 					$mime[] = sprintf('Content-Transfer-Encoding: %s%s', $encoding, $this->LE);
 				}
 
@@ -2727,7 +2659,7 @@ class PHPMailer extends MailerAbstract{
 			}
 			$file_buffer = file_get_contents($path);
 			if(false === $file_buffer){
-				throw new PHPMailerException($this->lang('file_open').$path, self::STOP_CONTINUE);
+				throw new PHPMailerException($this->lang('file_open').$path, $this::STOP_CONTINUE);
 			}
 			$file_buffer = $this->encodeString($file_buffer, $encoding);
 
@@ -2752,25 +2684,25 @@ class PHPMailer extends MailerAbstract{
 	public function encodeString($str, $encoding = self::ENCODING_BASE64){
 		$encoded = '';
 		switch(strtolower($encoding)){
-			case static::ENCODING_BASE64:
+			case $this::ENCODING_BASE64:
 				$encoded = chunk_split(
 					base64_encode($str),
-					static::STD_LINE_LENGTH,
+					$this::LINE_LENGTH_STD,
 					$this->LE
 				);
 				break;
-			case static::ENCODING_7BIT:
-			case static::ENCODING_8BIT:
+			case $this::ENCODING_7BIT:
+			case $this::ENCODING_8BIT:
 				$encoded = $this->normalizeBreaks($str);
 				// Make sure it ends with a line break
 				if(substr($encoded, -(strlen($this->LE))) != $this->LE){
 					$encoded .= $this->LE;
 				}
 				break;
-			case static::ENCODING_BINARY:
+			case $this::ENCODING_BINARY:
 				$encoded = $str;
 				break;
-			case static::ENCODING_QUOTED_PRINTABLE:
+			case $this::ENCODING_QUOTED_PRINTABLE:
 				$encoded = $this->encodeQP($str);
 				break;
 			default:
@@ -2819,7 +2751,7 @@ class PHPMailer extends MailerAbstract{
 		//RFCs specify a maximum line length of 78 chars, however mail() will sometimes
 		//corrupt messages with headers longer than 65 chars. See #818
 		$lengthsub = 'mail' == $this->Mailer ? 13 : 0;
-		$maxlen    = static::STD_LINE_LENGTH - $lengthsub;
+		$maxlen    = $this::LINE_LENGTH_STD - $lengthsub;
 		// Try to select the encoding which should produce the shortest output
 		if($matchcount > strlen($str) / 3){
 			// More than a third of the content will need encoding, so B encoding will be most efficient
@@ -2829,7 +2761,7 @@ class PHPMailer extends MailerAbstract{
 			// - shorten to avoid mail() corruption
 			// - Q/B encoding char overhead ("` =?<charset>?[QB]?<content>?=`")
 			// - charset name length
-			$maxlen = static::STD_LINE_LENGTH - $lengthsub - 8 - strlen($this->CharSet);
+			$maxlen = $this::LINE_LENGTH_STD - $lengthsub - 8 - strlen($this->CharSet);
 			if($this->hasMultiBytes($str)){
 				// Use a custom function which correctly encodes and wraps long
 				// multibyte strings without breaking lines within a character
@@ -2846,7 +2778,7 @@ class PHPMailer extends MailerAbstract{
 			//1 or more chars need encoding, use Q-encode
 			$encoding = 'Q';
 			//Recalc max line length for Q encoding - see comments on B encode
-			$maxlen  = static::STD_LINE_LENGTH - $lengthsub - 8 - strlen($this->CharSet);
+			$maxlen  = $this::LINE_LENGTH_STD - $lengthsub - 8 - strlen($this->CharSet);
 			$encoded = $this->encodeQ($str, $position);
 			$encoded = $this->wrapText($encoded, $maxlen, true);
 			$encoded = str_replace('='.$this->LE, "\n", trim($encoded));
@@ -2857,7 +2789,7 @@ class PHPMailer extends MailerAbstract{
 			$encoded = trim($this->wrapText($str, $maxlen, false));
 			if($str == $encoded){
 				//Wrapping nicely didn't work, wrap hard instead
-				$encoded = trim(chunk_split($str, static::STD_LINE_LENGTH, $this->LE));
+				$encoded = trim(chunk_split($str, $this::LINE_LENGTH_STD, $this->LE));
 			}
 			$encoded = str_replace($this->LE, "\n", trim($encoded));
 			$encoded = preg_replace('/^(.*)$/m', ' \\1', $encoded);
@@ -3418,7 +3350,7 @@ class PHPMailer extends MailerAbstract{
 				// Convert data URIs into embedded images
 				//e.g. "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="
 				if(preg_match('#^data:(image/(?:jpe?g|gif|png));?(base64)?,(.+)#', $url, $match)){
-					if(count($match) == 4 and static::ENCODING_BASE64 == $match[2]){
+					if(count($match) == 4 and $this::ENCODING_BASE64 == $match[2]){
 						$data = base64_decode($match[3]);
 					}
 					elseif('' == $match[2]){
@@ -3433,7 +3365,7 @@ class PHPMailer extends MailerAbstract{
 					$cid = hash('sha256', $data).'@phpmailer.0'; // RFC2392 S 2
 
 					if(!$this->cidExists($cid)){
-						$this->addStringEmbeddedImage($data, $cid, 'embed'.$imgindex, static::ENCODING_BASE64, $match[1]);
+						$this->addStringEmbeddedImage($data, $cid, 'embed'.$imgindex, $this::ENCODING_BASE64, $match[1]);
 					}
 					$message = str_replace(
 						$images[0][$imgindex],
@@ -3467,7 +3399,7 @@ class PHPMailer extends MailerAbstract{
 						$basedir.$directory.$filename,
 						$cid,
 						$filename,
-						static::ENCODING_BASE64,
+						$this::ENCODING_BASE64,
 						get_mime_type((string)mb_pathinfo($filename, PATHINFO_EXTENSION))
 					)
 					){
@@ -3585,24 +3517,6 @@ class PHPMailer extends MailerAbstract{
 		}
 
 		return $text;
-	}
-
-	/**
-	 * Return the current line break format string.
-	 *
-	 * @return string
-	 */
-	public function getLE(){
-		return $this->LE;
-	}
-
-	/**
-	 * Set the line break format string, e.g. "\r\n".
-	 *
-	 * @param string $le
-	 */
-	protected function setLE($le){
-		$this->LE = $le;
 	}
 
 	/**
@@ -3870,7 +3784,7 @@ class PHPMailer extends MailerAbstract{
 	 * @return bool
 	 */
 	public function hasLineLongerThanMax($str){
-		return (bool)preg_match('/^(.{'.(self::MAX_LINE_LENGTH + strlen($this->LE)).',})/m', $str);
+		return (bool)preg_match('/^(.{'.($this::LINE_LENGTH_MAX + strlen($this->LE)).',})/m', $str);
 	}
 
 	/**

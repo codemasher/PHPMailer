@@ -18,29 +18,128 @@ abstract class MailerAbstract implements LoggerAwareInterface{
 	use LoggerAwareTrait;
 
 	/**
+	 * The POP3 PHPMailer Version number.
+	 *
+	 * @var string
+	 */
+	public const VERSION = '6.0.7';
+
+	/**
+	 * The maximum line length allowed by RFC 2822 section 2.1.1.
+	 *
+	 * @var int
+	 */
+	public const LINE_LENGTH_MAX = 998;
+
+	/**
+	 * The lower maximum line length allowed by RFC 2822 section 2.1.1.
+	 * This length does NOT include the line break
+	 * 76 means that lines will be 77 or 78 chars depending on whether
+	 * the line break format is LF or CRLF; both are valid.
+	 *
+	 * @var int
+	 */
+	public const LINE_LENGTH_STD = 76;
+
+	public const CHARSET_ISO88591 = 'iso-8859-1';
+	public const CHARSET_UTF8     = 'utf-8';
+
+	public const CONTENT_TYPE_PLAINTEXT             = 'text/plain';
+	public const CONTENT_TYPE_TEXT_CALENDAR         = 'text/calendar';
+	public const CONTENT_TYPE_TEXT_HTML             = 'text/html';
+	public const CONTENT_TYPE_MULTIPART_ALTERNATIVE = 'multipart/alternative';
+	public const CONTENT_TYPE_MULTIPART_MIXED       = 'multipart/mixed';
+	public const CONTENT_TYPE_MULTIPART_RELATED     = 'multipart/related';
+
+	public const ENCODING_7BIT             = '7bit';
+	public const ENCODING_8BIT             = '8bit';
+	public const ENCODING_BASE64           = 'base64';
+	public const ENCODING_BINARY           = 'binary';
+	public const ENCODING_QUOTED_PRINTABLE = 'quoted-printable';
+
+	/**
 	 * Debug level for no output.
+	 *
+	 * @var int
 	 */
 	public const DEBUG_OFF = 0;
 
 	/**
 	 * Debug level to show client -> server messages.
+	 *
+	 * @var int
 	 */
 	public const DEBUG_CLIENT = 1;
 
 	/**
 	 * Debug level to show client -> server and server -> client messages.
+	 *
+	 * @var int
 	 */
 	public const DEBUG_SERVER = 2;
 
 	/**
 	 * Debug level to show connection status, client -> server and server -> client messages.
+	 *
+	 * @var int
 	 */
 	public const DEBUG_CONNECTION = 3;
 
 	/**
 	 * Debug level to show all messages.
+	 *
+	 * @var int
 	 */
 	public const DEBUG_LOWLEVEL = 4;
+
+	/**
+	 * The SMTP port to use if one is not specified.
+	 *
+	 * @var int
+	 */
+	protected const DEFAULT_PORT_SMTP = 25;
+
+	/**
+	 * Default POP3 port number.
+	 *
+	 * @var int
+	 */
+	protected const DEFAULT_PORT_POP3 = 110;
+
+	/**
+	 * Default timeout in seconds.
+	 *
+	 * @var int
+	 */
+	protected const DEFAULT_TIMEOUT = 30;
+
+	/**
+	 * Error severity: message only, continue processing.
+	 *
+	 * @var int
+	 */
+	protected const STOP_MESSAGE = 0;
+
+	/**
+	 * Error severity: message, likely ok to continue processing.
+	 *
+	 * @var int
+	 */
+	protected const STOP_CONTINUE = 1;
+
+	/**
+	 * Error severity: message, plus full stop, critical error reached.
+	 *
+	 * @var int
+	 */
+	protected const STOP_CRITICAL = 2;
+
+	/**
+	 * SMTP RFC standard line ending.
+	 *
+	 * @var string
+	 */
+	protected $LE = "\r\n";
 
 	/**
 	 * Debug output level.
@@ -82,6 +181,24 @@ abstract class MailerAbstract implements LoggerAwareInterface{
 	 */
 	public function getDebugLevel():int{
 		return $this->loglevel;
+	}
+
+	/**
+	 * Set the line break format string, e.g. "\r\n".
+	 *
+	 * @param string $le
+	 */
+	protected function setLE(string $le):void{
+		$this->LE = $le;
+	}
+
+	/**
+	 * Return the current line break format string.
+	 *
+	 * @return string
+	 */
+	public function getLE():string{
+		return $this->LE;
 	}
 
 	/**
