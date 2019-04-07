@@ -1293,9 +1293,10 @@ class PHPMailer extends MailerAbstract{
 	 *
 	 * @return SMTP
 	 */
-	public function getSMTPInstance(){
-		if(!is_object($this->smtp)){
-			$this->smtp = new SMTP();
+	public function getSMTPInstance():SMTP{
+
+		if(!$this->smtp instanceof SMTP){
+			$this->smtp = new SMTP;
 		}
 
 		return $this->smtp;
@@ -1418,39 +1419,35 @@ class PHPMailer extends MailerAbstract{
 	 * @uses \PHPMailer\PHPMailer\SMTP
 	 *
 	 */
-	public function smtpConnect($options = null){
-		if(null === $this->smtp){
+	public function smtpConnect(array $options = null):bool{
+
+		if(!$this->smtp instanceof SMTP){
 			$this->smtp = $this->getSMTPInstance();
 		}
 
-		//If no options are provided, use whatever is set in the instance
-		if(null === $options){
-			$options = $this->SMTPOptions;
-		}
+		$this->smtp->setLogger($this->logger);
 
 		// Already connected?
 		if($this->smtp->connected()){
 			return true;
 		}
 
-		$this->smtp->setTimeout($this->timeout);
-		$this->smtp->setDebugLevel($this->loglevel);
-		$this->smtp->setLogger($this->logger);
-		$this->smtp->setVerp($this->do_verp);
-		$hosts         = explode(';', $this->host);
+		$this->smtp->timeout  = $this->timeout;
+		$this->smtp->loglevel = $this->loglevel;
+		$this->smtp->do_verp  = $this->do_verp;
+
+		$hosts         = \explode(';', $this->host);
 		$lastexception = null;
 
 		foreach($hosts as $hostentry){
 			$hostinfo = [];
-			if(!preg_match(
-				'/^((ssl|tls):\/\/)*([a-zA-Z0-9\.-]*|\[[a-fA-F0-9:]+\]):?([0-9]*)$/',
-				trim($hostentry),
-				$hostinfo
-			)){
+
+			if(!\preg_match('/^((ssl|tls):\/\/)*([a-zA-Z0-9\.-]*|\[[a-fA-F0-9:]+\]):?([0-9]*)$/', \trim($hostentry), $hostinfo)){
 				$this->edebug($this->lang('connect_host').' '.$hostentry);
 				// Not a valid host entry
 				continue;
 			}
+
 			// $hostinfo[2]: optional ssl or tls prefix
 			// $hostinfo[3]: the hostname
 			// $hostinfo[4]: optional port number
@@ -1460,52 +1457,59 @@ class PHPMailer extends MailerAbstract{
 			//Check the host name is a valid name or IP address before trying to use it
 			if(!isValidHost($hostinfo[3])){
 				$this->edebug($this->lang('connect_host').' '.$hostentry);
+
 				continue;
 			}
+
 			$prefix = '';
 			$secure = $this->SMTPSecure;
-			$tls    = ('tls' == $this->SMTPSecure);
-			if('ssl' == $hostinfo[2] or ('' == $hostinfo[2] and 'ssl' == $this->SMTPSecure)){
+			$tls    = $this->SMTPSecure === 'tls';
+
+			if($hostinfo[2] === 'ssl' || ($hostinfo[2] === '' && $this->SMTPSecure === 'ssl')){
 				$prefix = 'ssl://';
 				$tls    = false; // Can't have SSL and TLS at the same time
 				$secure = 'ssl';
 			}
-			elseif('tls' == $hostinfo[2]){
+			elseif($hostinfo[2] === 'tls'){
 				$tls = true;
 				// tls doesn't use a prefix
 				$secure = 'tls';
 			}
+
 			//Do we need the OpenSSL extension?
-			$sslext = defined('OPENSSL_ALGO_SHA256');
-			if('tls' === $secure or 'ssl' === $secure){
+			$sslext = \defined('OPENSSL_ALGO_SHA256');
+
+			if($secure === 'tls' || $secure === 'ssl'){
 				//Check for an OpenSSL constant rather than using extension_loaded, which is sometimes disabled
 				if(!$sslext){
 					throw new PHPMailerException($this->lang('extension_missing').'openssl', $this::STOP_CRITICAL);
 				}
 			}
-			$host  = $hostinfo[3];
-			$port  = $this->port ?? $this::DEFAULT_PORT_SMTP;
-			$tport = (int)$hostinfo[4];
-			if($tport > 0 and $tport < 65536){
+
+			$host    = $hostinfo[3];
+			$port    = $this->port ?? $this::DEFAULT_PORT_SMTP;
+			$options = $options ?? $this->SMTPOptions;
+			$tport   = (int)$hostinfo[4];
+
+			if($tport > 0 && $tport < 65536){
 				$port = $tport;
 			}
+
 			if($this->smtp->connect($prefix.$host, $port, $this->timeout, $options)){
+
 				try{
-					if($this->Helo){
-						$hello = $this->Helo;
-					}
-					else{
-						$hello = $this->serverHostname();
-					}
+					$hello = $this->Helo ?: $this->serverHostname();
+
 					$this->smtp->hello($hello);
 					//Automatically enable TLS encryption if:
 					// * it's not disabled
 					// * we have openssl extension
 					// * we are not already using SSL
 					// * the server offers STARTTLS
-					if($this->SMTPAutoTLS and $sslext and 'ssl' != $secure and $this->smtp->getServerExt('STARTTLS')){
+					if($this->SMTPAutoTLS && $sslext && $secure !== 'ssl' && $this->smtp->getServerExt('STARTTLS')){
 						$tls = true;
 					}
+
 					if($tls){
 						if(!$this->smtp->startTLS()){
 							throw new PHPMailerException($this->lang('connect_host'));
@@ -1513,14 +1517,9 @@ class PHPMailer extends MailerAbstract{
 						// We must resend EHLO after TLS negotiation
 						$this->smtp->hello($hello);
 					}
+
 					if($this->SMTPAuth){
-						if(!$this->smtp->authenticate(
-							$this->username,
-							$this->password,
-							$this->AuthType,
-							$this->oauth
-						)
-						){
+						if(!$this->smtp->authenticate($this->username, $this->password, $this->AuthType, $this->oauth)){
 							throw new PHPMailerException($this->lang('authenticate'));
 						}
 					}
@@ -1533,12 +1532,13 @@ class PHPMailer extends MailerAbstract{
 					// We must have connected, but then failed TLS or Auth, so close connection nicely
 					$this->smtp->quit();
 				}
+
 			}
 		}
 		// If we get here, all connection attempts have failed, so close connection hard
 		$this->smtp->close();
 		// As we've caught all exceptions, just report whatever the last one was
-		if($this->exceptions and null !== $lastexception){
+		if($this->exceptions && $lastexception !== null){
 			throw $lastexception;
 		}
 

@@ -419,7 +419,7 @@ This is a major update that breaks backwards compatibility.
 * Fixed Postfix VERP support (Bugz: 92)
 * Allow action_function callbacks to pass/use
   the From address (passed as final param)
-* Prevent inf look for get_lines() (Bugz: 77)
+* Prevent inf look for getLines() (Bugz: 77)
 * New public var ($UseSendmailOptions). Only pass sendmail()
   options iff we really are using sendmail or something sendmail
   compatible. (Bugz: 75)
@@ -635,7 +635,7 @@ Please note, this is BETA software
 * added Estonian language file by Indrek P&auml;ri
 * added header injection patch
 * added "set" method to permit users to create their own pseudo-properties like 'X-Headers', etc.
-* fixed warning message in SMTP get_lines method
+* fixed warning message in SMTP getLines method
 * added TLS/SSL SMTP support.
 * PHPMailer has been tested with PHP4 (4.4.7) and PHP5 (5.2.7)
 * Works with PHP installed as a module or as CGI-PHP

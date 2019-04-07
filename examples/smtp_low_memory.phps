@@ -19,9 +19,9 @@ require '../vendor/autoload.php';
  */
 class SMTPLowMemory extends SMTP{
 
-	public function data($msg_data){
+	public function data(string $msg_data):bool{
 		//This will use the standard timelimit
-		if(!$this->sendCommand('DATA', 'DATA', 354)){
+		if(!$this->sendCommand('DATA', 'DATA', [354])){
 			return false;
 		}
 
@@ -101,7 +101,7 @@ class SMTPLowMemory extends SMTP{
 		//Increase timelimit for end of DATA command
 		$savetimelimit   = $this->Timelimit;
 		$this->Timelimit = $this->Timelimit * 2;
-		$result          = $this->sendCommand('DATA END', '.', 250);
+		$result          = $this->sendCommand('DATA END', '.', [250]);
 		//Restore timelimit
 		$this->Timelimit = $savetimelimit;
 
@@ -121,8 +121,9 @@ class PHPMailerLowMemory extends PHPMailer{
 	 *
 	 * @return SMTP
 	 */
-	public function getSMTPInstance(){
-		if(!is_object($this->smtp)){
+	public function getSMTPInstance():SMTP{
+
+		if(!$this->smtp instanceof SMTP){
 			$this->smtp = new SMTPLowMemory;
 		}
 
