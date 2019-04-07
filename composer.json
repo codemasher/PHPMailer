@@ -40,7 +40,10 @@
 	"autoload": {
 		"psr-4": {
 			"PHPMailer\\PHPMailer\\": "src/"
-		}
+		},
+		"files": [
+			"src/includes.php"
+		]
 	},
 	"autoload-dev": {
 		"psr-4": {

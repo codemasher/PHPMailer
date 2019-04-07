@@ -123,31 +123,6 @@ class POP3 extends MailerAbstract{
 	const LE = "\r\n";
 
 	/**
-	 * Simple static wrapper for all-in-one POP before SMTP.
-	 *
-	 * @param string   $host    The hostname to connect to
-	 * @param int|bool $port    The port number to connect to
-	 * @param int|bool $timeout The timeout value
-	 * @param string   $username
-	 * @param string   $password
-	 * @param int      $debug_level
-	 *
-	 * @return bool
-	 */
-	public static function popBeforeSmtp(
-		$host,
-		$port = false,
-		$timeout = false,
-		$username = '',
-		$password = '',
-		$debug_level = 0
-	){
-		$pop = new self();
-
-		return $pop->authorise($host, $port, $timeout, $username, $password, $debug_level);
-	}
-
-	/**
 	 * Authenticate with a POP3 server.
 	 * A connect, login, disconnect sequence
 	 * appropriate for POP-before SMTP authorisation.
