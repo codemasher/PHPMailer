@@ -1,8 +1,5 @@
 docs/*
 !docs/README.md
-test/message.txt
-test/testbootstrap.php
-build/
 vendor/
 *.pem
 composer.lock
@@ -10,3 +7,5 @@ composer.lock
 phpunit.xml
 .idea
 clover.xml
+logs/*
+*.phpunit.result.cache

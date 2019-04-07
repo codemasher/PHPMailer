@@ -31,7 +31,7 @@ final class PHPMailerLangTest extends TestCase{
 	/**
 	 * Run before each test is started.
 	 */
-	protected function setUp(){
+	protected function setUp():void{
 		$this->Mail = new PHPMailer();
 	}
 
