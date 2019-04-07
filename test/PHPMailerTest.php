@@ -336,7 +336,7 @@ final class PHPMailerTest extends TestCase{
 		$this->Mail->Sender     = 'from@example.com';
 		$this->Mail->clearAllRecipients();
 		$this->Mail->addAddress('user@example.com');
-		$this->assertTrue($this->mail->send(), $this->mail->ErrorInfo);
+		$this->assertTrue($this->Mail->send(), $this->Mail->ErrorInfo);
 	}
 
 	/**
