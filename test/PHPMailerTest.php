@@ -15,7 +15,6 @@ namespace PHPMailer\Test;
 use PHPMailer\PHPMailer\OAuth;
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\POP3;
-use PHPMailer\PHPMailer\SMTP;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
 use Psr\Log\LoggerInterface;
@@ -31,6 +30,11 @@ final class PHPMailerTest extends TestCase{
 	 * @var PHPMailer
 	 */
 	private $Mail;
+
+	/**
+	 * @var \PHPMailer\PHPMailer\SMTP
+	 */
+	private $Smtp;
 
 	/**
 	 * Holds the SMTP mail host.
