@@ -36,11 +36,7 @@ class myPHPMailer extends PHPMailer{
 		//Set an HTML and plain-text body, import relative image references
 		$this->msgHTML($body, './images/');
 		//Show debug output
-		$this->SMTPDebug = 2;
-		//Inject a new debug output handler
-		$this->Debugoutput = function($str, $level){
-			echo "Debug level $level; message: $str\n";
-		};
+		$this->loglevel = 2;
 	}
 
 	//Extend the send function

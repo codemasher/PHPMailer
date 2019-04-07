@@ -27,7 +27,7 @@ namespace PHPMailer\PHPMailer;
  * @author  Chris Ryan
  * @author  Marcus Bointon <phpmailer@synchromedia.co.uk>
  */
-class SMTP{
+class SMTP extends MailerAbstract{
 
 	/**
 	 * The PHPMailer SMTP version number.
@@ -56,67 +56,6 @@ class SMTP{
 	 * @var int
 	 */
 	const MAX_LINE_LENGTH = 998;
-
-	/**
-	 * Debug level for no output.
-	 */
-	const DEBUG_OFF = 0;
-
-	/**
-	 * Debug level to show client -> server messages.
-	 */
-	const DEBUG_CLIENT = 1;
-
-	/**
-	 * Debug level to show client -> server and server -> client messages.
-	 */
-	const DEBUG_SERVER = 2;
-
-	/**
-	 * Debug level to show connection status, client -> server and server -> client messages.
-	 */
-	const DEBUG_CONNECTION = 3;
-
-	/**
-	 * Debug level to show all messages.
-	 */
-	const DEBUG_LOWLEVEL = 4;
-
-	/**
-	 * Debug output level.
-	 * Options:
-	 * * self::DEBUG_OFF (`0`) No debug output, default
-	 * * self::DEBUG_CLIENT (`1`) Client commands
-	 * * self::DEBUG_SERVER (`2`) Client commands and server responses
-	 * * self::DEBUG_CONNECTION (`3`) As DEBUG_SERVER plus connection status
-	 * * self::DEBUG_LOWLEVEL (`4`) Low-level data output, all messages.
-	 *
-	 * @var int
-	 */
-	public $do_debug = self::DEBUG_OFF;
-
-	/**
-	 * How to handle debug output.
-	 * Options:
-	 * * `echo` Output plain-text as-is, appropriate for CLI
-	 * * `html` Output escaped, line breaks converted to `<br>`, appropriate for browser output
-	 * * `error_log` Output to error log as configured in php.ini
-	 * Alternatively, you can provide a callable expecting two params: a message string and the debug level:
-	 *
-	 * ```php
-	 * $smtp->Debugoutput = function($str, $level) {echo "debug level $level; message: $str";};
-	 * ```
-	 *
-	 * Alternatively, you can pass in an instance of a PSR-3 compatible logger, though only `debug`
-	 * level output is used:
-	 *
-	 * ```php
-	 * $mail->Debugoutput = new myPsr3Logger;
-	 * ```
-	 *
-	 * @var string|callable|\Psr\Log\LoggerInterface
-	 */
-	public $Debugoutput = 'echo';
 
 	/**
 	 * Whether to use VERP.
@@ -221,63 +160,6 @@ class SMTP{
 	protected $last_reply = '';
 
 	/**
-	 * Output debugging info via a user-selected method.
-	 *
-	 * @param string $str   Debug string to output
-	 * @param int    $level The debug level of this message; see DEBUG_* constants
-	 *
-	 * @see SMTP::$Debugoutput
-	 * @see SMTP::$do_debug
-	 */
-	protected function edebug($str, $level = 0){
-		if($level > $this->do_debug){
-			return;
-		}
-		//Is this a PSR-3 logger?
-		if($this->Debugoutput instanceof \Psr\Log\LoggerInterface){
-			$this->Debugoutput->debug($str);
-
-			return;
-		}
-		//Avoid clash with built-in function names
-		if(!in_array($this->Debugoutput, ['error_log', 'html', 'echo']) and is_callable($this->Debugoutput)){
-			call_user_func($this->Debugoutput, $str, $level);
-
-			return;
-		}
-		switch($this->Debugoutput){
-			case 'error_log':
-				//Don't output, just log
-				error_log($str);
-				break;
-			case 'html':
-				//Cleans up output a bit for a better looking, HTML-safe output
-				echo gmdate('Y-m-d H:i:s'), ' ', htmlentities(
-					preg_replace('/[\r\n]+/', '', $str),
-					ENT_QUOTES,
-					'UTF-8'
-				), "<br>\n";
-				break;
-			case 'echo':
-			default:
-				//Normalize line breaks
-				$str = preg_replace('/\r\n|\r/ms', "\n", $str);
-				echo gmdate('Y-m-d H:i:s'),
-				"\t",
-					//Trim trailing space
-				trim(
-				//Indent for readability, except for trailing break
-					str_replace(
-						"\n",
-						"\n                   \t                  ",
-						trim($str)
-					)
-				),
-				"\n";
-		}
-	}
-
-	/**
 	 * Connect to an SMTP server.
 	 *
 	 * @param string $host    SMTP server IP or host name
@@ -308,8 +190,13 @@ class SMTP{
 		}
 		// Connect to the SMTP server
 		$this->edebug(
-			"Connection: opening to $host:$port, timeout=$timeout, options=".
-			(count($options) > 0 ? var_export($options, true) : 'array()'),
+			sprintf(
+				'Connection: opening to %s:%s, timeout=%s, options=%s',
+				$host,
+				$port,
+				$timeout,
+				!empty($options) ? var_export($options, true) : '[]'
+			),
 			self::DEBUG_CONNECTION
 		);
 		$errno  = 0;
@@ -352,8 +239,7 @@ class SMTP{
 				(string)$errstr
 			);
 			$this->edebug(
-				'SMTP ERROR: '.$this->error['error']
-				.": $errstr ($errno)",
+				sprintf('SMTP ERROR: %s: %s (%s)', $this->error['error'], $errstr, $errno),
 				self::DEBUG_CLIENT
 			);
 
@@ -474,7 +360,7 @@ class SMTP{
 			}
 
 			if(!in_array($authtype, $this->server_caps['AUTH'])){
-				$this->setError("The requested authentication method \"$authtype\" is not supported by the server");
+				$this->setError('The requested authentication method "'.$authtype.'" is not supported by the server');
 
 				return false;
 			}
@@ -536,7 +422,7 @@ class SMTP{
 				}
 				break;
 			default:
-				$this->setError("Authentication method \"$authtype\" is not supported");
+				$this->setError('Authentication method "'.$authtype.'" is not supported');
 
 				return false;
 		}
@@ -947,7 +833,7 @@ class SMTP{
 				$code_ex
 			);
 			$this->edebug(
-				'SMTP ERROR: '.$this->error['error'].': '.$this->last_reply,
+				sprintf('SMTP ERROR: %s: %s', $this->error['error'], $this->last_reply),
 				self::DEBUG_CLIENT
 			);
 
@@ -1025,8 +911,7 @@ class SMTP{
 	public function client_send($data, $command = ''){
 		//If SMTP transcripts are left enabled, or debug output is posted online
 		//it can leak credentials, so hide credentials in all but lowest level
-		if(self::DEBUG_LOWLEVEL > $this->do_debug and
-		   in_array($command, ['User & Password', 'Username', 'Password'], true)){
+		if($this->loglevel <= self::DEBUG_LOWLEVEL && in_array($command, ['User & Password', 'Username', 'Password'], true)){
 			$this->edebug('CLIENT -> SERVER: <credentials hidden>', self::DEBUG_CLIENT);
 		}
 		else{
@@ -1158,8 +1043,7 @@ class SMTP{
 			// Now check if reads took too long
 			if($endtime and time() > $endtime){
 				$this->edebug(
-					'SMTP -> get_lines(): timelimit reached ('.
-					$this->Timelimit.' sec)',
+					'SMTP -> get_lines(): timelimit reached ('.$this->Timelimit.' sec)',
 					self::DEBUG_LOWLEVEL
 				);
 				break;
@@ -1205,42 +1089,6 @@ class SMTP{
 	}
 
 	/**
-	 * Set debug output method.
-	 *
-	 * @param string|callable $method The name of the mechanism to use for debugging output, or a callable to handle it
-	 */
-	public function setDebugOutput($method = 'echo'){
-		$this->Debugoutput = $method;
-	}
-
-	/**
-	 * Get debug output method.
-	 *
-	 * @return string
-	 */
-	public function getDebugOutput(){
-		return $this->Debugoutput;
-	}
-
-	/**
-	 * Set debug output level.
-	 *
-	 * @param int $level
-	 */
-	public function setDebugLevel($level = 0){
-		$this->do_debug = $level;
-	}
-
-	/**
-	 * Get debug output level.
-	 *
-	 * @return int
-	 */
-	public function getDebugLevel(){
-		return $this->do_debug;
-	}
-
-	/**
 	 * Set SMTP timeout.
 	 *
 	 * @param int $timeout The timeout duration in seconds
@@ -1274,7 +1122,7 @@ class SMTP{
 			(string)$errno
 		);
 		$this->edebug(
-			"$notice Error #$errno: $errmsg [$errfile line $errline]",
+			sprintf('%s Error #%s: %s [%s line %s]', $notice, $errno, $errmsg, $errfile, $errline),
 			self::DEBUG_CONNECTION
 		);
 	}

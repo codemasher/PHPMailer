@@ -25,7 +25,7 @@ try{
 	// 0 = off (for production use)
 	// 1 = client messages
 	// 2 = client and server messages
-	$mail->SMTPDebug = 2;
+	$mail->loglevel = 2;
 	//Set the hostname of the mail server
 	$mail->Host = 'mail.example.com';
 	//Set the SMTP port number - likely to be 25, 465 or 587

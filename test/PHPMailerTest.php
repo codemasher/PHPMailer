@@ -17,6 +17,8 @@ use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\POP3;
 use PHPMailer\PHPMailer\SMTP;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\AbstractLogger;
+use Psr\Log\LoggerInterface;
 
 /**
  * PHPMailer - PHP email transport unit test class.
@@ -71,8 +73,8 @@ final class PHPMailerTest extends TestCase{
 	protected function setUp(){
 		$this->INCLUDE_DIR       = dirname(__DIR__); //Default to the dir above the test dir, i.e. the project home dir
 		$this->Mail              = new PHPMailer();
-		$this->Mail->SMTPDebug   = SMTP::DEBUG_CONNECTION; //Full debug output
-#		$this->Mail->Debugoutput = ['PHPMailer\Test\DebugLogTestListener', 'debugLog'];
+		$this->Mail->setLogger($this->getDebugLogger());
+		$this->Mail->loglevel    = SMTP::DEBUG_CONNECTION; //Full debug output
 		$this->Mail->Priority    = 3;
 		$this->Mail->Encoding    = '8bit';
 		$this->Mail->CharSet     = 'iso-8859-1';
@@ -117,6 +119,34 @@ final class PHPMailerTest extends TestCase{
 			$p = escapeshellarg($pid);
 			shell_exec("ps $p && kill -TERM $p");
 		}
+	}
+
+	/**
+	 * A simple PSR-3 logger implementation for console output
+	 *
+	 * @return \Psr\Log\LoggerInterface
+	 */
+	protected function getDebugLogger():LoggerInterface{
+		return new class () extends AbstractLogger{
+
+			/** @inheritDoc */
+			public function log($level, $message, array $context = []){
+				//Normalize line breaks
+				$str = preg_replace('/\r\n|\r/ms', "\n", $message);
+				echo gmdate('Y-m-d H:i:s'),
+				"\t",
+					//Trim trailing space
+				trim(
+				//Indent for readability, except for trailing break
+					str_replace(
+						"\n",
+						"\n                   \t                  ",
+						trim($str)
+					)
+				),
+				"\n";
+			}
+		};
 	}
 
 	/**
@@ -2412,7 +2442,7 @@ EOT;
 		sleep(1);
 		//Test a known-good login
 		$this->assertTrue(
-			POP3::popBeforeSmtp('localhost', 1100, 10, 'user', 'test', $this->Mail->SMTPDebug),
+			POP3::popBeforeSmtp('localhost', 1100, 10, 'user', 'test', $this->Mail->loglevel),
 			'POP before SMTP failed'
 		);
 		//Kill the fake server, don't care if it fails
@@ -2439,7 +2469,7 @@ EOT;
 		sleep(2);
 		//Test a known-bad login
 		$this->assertFalse(
-			POP3::popBeforeSmtp('localhost', 1101, 10, 'user', 'xxx', $this->Mail->SMTPDebug),
+			POP3::popBeforeSmtp('localhost', 1101, 10, 'user', 'xxx', $this->Mail->loglevel),
 			'POP before SMTP should have failed'
 		);
 		//Kill the fake server, don't care if it fails
@@ -2454,7 +2484,7 @@ EOT;
 	 * @group slow
 	 */
 	public function testSmtpConnect(){
-		$this->Mail->SMTPDebug = SMTP::DEBUG_LOWLEVEL; //Show connection-level errors
+		$this->Mail->loglevel = SMTP::DEBUG_LOWLEVEL; //Show connection-level errors
 		$this->assertTrue($this->Mail->smtpConnect(), 'SMTP single connect failed');
 		$this->Mail->smtpClose();
 

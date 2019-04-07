@@ -28,7 +28,7 @@ namespace PHPMailer\PHPMailer;
  * @author  Andy Prevost (codeworxtech) <codeworxtech@users.sourceforge.net>
  * @author  Brent R. Matzelle (original founder)
  */
-class PHPMailer{
+class PHPMailer extends MailerAbstract{
 
 	const CHARSET_ISO88591 = 'iso-8859-1';
 	const CHARSET_UTF8     = 'utf-8';
@@ -352,48 +352,6 @@ class PHPMailer{
 	 * @see https://tools.ietf.org/html/rfc3461 See section 4.1 for more information about NOTIFY
 	 */
 	public $dsn = '';
-
-	/**
-	 * SMTP class debug output mode.
-	 * Debug output level.
-	 * Options:
-	 * * `0` No output
-	 * * `1` Commands
-	 * * `2` Data and commands
-	 * * `3` As 2 plus connection status
-	 * * `4` Low-level data output.
-	 *
-	 * @see SMTP::$do_debug
-	 *
-	 * @var int
-	 */
-	public $SMTPDebug = 0;
-
-	/**
-	 * How to handle debug output.
-	 * Options:
-	 * * `echo` Output plain-text as-is, appropriate for CLI
-	 * * `html` Output escaped, line breaks converted to `<br>`, appropriate for browser output
-	 * * `error_log` Output to error log as configured in php.ini
-	 * By default PHPMailer will use `echo` if run from a `cli` or `cli-server` SAPI, `html` otherwise.
-	 * Alternatively, you can provide a callable expecting two params: a message string and the debug level:
-	 *
-	 * ```php
-	 * $mail->Debugoutput = function($str, $level) {echo "debug level $level; message: $str";};
-	 * ```
-	 *
-	 * Alternatively, you can pass in an instance of a PSR-3 compatible logger, though only `debug`
-	 * level output is used:
-	 *
-	 * ```php
-	 * $mail->Debugoutput = new myPsr3Logger;
-	 * ```
-	 *
-	 * @see SMTP::$Debugoutput
-	 *
-	 * @var string|callable|\Psr\Log\LoggerInterface
-	 */
-	public $Debugoutput = 'echo';
 
 	/**
 	 * Whether to keep SMTP connection open after each message.
@@ -767,11 +725,11 @@ class PHPMailer{
 	 * @param bool $exceptions Should we throw external exceptions?
 	 */
 	public function __construct($exceptions = null){
+		parent::__construct();
+
 		if(null !== $exceptions){
 			$this->exceptions = (bool)$exceptions;
 		}
-		//Pick an appropriate debug output format automatically
-		$this->Debugoutput = (strpos(PHP_SAPI, 'cli') !== false ? 'echo' : 'html');
 	}
 
 	/**
@@ -813,64 +771,6 @@ class PHPMailer{
 		}
 
 		return $result;
-	}
-
-	/**
-	 * Output debugging info via user-defined method.
-	 * Only generates output if SMTP debug output is enabled (@param string $str
-	 *
-	 * @see PHPMailer::$Debugoutput
-	 * @see PHPMailer::$SMTPDebug
-	 *
-	 * @see SMTP::$do_debug).
-	 *
-	 */
-	protected function edebug($str){
-		if($this->SMTPDebug <= 0){
-			return;
-		}
-		//Is this a PSR-3 logger?
-		if($this->Debugoutput instanceof \Psr\Log\LoggerInterface){
-			$this->Debugoutput->debug($str);
-
-			return;
-		}
-		//Avoid clash with built-in function names
-		if(!in_array($this->Debugoutput, ['error_log', 'html', 'echo']) and is_callable($this->Debugoutput)){
-			call_user_func($this->Debugoutput, $str, $this->SMTPDebug);
-
-			return;
-		}
-		switch($this->Debugoutput){
-			case 'error_log':
-				//Don't output, just log
-				error_log($str);
-				break;
-			case 'html':
-				//Cleans up output a bit for a better looking, HTML-safe output
-				echo htmlentities(
-					preg_replace('/[\r\n]+/', '', $str),
-					ENT_QUOTES,
-					'UTF-8'
-				), "<br>\n";
-				break;
-			case 'echo':
-			default:
-				//Normalize line breaks
-				$str = preg_replace('/\r\n|\r/ms', "\n", $str);
-				echo gmdate('Y-m-d H:i:s'),
-				"\t",
-					//Trim trailing space
-				trim(
-				//Indent for readability, except for trailing break
-					str_replace(
-						"\n",
-						"\n                   \t                  ",
-						trim($str)
-					)
-				),
-				"\n";
-		}
 	}
 
 	/**
@@ -1894,8 +1794,8 @@ class PHPMailer{
 		}
 
 		$this->smtp->setTimeout($this->Timeout);
-		$this->smtp->setDebugLevel($this->SMTPDebug);
-		$this->smtp->setDebugOutput($this->Debugoutput);
+		$this->smtp->setDebugLevel($this->loglevel);
+		$this->smtp->setLogger($this->logger);
 		$this->smtp->setVerp($this->do_verp);
 		$hosts         = explode(';', $this->Host);
 		$lastexception = null;
@@ -1907,7 +1807,7 @@ class PHPMailer{
 				trim($hostentry),
 				$hostinfo
 			)){
-				static::edebug($this->lang('connect_host').' '.$hostentry);
+				$this->edebug($this->lang('connect_host').' '.$hostentry);
 				// Not a valid host entry
 				continue;
 			}
@@ -1919,7 +1819,7 @@ class PHPMailer{
 
 			//Check the host name is a valid name or IP address before trying to use it
 			if(!static::isValidHost($hostinfo[3])){
-				static::edebug($this->lang('connect_host').' '.$hostentry);
+				$this->edebug($this->lang('connect_host').' '.$hostentry);
 				continue;
 			}
 			$prefix = '';

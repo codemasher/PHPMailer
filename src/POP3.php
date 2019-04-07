@@ -38,7 +38,7 @@ namespace PHPMailer\PHPMailer;
  * @author  Jim Jagielski (jimjag) <jimjag@gmail.com>
  * @author  Andy Prevost (codeworxtech) <codeworxtech@users.sourceforge.net>
  */
-class POP3{
+class POP3 extends MailerAbstract{
 
 	/**
 	 * The POP3 PHPMailer Version number.
@@ -60,14 +60,6 @@ class POP3{
 	 * @var int
 	 */
 	const DEFAULT_TIMEOUT = 30;
-
-	/**
-	 * Debug display level.
-	 * Options: 0 = no, 1+ = yes.
-	 *
-	 * @var int
-	 */
-	public $do_debug = 0;
 
 	/**
 	 * POP3 mail server hostname.
@@ -185,7 +177,7 @@ class POP3{
 		else{
 			$this->tval = (int)$timeout;
 		}
-		$this->do_debug = $debug_level;
+		$this->loglevel = $debug_level;
 		$this->username = $username;
 		$this->password = $password;
 		//  Reset the error log
@@ -325,9 +317,7 @@ class POP3{
 	 */
 	protected function getResponse($size = 128){
 		$response = fgets($this->pop_conn, $size);
-		if($this->do_debug >= 1){
-			echo 'Server -> Client: ', $response;
-		}
+		$this->edebug('Server -> Client: '. $response, self::DEBUG_CLIENT);
 
 		return $response;
 	}
@@ -341,9 +331,7 @@ class POP3{
 	 */
 	protected function sendString($string){
 		if($this->pop_conn){
-			if($this->do_debug >= 2){ //Show client messages when debug >= 2
-				echo 'Client -> Server: ', $string;
-			}
+			$this->edebug('Client -> Server: '. $string, self::DEBUG_SERVER);
 
 			return fwrite($this->pop_conn, $string, strlen($string));
 		}
@@ -377,13 +365,7 @@ class POP3{
 	 */
 	protected function setError($error){
 		$this->errors[] = $error;
-		if($this->do_debug >= 1){
-			echo '<pre>';
-			foreach($this->errors as $e){
-				print_r($e);
-			}
-			echo '</pre>';
-		}
+		$this->edebug(implode(PHP_EOL, $this->errors), self::DEBUG_CLIENT);
 	}
 
 	/**

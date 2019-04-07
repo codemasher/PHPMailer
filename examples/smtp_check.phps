@@ -18,7 +18,7 @@ date_default_timezone_set('Etc/UTC');
 $smtp = new SMTP;
 
 //Enable connection-level debug output
-$smtp->do_debug = SMTP::DEBUG_CONNECTION;
+$smtp->loglevel = SMTP::DEBUG_CONNECTION;
 
 try{
 	//Connect to an SMTP server
