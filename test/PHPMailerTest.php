@@ -370,6 +370,8 @@ final class PHPMailerTest extends TestCase{
 
 	/**
 	 * Word-wrap an ASCII message.
+	 *
+	 * @group network
 	 */
 	public function testWordWrap(){
 		$this->Mail->WordWrap = 40;
@@ -391,6 +393,8 @@ final class PHPMailerTest extends TestCase{
 
 	/**
 	 * Word-wrap a multibyte message.
+	 *
+	 * @group network
 	 */
 	public function testWordWrapMultibyte(){
 		$this->Mail->WordWrap = 40;
@@ -412,6 +416,8 @@ final class PHPMailerTest extends TestCase{
 
 	/**
 	 * Test low priority.
+	 *
+	 * @group network
 	 */
 	public function testLowPriority(){
 		$this->Mail->Priority = 5;
@@ -426,6 +432,8 @@ final class PHPMailerTest extends TestCase{
 
 	/**
 	 * Simple plain file attachment test.
+	 *
+	 * @group network
 	 */
 	public function testMultiplePlainFileAttachment(){
 		$this->Mail->Body    = 'Here is the text body';
@@ -464,6 +472,8 @@ final class PHPMailerTest extends TestCase{
 
 	/**
 	 * Simple plain string attachment test.
+	 *
+	 * @group network
 	 */
 	public function testPlainStringAttachment(){
 		$this->Mail->Body    = 'Here is the text body';
@@ -481,6 +491,8 @@ final class PHPMailerTest extends TestCase{
 
 	/**
 	 * Plain quoted-printable message.
+	 *
+	 * @group network
 	 */
 	public function testQuotedPrintable(){
 		$this->Mail->Body     = 'Here is the main body';
@@ -577,6 +589,8 @@ final class PHPMailerTest extends TestCase{
 
 	/**
 	 * Send an HTML message.
+	 *
+	 * @group network
 	 */
 	public function testHtml(){
 		$this->Mail->isHTML(true);
@@ -604,6 +618,8 @@ EOT;
 
 	/**
 	 * Send an HTML message specifiying the DSN notifications we expect.
+	 *
+	 * @group network
 	 */
 	public function testDsn(){
 		$this->Mail->isHTML(true);
@@ -629,6 +645,8 @@ EOT;
 
 	/**
 	 * createBody test of switch case
+	 *
+	 * @group network
 	 */
 	public function testCreateBody(){
 		$PHPMailer  = new PHPMailer();
@@ -659,6 +677,8 @@ EOT;
 
 	/**
 	 * Send a message containing ISO-8859-1 text.
+	 *
+	 * @group network
 	 */
 	public function testHtmlIso8859(){
 		$this->Mail->isHTML(true);
@@ -686,6 +706,8 @@ EOT;
 
 	/**
 	 * Send a message containing multilingual UTF-8 text.
+	 *
+	 * @group network
 	 */
 	public function testHtmlUtf8(){
 		$this->Mail->isHTML(true);
@@ -714,6 +736,8 @@ EOT;
 
 	/**
 	 * Send a message containing multilingual UTF-8 text with an embedded image.
+	 *
+	 * @group network
 	 */
 	public function testUtf8WithEmbeddedImage(){
 		$this->Mail->isHTML(true);
@@ -748,6 +772,8 @@ EOT;
 
 	/**
 	 * Send a message containing multilingual UTF-8 text.
+	 *
+	 * @group network
 	 */
 	public function testPlainUtf8(){
 		$this->Mail->isHTML(false);
@@ -768,6 +794,8 @@ EOT;
 
 	/**
 	 * Test simple message builder and html2text converters.
+	 *
+	 * @group network
 	 */
 	public function testMsgHTML(){
 		$message             = file_get_contents(realpath($this->INCLUDE_DIR.'/examples/contentsutf8.html'));
@@ -818,6 +846,8 @@ EOT;
 
 	/**
 	 * Simple HTML and attachment test.
+	 *
+	 * @group network
 	 */
 	public function testHTMLAttachment(){
 		$this->Mail->Body    = 'This is the <strong>HTML</strong> part of the email.';
@@ -844,6 +874,8 @@ EOT;
 
 	/**
 	 * Test embedded image without a name.
+	 *
+	 * @group network
 	 */
 	public function testHTMLStringEmbedNoName(){
 		$this->Mail->Body    = 'This is the <strong>HTML</strong> part of the email.';
@@ -869,6 +901,8 @@ EOT;
 
 	/**
 	 * Simple HTML and multiple attachment test.
+	 *
+	 * @group network
 	 */
 	public function testHTMLMultiAttachment(){
 		$this->Mail->Body    = 'This is the <strong>HTML</strong> part of the email.';
@@ -901,6 +935,8 @@ EOT;
 
 	/**
 	 * An embedded attachment test.
+	 *
+	 * @group network
 	 */
 	public function testEmbeddedImage(){
 		$this->Mail->Body    = 'Embedded Image: <img alt="phpmailer" src="'.
@@ -931,6 +967,8 @@ EOT;
 
 	/**
 	 * An embedded attachment test.
+	 *
+	 * @group network
 	 */
 	public function testMultiEmbeddedImage(){
 		$this->Mail->Body    = 'Embedded Image: <img alt="phpmailer" src="'.
@@ -964,6 +1002,8 @@ EOT;
 
 	/**
 	 * Simple multipart/alternative test.
+	 *
+	 * @group network
 	 */
 	public function testAltBody(){
 		$this->Mail->Body     = 'This is the <strong>HTML</strong> part of the email.';
@@ -980,6 +1020,8 @@ EOT;
 
 	/**
 	 * Simple HTML and attachment test.
+	 *
+	 * @group network
 	 */
 	public function testAltBodyAttachment(){
 		$this->Mail->Body    = 'This is the <strong>HTML</strong> part of the email.';
@@ -999,6 +1041,8 @@ EOT;
 
 	/**
 	 * Test sending multiple messages with separate connections.
+	 *
+	 * @group network
 	 */
 	public function testMultipleSend(){
 		$this->Mail->Body = 'Sending two messages without keepalive';
@@ -1015,6 +1059,8 @@ EOT;
 
 	/**
 	 * Test sending using SendMail.
+	 *
+	 * @group network
 	 */
 	public function testSendmailSend(){
 		$this->Mail->Body = 'Sending via sendmail';
@@ -1048,6 +1094,8 @@ EOT;
 
 	/**
 	 * Test sending using PHP mail() function.
+	 *
+	 * @group network
 	 */
 	public function testMailSend(){
 		$sendmail = ini_get('sendmail_path');
@@ -1082,6 +1130,8 @@ EOT;
 
 	/**
 	 * Test sending an empty body.
+	 *
+	 * @group network
 	 */
 	public function testEmptyBody(){
 		$this->buildBody();
@@ -1151,6 +1201,8 @@ EOT;
 
 	/**
 	 * Test keepalive (sending multiple messages in a single connection).
+	 *
+	 * @group network
 	 */
 	public function testSmtpKeepAlive(){
 		$this->Mail->Body = 'SMTP keep-alive test.';
@@ -1168,6 +1220,8 @@ EOT;
 
 	/**
 	 * Test this denial of service attack.
+	 *
+	 * @group network
 	 *
 	 * @see http://www.cybsec.com/vuln/PHPMailer-DOS.pdf
 	 */
@@ -1195,6 +1249,8 @@ EOT;
 
 	/**
 	 * Test error handling.
+	 *
+	 * @group network
 	 */
 	public function testError(){
 		$this->Mail->Subject .= ': Error handling test - this should be sent ok';
@@ -1283,6 +1339,8 @@ EOT;
 
 	/**
 	 * Test BCC-only addressing.
+	 *
+	 * @group network
 	 */
 	public function testBCCAddressing(){
 		$this->Mail->isSMTP();
@@ -1339,6 +1397,8 @@ EOT;
 
 	/**
 	 * Test base-64 encoding.
+	 *
+	 * @group network
 	 */
 	public function testBase64(){
 		$this->Mail->Subject  .= ': Base-64 encoding';
@@ -1349,6 +1409,8 @@ EOT;
 
 	/**
 	 * S/MIME Signing tests (self-signed).
+	 *
+	 * @group network
 	 *
 	 * @requires extension openssl
 	 */
@@ -1406,6 +1468,8 @@ EOT;
 	 * To test that a generated message is signed correctly, save the message in a file called `signed.eml`
 	 * and use openssl along with the certs generated by this script:
 	 * `openssl smime -verify -in signed.eml -signer certfile.pem -CAfile cacertfile.pem`.
+	 *
+	 * @group network
 	 *
 	 * @requires extension openssl
 	 */
@@ -1610,6 +1674,8 @@ EOT;
 	/**
 	 * DKIM Signing tests.
 	 *
+	 * @group network
+	 *
 	 * @requires extension openssl
 	 */
 	public function testDKIM(){
@@ -1639,6 +1705,8 @@ EOT;
 
 	/**
 	 * Test line break reformatting.
+	 *
+	 * @group network
 	 */
 	public function testLineBreaks(){
 		//May have been altered by earlier tests, can interfere with line break format
@@ -1675,6 +1743,8 @@ EOT;
 
 	/**
 	 * Test line length detection.
+	 *
+	 * @group network
 	 */
 	public function testLineLength(){
 		//May have been altered by earlier tests, can interfere with line break format
@@ -1756,6 +1826,9 @@ EOT;
 		$this->assertEquals($this->Mail->normalizeBreaks($b3), $t1, 'Failed to normalize line breaks (3)');
 	}
 
+	/**
+	 * @group network
+	 */
 	public function testBadSMTP(){
 		$this->Mail->smtpConnect();
 		$smtp = $this->Mail->getSMTPInstance();
@@ -1797,6 +1870,8 @@ EOT;
 
 	/**
 	 * Tests setting and retrieving ConfirmReadingTo address, also known as "read receipt" address.
+	 *
+	 * @group network
 	 */
 	public function testConfirmReadingTo(){
 		$this->Mail->CharSet = 'utf-8';
@@ -1829,6 +1904,8 @@ EOT;
 
 	/**
 	 * Tests CharSet and Unicode -> ASCII conversions for addresses with IDN.
+	 *
+	 * @group network
 	 */
 	public function testConvertEncoding(){
 		if(!\PHPMailer\PHPMailer\idnSupported()){
@@ -1879,6 +1956,8 @@ EOT;
 
 	/**
 	 * Tests removal of duplicate recipients and reply-tos.
+	 *
+	 * @group network
 	 */
 	public function testDuplicateIDNRemoved(){
 		if(!\PHPMailer\PHPMailer\idnSupported()){
