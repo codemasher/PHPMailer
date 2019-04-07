@@ -111,7 +111,7 @@ abstract class MailerAbstract implements LoggerAwareInterface{
 	 *
 	 * @var int
 	 */
-	protected const DEFAULT_TIMEOUT = 30;
+	protected const DEFAULT_TIMEOUT_POP3 = 30;
 
 	/**
 	 * Error severity: message only, continue processing.

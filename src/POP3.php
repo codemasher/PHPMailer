@@ -41,13 +41,6 @@ namespace PHPMailer\PHPMailer;
 class POP3 extends MailerAbstract{
 
 	/**
-	 * POP3 Timeout Value in seconds.
-	 *
-	 * @var int
-	 */
-	public $tval;
-
-	/**
 	 * Are we connected?
 	 *
 	 * @var bool
@@ -66,46 +59,35 @@ class POP3 extends MailerAbstract{
 	 * A connect, login, disconnect sequence
 	 * appropriate for POP-before SMTP authorisation.
 	 *
-	 * @param string   $host    The hostname to connect to
-	 * @param int|bool $port    The port number to connect to
-	 * @param int|bool $timeout The timeout value
-	 * @param string   $username
-	 * @param string   $password
-	 * @param int      $debug_level
+	 * @param string      $host    The hostname to connect to
+	 * @param int|null    $port    The port number to connect to
+	 * @param int|null    $timeout The timeout value
+	 * @param string|null $username
+	 * @param string|null $password
+	 * @param int|null    $debug_level
 	 *
 	 * @return bool
 	 */
-	public function authorise($host, $port = false, $timeout = false, $username = '', $password = '', $debug_level = 0){
-		$this->host = $host;
-		// If no port value provided, use default
-		if(false === $port){
-			$this->port = $this::DEFAULT_PORT_POP3;
-		}
-		else{
-			$this->port = (int)$port;
-		}
-		// If no timeout value provided, use default
-		if(false === $timeout){
-			$this->tval = $this::DEFAULT_TIMEOUT;
-		}
-		else{
-			$this->tval = (int)$timeout;
-		}
-		$this->loglevel = $debug_level;
-		$this->username = $username;
-		$this->password = $password;
-		//  Reset the error log
-		$this->errors = [];
+	public function authorise(
+		string $host,
+		int $port = null,
+		int $timeout = null,
+		string $username = null,
+		string $password = null,
+		int $debug_level = null
+	):bool{
+		$this->loglevel = $debug_level ?? $this::DEBUG_OFF;
+		$this->errors   = [];
+
 		//  connect
-		$result = $this->connect($this->host, $this->port, $this->tval);
-		if($result){
-			$login_result = $this->login($this->username, $this->password);
-			if($login_result){
+		if($this->connect($host, $port, $timeout)){
+			if($this->login($username, $password)){
 				$this->disconnect();
 
 				return true;
 			}
 		}
+
 		// We need to disconnect regardless of whether the login succeeded
 		$this->disconnect();
 
@@ -116,53 +98,46 @@ class POP3 extends MailerAbstract{
 	 * Connect to a POP3 server.
 	 *
 	 * @param string   $host
-	 * @param int|bool $port
-	 * @param int      $tval
+	 * @param int|null $port
+	 * @param int|null $timeout
 	 *
 	 * @return bool
 	 */
-	public function connect($host, $port = false, $tval = 30){
+	public function connect(string $host, int $port = null, int $timeout = null):bool{
 		//  Are we already connected?
 		if($this->connected){
 			return true;
 		}
 
+		$port    = $port ?? $this->port ?? $this::DEFAULT_PORT_POP3;
+		$timeout = $timeout ?? $this->timeout ?? $this::DEFAULT_TIMEOUT_POP3;
+
 		//On Windows this will raise a PHP Warning error if the hostname doesn't exist.
 		//Rather than suppress it with @fsockopen, capture it cleanly instead
-		set_error_handler([$this, 'catchWarning']);
-
-		if(false === $port){
-			$port = $this::DEFAULT_PORT_POP3;
-		}
+		\set_error_handler([$this, 'catchWarning']);
 
 		//  connect to the POP3 server
-		$this->socket = fsockopen(
-			$host, //  POP3 Host
-			$port, //  Port #
-			$errno, //  Error Number
-			$errstr, //  Error Message
-			$tval
-		); //  Timeout (seconds)
+		$this->socket = \fsockopen($host, $port, $errno, $errstr, $timeout);
+
 		//  Restore the error handler
-		restore_error_handler();
+		\restore_error_handler();
 
 		//  Did we connect?
-		if(false === $this->socket){
+		if($this->socket === false){
 			//  It would appear not...
 			$this->setError(
-				"Failed to connect to server $host on port $port. errno: $errno; errstr: $errstr"
+				\sprintf('Failed to connect to server %s on port %s. errno: %s; errstr: %s', $host, $port, $errno, $errstr)
 			);
 
 			return false;
 		}
 
 		//  Increase the stream time-out
-		stream_set_timeout($this->socket, $tval, 0);
+		\stream_set_timeout($this->socket, $timeout, 0);
 
-		//  Get the POP3 server response
-		$pop3_response = $this->getResponse();
-		//  Check for the +OK
-		if($this->checkResponse($pop3_response)){
+		// Get the POP3 server response
+		// Check for the +OK
+		if($this->checkResponse($this->getResponse())){
 			//  The connection is established and the POP3 server is talking
 			$this->connected = true;
 
@@ -176,30 +151,29 @@ class POP3 extends MailerAbstract{
 	 * Log in to the POP3 server.
 	 * Does not support APOP (RFC 2828, 4949).
 	 *
-	 * @param string $username
-	 * @param string $password
+	 * @param string|null $username
+	 * @param string|null $password
 	 *
 	 * @return bool
 	 */
-	public function login($username = '', $password = ''){
+	public function login(string $username = null, string $password = null):bool{
+
 		if(!$this->connected){
 			$this->setError('Not connected to POP3 server');
 		}
-		if(empty($username)){
-			$username = $this->username;
-		}
-		if(empty($password)){
-			$password = $this->password;
-		}
+
+		$username = $username ?? $this->username ?? '';
+		$password = $password ?? $this->password ?? '';
 
 		// Send the Username
-		$this->sendString("USER $username".$this->LE);
-		$pop3_response = $this->getResponse();
-		if($this->checkResponse($pop3_response)){
+		$this->sendString('USER '.$username.$this->LE);
+
+		if($this->checkResponse($this->getResponse())){
+
 			// Send the Password
-			$this->sendString("PASS $password".$this->LE);
-			$pop3_response = $this->getResponse();
-			if($this->checkResponse($pop3_response)){
+			$this->sendString('PASS '.$password.$this->LE);
+
+			if($this->checkResponse($this->getResponse())){
 				return true;
 			}
 		}
@@ -212,10 +186,13 @@ class POP3 extends MailerAbstract{
 	 */
 	public function disconnect(){
 		$this->sendString('QUIT');
+
 		//The QUIT command may cause the daemon to exit, which will kill our connection
 		//So ignore errors here
 		try{
-			@fclose($this->socket);
+			if(\is_resource($this->socket)){
+				\fclose($this->socket);
+			}
 		}
 		catch(PHPMailerException $e){
 			//Do nothing
@@ -229,9 +206,15 @@ class POP3 extends MailerAbstract{
 	 *
 	 * @return string
 	 */
-	protected function getResponse($size = 128){
-		$response = fgets($this->socket, $size);
+	protected function getResponse(int $size = 128):string{
+		$response = \fgets($this->socket, $size);
 		$this->edebug('Server -> Client: '. $response, $this::DEBUG_CLIENT);
+
+		if($response === false){
+			$this->setError('fgets error');
+
+			return '';
+		}
 
 		return $response;
 	}
@@ -243,14 +226,17 @@ class POP3 extends MailerAbstract{
 	 *
 	 * @return int
 	 */
-	protected function sendString($string){
-		if($this->socket){
-			$this->edebug('Client -> Server: '. $string, $this::DEBUG_SERVER);
+	protected function sendString(string $string):int{
+		$this->edebug('Client -> Server: '. $string, $this::DEBUG_SERVER);
+		$bytes_written = \fwrite($this->socket, $string, \strlen($string));
 
-			return fwrite($this->socket, $string, strlen($string));
+		if($bytes_written === false){
+			$this->setError('fwrite error');
+
+			return 0;
 		}
 
-		return 0;
+		return $bytes_written;
 	}
 
 	/**
@@ -261,9 +247,10 @@ class POP3 extends MailerAbstract{
 	 *
 	 * @return bool
 	 */
-	protected function checkResponse($string){
-		if(substr($string, 0, 3) !== '+OK'){
-			$this->setError("Server reported an error: $string");
+	protected function checkResponse(string $string):bool{
+
+		if(\substr($string, 0, 3) !== '+OK'){
+			$this->setError(\sprintf('Server reported an error: %s', $string));
 
 			return false;
 		}
@@ -277,9 +264,9 @@ class POP3 extends MailerAbstract{
 	 *
 	 * @param string $error
 	 */
-	protected function setError($error){
+	protected function setError(string $error):void{
 		$this->errors[] = $error;
-		$this->edebug(implode(PHP_EOL, $this->errors), $this::DEBUG_CLIENT);
+		$this->edebug(\implode(\PHP_EOL, $this->errors), $this::DEBUG_CLIENT);
 	}
 
 	/**
@@ -287,7 +274,7 @@ class POP3 extends MailerAbstract{
 	 *
 	 * @return array
 	 */
-	public function getErrors(){
+	public function getErrors():array{
 		return $this->errors;
 	}
 
@@ -299,10 +286,16 @@ class POP3 extends MailerAbstract{
 	 * @param string $errfile
 	 * @param int    $errline
 	 */
-	protected function catchWarning($errno, $errstr, $errfile, $errline){
+	protected function catchWarning(int $errno, string $errstr, string $errfile, int $errline):void{
 		$this->setError(
-			'Connecting to the POP3 server raised a PHP warning:'.
-			"errno: $errno errstr: $errstr; errfile: $errfile; errline: $errline"
+			\sprintf(
+				'Connecting to the POP3 server raised a PHP warning: errno: %s errstr: %s; errfile: %s; errline: %s',
+				$errno,
+				$errstr,
+				$errfile,
+				$errline
+			)
 		);
 	}
+
 }
