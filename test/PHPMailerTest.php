@@ -82,6 +82,7 @@ final class PHPMailerTest extends TestCase{
 	 * Run before each test is started.
 	 */
 	protected function setUp():void{
+		var_dump(TEST_IS_CI);
 		$this->IS_CI       = defined('TEST_IS_CI') && TEST_IS_CI === 'true';
 		$this->INCLUDE_DIR = dirname(__DIR__); //Default to the dir above the test dir, i.e. the project home dir
 		$this->Mail        = new PHPMailer;
