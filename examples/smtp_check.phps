@@ -5,7 +5,7 @@
  */
 
 //Import the PHPMailer SMTP class into the global namespace
-use PHPMailer\PHPMailer\Exception;
+use PHPMailer\PHPMailer\PHPMailerException;
 use PHPMailer\PHPMailer\SMTP;
 
 require '../vendor/autoload.php';
@@ -23,11 +23,11 @@ $smtp->do_debug = SMTP::DEBUG_CONNECTION;
 try{
 	//Connect to an SMTP server
 	if(!$smtp->connect('mail.example.com', 25)){
-		throw new Exception('Connect failed');
+		throw new PHPMailerException('Connect failed');
 	}
 	//Say hello
 	if(!$smtp->hello(gethostname())){
-		throw new Exception('EHLO failed: '.$smtp->getError()['error']);
+		throw new PHPMailerException('EHLO failed: '.$smtp->getError()['error']);
 	}
 	//Get the list of ESMTP services the server offers
 	$e = $smtp->getServerExtList();
@@ -35,11 +35,11 @@ try{
 	if(is_array($e) && array_key_exists('STARTTLS', $e)){
 		$tlsok = $smtp->startTLS();
 		if(!$tlsok){
-			throw new Exception('Failed to start encryption: '.$smtp->getError()['error']);
+			throw new PHPMailerException('Failed to start encryption: '.$smtp->getError()['error']);
 		}
 		//Repeat EHLO after STARTTLS
 		if(!$smtp->hello(gethostname())){
-			throw new Exception('EHLO (2) failed: '.$smtp->getError()['error']);
+			throw new PHPMailerException('EHLO (2) failed: '.$smtp->getError()['error']);
 		}
 		//Get new capabilities list, which will usually now include AUTH if it didn't before
 		$e = $smtp->getServerExtList();
@@ -50,11 +50,11 @@ try{
 			echo "Connected ok!";
 		}
 		else{
-			throw new Exception('Authentication failed: '.$smtp->getError()['error']);
+			throw new PHPMailerException('Authentication failed: '.$smtp->getError()['error']);
 		}
 	}
 }
-catch(Exception $e){
+catch(PHPMailerException $e){
 	echo 'SMTP error: '.$e->getMessage(), "\n";
 }
 //Whatever happened, close the connection.

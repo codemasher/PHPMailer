@@ -58,9 +58,9 @@ Alternatively, if you're not using Composer, copy the contents of the PHPMailer 
 ```php
 <?php
 use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
+use PHPMailer\PHPMailer\PHPMailerException;
 
-require 'path/to/PHPMailer/src/Exception.php';
+require 'path/to/PHPMailer/src/PHPMailerException.php';
 require 'path/to/PHPMailer/src/PHPMailer.php';
 require 'path/to/PHPMailer/src/SMTP.php';
 ```
@@ -87,7 +87,7 @@ While installing the entire package manually or with Composer is simple, conveni
 // Import PHPMailer classes into the global namespace
 // These must be at the top of your script, not inside a function
 use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
+use PHPMailer\PHPMailer\PHPMailerException;
 
 // Load Composer's autoloader
 require 'vendor/autoload.php';

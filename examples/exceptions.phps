@@ -4,7 +4,7 @@
  */
 
 //Import PHPMailer classes into the global namespace
-use PHPMailer\PHPMailer\Exception;
+use PHPMailer\PHPMailer\PHPMailerException;
 use PHPMailer\PHPMailer\PHPMailer;
 
 require '../vendor/autoload.php';
@@ -33,7 +33,7 @@ try{
 	$mail->send();
 	echo 'Message sent!';
 }
-catch(Exception $e){
+catch(PHPMailerException $e){
 	echo $e->errorMessage(); //Pretty error messages from PHPMailer
 }
 catch(\Exception $e){ //The leading slash means the Global PHP Exception class will be caught

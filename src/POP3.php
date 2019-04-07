@@ -311,7 +311,7 @@ class POP3{
 		try{
 			@fclose($this->pop_conn);
 		}
-		catch(Exception $e){
+		catch(PHPMailerException $e){
 			//Do nothing
 		}
 	}

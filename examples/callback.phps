@@ -4,7 +4,7 @@
  */
 
 //Import PHPMailer classes into the global namespace
-use PHPMailer\PHPMailer\Exception;
+use PHPMailer\PHPMailer\PHPMailerException;
 use PHPMailer\PHPMailer\PHPMailer;
 
 require '../vendor/autoload.php';
@@ -57,7 +57,7 @@ try{
 	$mail->action_function = 'callbackAction';
 	$mail->send();
 }
-catch(Exception $e){
+catch(PHPMailerException $e){
 	echo $e->errorMessage();
 }
 
@@ -73,6 +73,6 @@ try{
 	};
 	$mail->send();
 }
-catch(Exception $e){
+catch(PHPMailerException $e){
 	echo $e->errorMessage();
 }

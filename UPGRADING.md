@@ -34,11 +34,11 @@ If you're not using composer, you can still load the classes manually, depending
 ```php
 require 'src/PHPMailer.php';
 require 'src/SMTP.php';
-require 'src/Exception.php';
+require 'src/PHPMailerException.php';
 ```
 
 ## Namespace
-PHPMailer 6 uses a [namespace](http://php.net/manual/en/language.namespaces.rationale.php) of `PHPMailer\PHPMailer`, because it's the PHPMailer project within the PHPMailer organisation. You **must** import (with a `use` statement) classes you're using explicitly into your own namespace, or reference them absolutely in the global namespace - all the examples do this. This means the fully-qualified name of the main PHPMailer class is `PHPMailer\PHPMailer\PHPMailer`, which is a bit of a mouthful, but there's no harm in it! If you are using other PHPMailer classes explicitly (such as `SMTP` or `Exception`), you will need to import them into your namespace too.
+PHPMailer 6 uses a [namespace](http://php.net/manual/en/language.namespaces.rationale.php) of `PHPMailer\PHPMailer`, because it's the PHPMailer project within the PHPMailer organisation. You **must** import (with a `use` statement) classes you're using explicitly into your own namespace, or reference them absolutely in the global namespace - all the examples do this. This means the fully-qualified name of the main PHPMailer class is `PHPMailer\PHPMailer\PHPMailer`, which is a bit of a mouthful, but there's no harm in it! If you are using other PHPMailer classes explicitly (such as `SMTP` or `PHPMailerException`), you will need to import them into your namespace too.
 
 For example you might create an instance like this:
 
@@ -64,14 +64,14 @@ $mail = new PHPMailer\PHPMailer\PHPMailer;
 Note that `use` statements apply *only* to the file they appear in (they are local aliases), so if an included file contains `use` statements, it will not import the namespaced classes into the file you're including from.
 
 ## Namespaced exceptions
-PHPMailer now uses its own namespaced `Exception` class, so if you were previously catching exceptions of type `phpmailerException` (or subclasses of that), you will need to update them to use the PHPMailer namespace, and make any existing `Exception` references use the global namespace, i.e. `\Exception`. If your original code was:
+PHPMailer now uses its own namespaced `PHPMailerException` class, so if you were previously catching exceptions of type `phpmailerException` (or subclasses of that), you will need to update them to use the PHPMailer namespace, and make any existing `PHPMailerException` references use the global namespace, i.e. `\PHPMailerException`. If your original code was:
 
 ```php
 try {
 ...
 } catch (phpmailerException $e) {
     echo $e->errorMessage();
-} catch (Exception $e) {
+} catch (PHPMailerException $e) {
     echo $e->getMessage();
 }
 ```
@@ -79,13 +79,13 @@ try {
 Convert it to:
 
 ```php
-use PHPMailer\PHPMailer\Exception;
+use PHPMailer\PHPMailer\PHPMailerException;
 ...
 try {
 ...
-} catch (Exception $e) {
+} catch (PHPMailerException $e) {
     echo $e->errorMessage();
-} catch (\Exception $e) {
+} catch (\PHPMailerException $e) {
     echo $e->getMessage();
 }
 ```

@@ -8,7 +8,7 @@
  */
 
 //Import PHPMailer classes into the global namespace
-use PHPMailer\PHPMailer\Exception;
+use PHPMailer\PHPMailer\PHPMailerException;
 use PHPMailer\PHPMailer\PHPMailer;
 
 require '../vendor/autoload.php';
@@ -63,7 +63,7 @@ try{
 	$mail->addAttachment(__FILE__, 'myPHPMailer.php');
 	$mail->send(); //no need to check for errors - the exception handler will do it
 }
-catch(Exception $e){
-	//Note that this is catching the PHPMailer Exception class, not the global \Exception type!
+catch(PHPMailerException $e){
+	//Note that this is catching the PHPMailerException class, not the global \Exception type!
 	echo "Caught a ".get_class($e).": ".$e->getMessage();
 }
