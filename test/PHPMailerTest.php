@@ -189,7 +189,7 @@ final class PHPMailerTest extends TestCase{
 		$ReportBody .= '---------------------'.$eol;
 		$ReportBody .= 'Unit Test Information'.$eol;
 		$ReportBody .= '---------------------'.$eol;
-		$ReportBody .= 'phpmailer version: '.PHPMailer::VERSION.$eol;
+		$ReportBody .= 'phpmailer version: '.$this->Mail::VERSION.$eol;
 		$ReportBody .= 'Content Type: '.$this->Mail->ContentType.$eol;
 		$ReportBody .= 'CharSet: '.$this->Mail->CharSet.$eol;
 
@@ -539,15 +539,15 @@ final class PHPMailerTest extends TestCase{
 	public function testHeaderEncoding(){
 		$this->Mail->CharSet = 'UTF-8';
 		//This should select B-encoding automatically and should fold
-		$bencode = str_repeat('é', PHPMailer::LINE_LENGTH_STD + 1);
+		$bencode = str_repeat('é', $this->Mail::LINE_LENGTH_STD + 1);
 		//This should select Q-encoding automatically and should fold
-		$qencode = str_repeat('e', PHPMailer::LINE_LENGTH_STD).'é';
+		$qencode = str_repeat('e', $this->Mail::LINE_LENGTH_STD).'é';
 		//This should select B-encoding automatically and should not fold
 		$bencodenofold = str_repeat('é', 10);
 		//This should select Q-encoding automatically and should not fold
 		$qencodenofold = str_repeat('e', 9).'é';
 		//This should not encode, but just fold automatically
-		$justfold = str_repeat('e', PHPMailer::LINE_LENGTH_STD + 10);
+		$justfold = str_repeat('e', $this->Mail::LINE_LENGTH_STD + 10);
 		//This should not change
 		$noencode = 'eeeeeeeeee';
 		$this->Mail->isMail();
@@ -1161,9 +1161,9 @@ EOT;
 	 * Test constructing a multipart message that contains lines that are too long for RFC compliance.
 	 */
 	public function testLongBody(){
-		$oklen = str_repeat(str_repeat('0', PHPMailer::LINE_LENGTH_MAX).$this->Mail->getLE(), 2);
+		$oklen = str_repeat(str_repeat('0', $this->Mail::LINE_LENGTH_MAX).$this->Mail->getLE(), 2);
 		//Use +2 to ensure line length is over limit - LE may only be 1 char
-		$badlen = str_repeat(str_repeat('1', PHPMailer::LINE_LENGTH_MAX + 2).$this->Mail->getLE(), 2);
+		$badlen = str_repeat(str_repeat('1', $this->Mail::LINE_LENGTH_MAX + 2).$this->Mail->getLE(), 2);
 
 		$this->Mail->Body = 'This message contains lines that are too long.'.
 		                    $this->Mail->getLE().$oklen.$badlen.$oklen;
@@ -1179,7 +1179,7 @@ EOT;
 		$message = $this->Mail->getSentMIMEMessage();
 		$this->assertFalse(
 			$this->Mail->hasLineLongerThanMax($message),
-			'Long line not corrected (Max: '.(PHPMailer::LINE_LENGTH_MAX + strlen($this->Mail->getLE())).' chars)'
+			'Long line not corrected (Max: '.($this->Mail::LINE_LENGTH_MAX + strlen($this->Mail->getLE())).' chars)'
 		);
 		$this->assertStringContainsString(
 			'Content-Transfer-Encoding: quoted-printable',
@@ -1192,7 +1192,7 @@ EOT;
 	 * Test constructing a message that does NOT contain lines that are too long for RFC compliance.
 	 */
 	public function testShortBody(){
-		$oklen = str_repeat(str_repeat('0', PHPMailer::LINE_LENGTH_MAX).$this->Mail->getLE(), 10);
+		$oklen = str_repeat(str_repeat('0', $this->Mail::LINE_LENGTH_MAX).$this->Mail->getLE(), 10);
 
 		$this->Mail->Body = 'This message does not contain lines that are too long.'.
 		                    $this->Mail->getLE().$oklen;
@@ -1763,8 +1763,8 @@ EOT;
 		//May have been altered by earlier tests, can interfere with line break format
 		$this->Mail->isSMTP();
 		$this->Mail->preSend();
-		$oklen  = str_repeat(str_repeat('0', PHPMailer::LINE_LENGTH_MAX)."\r\n", 2);
-		$badlen = str_repeat(str_repeat('1', PHPMailer::LINE_LENGTH_MAX + 1)."\r\n", 2);
+		$oklen  = str_repeat(str_repeat('0', $this->Mail::LINE_LENGTH_MAX)."\r\n", 2);
+		$badlen = str_repeat(str_repeat('1', $this->Mail::LINE_LENGTH_MAX + 1)."\r\n", 2);
 		$this->assertTrue($this->Mail->hasLineLongerThanMax($badlen), 'Long line not detected (only)');
 		$this->assertTrue($this->Mail->hasLineLongerThanMax($oklen.$badlen), 'Long line not detected (first)');
 		$this->assertTrue($this->Mail->hasLineLongerThanMax($badlen.$oklen), 'Long line not detected (last)');
@@ -2073,7 +2073,7 @@ EOT;
 	 * @group slow
 	 */
 	public function testSmtpConnect(){
-		$this->Mail->loglevel = SMTP::DEBUG_LOWLEVEL; //Show connection-level errors
+		$this->Mail->loglevel = $this->Mail::DEBUG_LOWLEVEL; //Show connection-level errors
 		$this->assertTrue($this->Mail->smtpConnect(), 'SMTP single connect failed');
 		$this->Mail->smtpClose();
 
