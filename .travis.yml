@@ -14,7 +14,8 @@ install:
 
 before_script:
   - sudo service postfix stop
-  - smtp-sink -d "%d.%H.%M.%S" localhost:2500 1000 &
+  - mkdir -p logs
+  - smtp-sink -d "./logs/%d.%H.%M.%S" localhost:2500 1000 &
   - chmod +x scripts/fakesendmail.sh
   - sudo mkdir -p /var/qmail/bin
   - sudo cp scripts/fakesendmail.sh /var/qmail/bin/sendmail
