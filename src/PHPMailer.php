@@ -1240,7 +1240,7 @@ class PHPMailer extends MailerAbstract{
 			   and !empty($this->DKIM_selector)
 			       and (!empty($this->DKIM_private_string)
 			            or (!empty($this->DKIM_private)
-			                and static::isPermittedPath($this->DKIM_private)
+			                and isPermittedPath($this->DKIM_private)
 			                    and file_exists($this->DKIM_private)
 			            )
 			       )
@@ -1318,7 +1318,7 @@ class PHPMailer extends MailerAbstract{
 	 */
 	protected function sendmailSend($header, $body){
 		// CVE-2016-10033, CVE-2016-10045: Don't pass -f if characters will be escaped.
-		if(!empty($this->Sender) and self::isShellSafe($this->Sender)){
+		if(!empty($this->Sender) && isShellSafe($this->Sender)){
 			if('qmail' == $this->Mailer){
 				$sendmailFmt = '%s -f%s';
 			}
@@ -1389,53 +1389,6 @@ class PHPMailer extends MailerAbstract{
 	}
 
 	/**
-	 * Fix CVE-2016-10033 and CVE-2016-10045 by disallowing potentially unsafe shell characters.
-	 * Note that escapeshellarg and escapeshellcmd are inadequate for our purposes, especially on Windows.
-	 *
-	 * @see https://github.com/PHPMailer/PHPMailer/issues/924 CVE-2016-10045 bug report
-	 *
-	 * @param string $string The string to be validated
-	 *
-	 * @return bool
-	 */
-	protected static function isShellSafe($string){
-		// Future-proof
-		if(escapeshellcmd($string) !== $string
-		   or !in_array(escapeshellarg($string), ["'$string'", "\"$string\""])
-		){
-			return false;
-		}
-
-		$length = strlen($string);
-
-		for($i = 0; $i < $length; ++$i){
-			$c = $string[$i];
-
-			// All other characters have a special meaning in at least one common shell, including = and +.
-			// Full stop (.) has a special meaning in cmd.exe, but its impact should be negligible here.
-			// Note that this does permit non-Latin alphanumeric characters based on the current locale.
-			if(!ctype_alnum($c) && strpos('@_-.', $c) === false){
-				return false;
-			}
-		}
-
-		return true;
-	}
-
-	/**
-	 * Check whether a file path is of a permitted type.
-	 * Used to reject URLs and phar files from functions that access local file paths,
-	 * such as addAttachment.
-	 *
-	 * @param string $path A relative or absolute path to a file
-	 *
-	 * @return bool
-	 */
-	protected static function isPermittedPath($path){
-		return !preg_match('#^[a-z]+://#i', $path);
-	}
-
-	/**
 	 * Send mail using the PHP mail() function.
 	 *
 	 * @see    http://www.php.net/manual/en/book.mail.php
@@ -1464,7 +1417,7 @@ class PHPMailer extends MailerAbstract{
 			//Qmail docs: http://www.qmail.org/man/man8/qmail-inject.html
 			//Example problem: https://www.drupal.org/node/1057954
 			// CVE-2016-10033, CVE-2016-10045: Don't pass -f if characters will be escaped.
-			if(self::isShellSafe($this->Sender)){
+			if(isShellSafe($this->Sender)){
 				$params = sprintf('-f%s', $this->Sender);
 			}
 		}
@@ -1825,7 +1778,7 @@ class PHPMailer extends MailerAbstract{
 		// There is no English translation file
 		if('en' != $langcode){
 			// Make sure language file path is readable
-			if(!static::isPermittedPath($lang_file) || !file_exists($lang_file)){
+			if(!isPermittedPath($lang_file) || !file_exists($lang_file)){
 				$foundlang = false;
 			}
 			else{
@@ -2583,8 +2536,8 @@ class PHPMailer extends MailerAbstract{
 	 */
 	public function addAttachment($path, $name = '', $encoding = self::ENCODING_BASE64, $type = '', $disposition = 'attachment'){
 		try{
-			if(!static::isPermittedPath($path) || !@is_file($path)){
-				throw new PHPMailerException($this->lang('file_access').$path, self::STOP_CONTINUE);
+			if(!isPermittedPath($path) || !@is_file($path)){
+				throw new PHPMailerException($this->lang('file_access').$path, $this::STOP_CONTINUE);
 			}
 
 			// If a MIME type is not specified, try to work it out from the file name
@@ -2769,8 +2722,8 @@ class PHPMailer extends MailerAbstract{
 	 */
 	protected function encodeFile($path, $encoding = self::ENCODING_BASE64){
 		try{
-			if(!static::isPermittedPath($path) || !file_exists($path)){
-				throw new PHPMailerException($this->lang('file_open').$path, self::STOP_CONTINUE);
+			if(!isPermittedPath($path) || !file_exists($path)){
+				throw new PHPMailerException($this->lang('file_open').$path, $this::STOP_CONTINUE);
 			}
 			$file_buffer = file_get_contents($path);
 			if(false === $file_buffer){
@@ -3108,7 +3061,7 @@ class PHPMailer extends MailerAbstract{
 	 * @return bool True on successfully adding an attachment
 	 */
 	public function addEmbeddedImage($path, $cid, $name = '', $encoding = self::ENCODING_BASE64, $type = '', $disposition = 'inline'){
-		if(!static::isPermittedPath($path) || !@is_file($path)){
+		if(!isPermittedPath($path) || !@is_file($path)){
 			$this->setError($this->lang('file_access').$path);
 
 			return false;

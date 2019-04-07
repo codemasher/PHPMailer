@@ -426,3 +426,49 @@ function mb_pathinfo(string $path, $options = null){
 			return $ret;
 	}
 }
+
+/**
+ * Fix CVE-2016-10033 and CVE-2016-10045 by disallowing potentially unsafe shell characters.
+ * Note that escapeshellarg and escapeshellcmd are inadequate for our purposes, especially on Windows.
+ *
+ * @see https://github.com/PHPMailer/PHPMailer/issues/924 CVE-2016-10045 bug report
+ *
+ * @param string $string The string to be validated
+ *
+ * @return bool
+ */
+function isShellSafe(string $string):bool{
+	// Future-proof
+	if(\escapeshellcmd($string) !== $string || !\in_array(\escapeshellarg($string), ["'$string'", "\"$string\""])){
+		return false;
+	}
+
+	$length = \strlen($string);
+
+	for($i = 0; $i < $length; ++$i){
+		$c = $string[$i];
+
+		// All other characters have a special meaning in at least one common shell, including = and +.
+		// Full stop (.) has a special meaning in cmd.exe, but its impact should be negligible here.
+		// Note that this does permit non-Latin alphanumeric characters based on the current locale.
+		if(!\ctype_alnum($c) && \strpos('@_-.', $c) === false){
+			return false;
+		}
+	}
+
+	return true;
+}
+
+/**
+ * Check whether a file path is of a permitted type.
+ * Used to reject URLs and phar files from functions that access local file paths,
+ * such as addAttachment.
+ *
+ * @param string $path A relative or absolute path to a file
+ *
+ * @return bool
+ */
+function isPermittedPath($path){
+	return !\preg_match('#^[a-z]+://#i', $path);
+}
+
