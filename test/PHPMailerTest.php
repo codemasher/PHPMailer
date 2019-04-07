@@ -88,7 +88,7 @@ final class PHPMailerTest extends TestCase{
 
 		// avoid console spam on CI
 		if(!$this->IS_CI){
-			$this->Mail->setLogger($this->getDebugLogger());
+#			$this->Mail->setLogger($this->getDebugLogger());
 		}
 
 		$this->Mail->loglevel = $this->Mail::DEBUG_CONNECTION; //Full debug output
