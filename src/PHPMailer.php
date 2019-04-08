@@ -375,20 +375,11 @@ class PHPMailer extends MailerAbstract{
 	public $DKIM_extraHeaders = [];
 
 	/**
-	 * DKIM private key file path.
+	 * DKIM private key file path or key string.
 	 *
 	 * @var string
 	 */
 	public $DKIM_private = '';
-
-	/**
-	 * DKIM private key string.
-	 *
-	 * If set, takes precedence over `$DKIM_private`.
-	 *
-	 * @var string
-	 */
-	public $DKIM_private_string = '';
 
 	/**
 	 * Callback Action function name.
@@ -1069,13 +1060,7 @@ class PHPMailer extends MailerAbstract{
 			}
 
 			// Sign with DKIM if enabled
-			if(
-				!empty($this->DKIM_domain) && !empty($this->DKIM_selector) && (
-					!empty($this->DKIM_private_string) || (
-						!empty($this->DKIM_private) && isPermittedPath($this->DKIM_private) && \file_exists($this->DKIM_private)
-					)
-				)
-			){
+			if(!empty($this->DKIM_domain) && !empty($this->DKIM_selector) && !empty($this->DKIM_private)){
 				$header_dkim = $this->DKIM_Add(
 					$this->MIMEHeader.$this->mailHeader,
 					$this->encodeHeader(secureHeader($this->Subject)),

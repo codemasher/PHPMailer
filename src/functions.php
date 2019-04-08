@@ -700,10 +700,14 @@ function DKIM_Sign(string $signHeader, string $key, string $passphrase = null):s
 		throw new PHPMailerException('invalid DKIM private key');
 	}
 
-	if(\is_file($key)){
+	if(\file_exists($key) && \is_file($key)){
 
 		if(!\is_readable($key)){
 			throw new PHPMailerException('DKIM private key file not readable');
+		}
+
+		if(!isPermittedPath($key)){
+			throw new PHPMailerException('path to DKIM private key is not permitted');
 		}
 
 		$key = \file_get_contents($key);
