@@ -362,7 +362,7 @@ function get_mime_type(string $ext = ''):string{
  *
  * @return string
  */
-function filenameToType($filename){
+function filenameToType(string $filename):string{
 	// In case the path is a URL, strip any query string before getting extension
 	$qpos = \strpos($filename, '?');
 
@@ -468,7 +468,7 @@ function isShellSafe(string $string):bool{
  *
  * @return bool
  */
-function isPermittedPath($path){
+function isPermittedPath(string $path):bool{
 	return !\preg_match('#^[a-z]+://#i', $path);
 }
 
