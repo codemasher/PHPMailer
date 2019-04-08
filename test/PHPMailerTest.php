@@ -2108,14 +2108,6 @@ EOT;
 	 * Test OAuth method
 	 */
 	public function testOAuth(){
-		$this->markTestIncomplete('@todo');
-
-		$PHPMailer  = new PHPMailer();
-		$reflection = new \ReflectionClass($PHPMailer);
-		$property   = $reflection->getProperty('oauth');
-		$property->setAccessible(true);
-		$property->setValue($PHPMailer, true);
-		$this->assertTrue($PHPMailer->getOAuth());
 
 		$options = [
 			'provider'     => 'dummyprovider',
@@ -2127,8 +2119,8 @@ EOT;
 
 		$oauth = new OAuth($options);
 		$this->assertInstanceOf(OAuth::class, $oauth);
-		$subject = $PHPMailer->setOAuth($oauth);
+		$subject = $this->Mail->setOAuth($oauth);
 		$this->assertNull($subject);
-		$this->assertInstanceOf(OAuth::class, $PHPMailer->getOAuth());
+		$this->assertInstanceOf(OAuth::class, $this->Mail->getOAuth());
 	}
 }
