@@ -1376,7 +1376,6 @@ EOT;
 	 * Encoding and charset tests.
 	 */
 	public function testEncodings(){
-		$this->Mail->CharSet = 'iso-8859-1';
 		$this->assertEquals(
 			'=A1Hola!_Se=F1or!',
 			$this->Mail->encodeQ("\xa1Hola! Se\xf1or!", 'text'),
@@ -1392,7 +1391,6 @@ EOT;
 			$this->Mail->encodeQ("\xa1Hola! Se\xf1or!", 'phrase'),
 			'Q Encoding (phrase) failed'
 		);
-		$this->Mail->CharSet = 'UTF-8';
 		$this->assertEquals(
 			'=C2=A1Hola!_Se=C3=B1or!',
 			$this->Mail->encodeQ("\xc2\xa1Hola! Se\xc3\xb1or!", 'text'),
