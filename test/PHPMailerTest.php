@@ -899,18 +899,14 @@ EOT;
 		$this->Mail->Subject .= ': HTML + unnamed embedded image';
 		$this->Mail->setMessageContentType(true);
 
-		if(!$this->Mail->addStringEmbeddedImage(
+		$this->Mail->addStringEmbeddedImage(
 			file_get_contents(realpath($this->INCLUDE_DIR.'/examples/images/phpmailer_mini.png')),
 			hash('sha256', 'phpmailer_mini.png').'@phpmailer.0',
 			'', //Intentionally empty name
 			'base64',
 			'', //Intentionally empty MIME type
 			'inline'
-		)){
-			$this->assertTrue(false, $this->Mail->ErrorInfo);
-
-			return;
-		}
+		);
 
 		$this->buildBody();
 		$this->assertTrue($this->Mail->send(), $this->Mail->ErrorInfo);
