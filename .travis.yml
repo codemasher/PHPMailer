@@ -31,4 +31,5 @@ matrix:
     - php: 7.4snapshot
     - php: nightly
   allow_failures:
+    - php: 7.4snapshot
     - php: nightly
