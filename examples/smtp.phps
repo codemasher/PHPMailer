@@ -15,7 +15,7 @@ require '../vendor/autoload.php';
 //Create a new PHPMailer instance
 $mail = new PHPMailer;
 //Tell PHPMailer to use SMTP
-$mail->isSMTP();
+$mail->setMailerSMTP();
 //Enable SMTP debugging
 // 0 = off (for production use)
 // 1 = client messages

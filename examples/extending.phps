@@ -29,7 +29,7 @@ class myPHPMailer extends PHPMailer{
 		//Set a default 'From' address
 		$this->setFrom('joe@example.com', 'Joe User');
 		//Send via SMTP
-		$this->isSMTP();
+		$this->setMailerSMTP();
 		//Equivalent to setting `Host`, `Port` and `SMTPSecure` all at once
 		$this->host = 'tls://smtp.example.com:587';
 		//Set an HTML and plain-text body, import relative image references

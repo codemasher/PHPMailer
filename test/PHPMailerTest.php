@@ -112,8 +112,8 @@ final class PHPMailerTest extends TestCase{
 		$this->Mail->Sender = 'unit_test@phpmailer.example.com';
 
 		strlen($this->Mail->host) > 0
-			? $this->Mail->isSMTP()
-			: $this->Mail->isMail();
+			? $this->Mail->setMailerSMTP()
+			: $this->Mail->setMailerMail();
 
 		if(defined('TEST_MAIL_TO') && !empty(TEST_MAIL_TO)){
 			$this->setAddress(TEST_MAIL_TO, 'Test User', 'to');
@@ -554,7 +554,7 @@ final class PHPMailerTest extends TestCase{
 		$justfold = str_repeat('e', $this->Mail::LINE_LENGTH_STD + 10);
 		//This should not change
 		$noencode = 'eeeeeeeeee';
-		$this->Mail->isMail();
+		$this->Mail->setMailerMail();
 		//Expected results
 
 		$bencoderes       = '=?UTF-8?B?w6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6k=?='.
@@ -610,7 +610,7 @@ final class PHPMailerTest extends TestCase{
 	 * @group network
 	 */
 	public function testHtml(){
-		$this->Mail->isHTML(true);
+		$this->Mail->setMessageContentType(true);
 		$this->Mail->Subject .= ': HTML only';
 
 		$this->Mail->Body = <<<'EOT'
@@ -639,7 +639,7 @@ EOT;
 	 * @group network
 	 */
 	public function testDsn(){
-		$this->Mail->isHTML(true);
+		$this->Mail->setMessageContentType(true);
 		$this->Mail->Subject .= ': HTML only';
 
 		$this->Mail->Body = <<<'EOT'
@@ -698,7 +698,7 @@ EOT;
 	 * @group network
 	 */
 	public function testHtmlIso8859(){
-		$this->Mail->isHTML(true);
+		$this->Mail->setMessageContentType(true);
 		$this->Mail->Subject .= ': ISO-8859-1 HTML';
 		$this->Mail->CharSet = 'iso-8859-1';
 
@@ -727,7 +727,7 @@ EOT;
 	 * @group network
 	 */
 	public function testHtmlUtf8(){
-		$this->Mail->isHTML(true);
+		$this->Mail->setMessageContentType(true);
 		$this->Mail->Subject .= ': UTF-8 HTML Пустое тело сообщения';
 		$this->Mail->CharSet = 'UTF-8';
 
@@ -757,7 +757,7 @@ EOT;
 	 * @group network
 	 */
 	public function testUtf8WithEmbeddedImage(){
-		$this->Mail->isHTML(true);
+		$this->Mail->setMessageContentType(true);
 		$this->Mail->Subject .= ': UTF-8 with embedded image';
 		$this->Mail->CharSet = 'UTF-8';
 
@@ -793,7 +793,7 @@ EOT;
 	 * @group network
 	 */
 	public function testPlainUtf8(){
-		$this->Mail->isHTML(false);
+		$this->Mail->setMessageContentType(false);
 		$this->Mail->Subject .= ': UTF-8 plain text';
 		$this->Mail->CharSet = 'UTF-8';
 
@@ -869,7 +869,7 @@ EOT;
 	public function testHTMLAttachment(){
 		$this->Mail->Body    = 'This is the <strong>HTML</strong> part of the email.';
 		$this->Mail->Subject .= ': HTML + Attachment';
-		$this->Mail->isHTML(true);
+		$this->Mail->setMessageContentType(true);
 		$this->Mail->CharSet = 'UTF-8';
 
 		if(!$this->Mail->addAttachment(
@@ -897,7 +897,7 @@ EOT;
 	public function testHTMLStringEmbedNoName(){
 		$this->Mail->Body    = 'This is the <strong>HTML</strong> part of the email.';
 		$this->Mail->Subject .= ': HTML + unnamed embedded image';
-		$this->Mail->isHTML(true);
+		$this->Mail->setMessageContentType(true);
 
 		if(!$this->Mail->addStringEmbeddedImage(
 			file_get_contents(realpath($this->INCLUDE_DIR.'/examples/images/phpmailer_mini.png')),
@@ -924,7 +924,7 @@ EOT;
 	public function testHTMLMultiAttachment(){
 		$this->Mail->Body    = 'This is the <strong>HTML</strong> part of the email.';
 		$this->Mail->Subject .= ': HTML + multiple Attachment';
-		$this->Mail->isHTML(true);
+		$this->Mail->setMessageContentType(true);
 
 		if(!$this->Mail->addAttachment(
 			realpath($this->INCLUDE_DIR.'/examples/images/phpmailer_mini.png'),
@@ -960,7 +960,7 @@ EOT;
 		                       'cid:my-attach">'.
 		                       'Here is an image!';
 		$this->Mail->Subject .= ': Embedded Image';
-		$this->Mail->isHTML(true);
+		$this->Mail->setMessageContentType(true);
 
 		if(!$this->Mail->addEmbeddedImage(
 			realpath($this->INCLUDE_DIR.'/examples/images/phpmailer.png'),
@@ -992,7 +992,7 @@ EOT;
 		                       'cid:my-attach">'.
 		                       'Here is an image!</a>';
 		$this->Mail->Subject .= ': Embedded Image + Attachment';
-		$this->Mail->isHTML(true);
+		$this->Mail->setMessageContentType(true);
 
 		if(!$this->Mail->addEmbeddedImage(
 			realpath($this->INCLUDE_DIR.'/examples/images/phpmailer.png'),
@@ -1044,7 +1044,7 @@ EOT;
 		$this->Mail->Body    = 'This is the <strong>HTML</strong> part of the email.';
 		$this->Mail->AltBody = 'This is the text part of the email.';
 		$this->Mail->Subject .= ': AltBody + Attachment';
-		$this->Mail->isHTML(true);
+		$this->Mail->setMessageContentType(true);
 
 		if(!$this->Mail->addAttachment(__FILE__, 'test_attach.txt')){
 			$this->assertTrue(false, $this->Mail->ErrorInfo);
@@ -1085,7 +1085,7 @@ EOT;
 		$subject = $this->Mail->Subject;
 
 		$this->Mail->Subject = $subject.': sendmail';
-		$this->Mail->isSendmail();
+		$this->Mail->setMailerSendmail();
 
 		$this->assertTrue($this->Mail->send(), $this->Mail->ErrorInfo);
 	}
@@ -1101,7 +1101,7 @@ EOT;
 			$subject = $this->Mail->Subject;
 
 			$this->Mail->Subject = $subject.': qmail';
-			$this->Mail->isQmail();
+			$this->Mail->setMailerQmail();
 			$this->assertTrue($this->Mail->send(), $this->Mail->ErrorInfo);
 		}
 		else{
@@ -1139,7 +1139,7 @@ EOT;
 		$this->assertTrue($this->Mail->getAllRecipientAddresses()['bcctestmailsend@example.com']);
 
 		$this->Mail->createHeader();
-		$this->Mail->isMail();
+		$this->Mail->setMailerMail();
 		$this->assertTrue($this->Mail->send(), $this->Mail->ErrorInfo);
 		$msg = $this->Mail->getSentMIMEMessage();
 		$this->assertStringNotContainsString("\r\n\r\nMIME-Version:", $msg, 'Incorrect MIME headers');
@@ -1154,7 +1154,7 @@ EOT;
 		$this->buildBody();
 		$this->Mail->Body    = '';
 		$this->Mail->Subject = $this->Mail->Subject.': Empty Body';
-		$this->Mail->isMail();
+		$this->Mail->setMailerMail();
 		$this->Mail->AllowEmpty = true;
 		$this->assertTrue($this->Mail->send(), $this->Mail->ErrorInfo);
 		$this->Mail->AllowEmpty = false;
@@ -1175,7 +1175,7 @@ EOT;
 			$this->Mail->hasLineLongerThanMax($this->Mail->Body),
 			'Test content does not contain long lines!'
 		);
-		$this->Mail->isHTML();
+		$this->Mail->setMessageContentType();
 		$this->buildBody();
 		$this->Mail->AltBody  = $this->Mail->Body;
 		$this->Mail->Encoding = '8bit';
@@ -1360,7 +1360,7 @@ EOT;
 	 * @group network
 	 */
 	public function testBCCAddressing(){
-		$this->Mail->isSMTP();
+		$this->Mail->setMailerSMTP();
 		$this->Mail->Subject .= ': BCC-only addressing';
 		$this->buildBody();
 		$this->Mail->clearAllRecipients();
@@ -1715,7 +1715,7 @@ EOT;
 		$this->Mail->DKIM_selector   = 'phpmailer';
 		$this->Mail->DKIM_passphrase = ''; //key is not encrypted
 		$this->assertTrue($this->Mail->send(), 'DKIM signed mail failed');
-		$this->Mail->isMail();
+		$this->Mail->setMailerMail();
 		$this->assertTrue($this->Mail->send(), 'DKIM signed mail via mail() failed');
 		unlink($privatekeyfile);
 	}
@@ -1727,7 +1727,7 @@ EOT;
 	 */
 	public function testLineBreaks(){
 		//May have been altered by earlier tests, can interfere with line break format
-		$this->Mail->isSMTP();
+		$this->Mail->setMailerSMTP();
 		$this->Mail->preSend();
 		$unixsrc    = "hello\nWorld\nAgain\n";
 		$macsrc     = "hello\rWorld\rAgain\r";
@@ -1765,7 +1765,7 @@ EOT;
 	 */
 	public function testLineLength(){
 		//May have been altered by earlier tests, can interfere with line break format
-		$this->Mail->isSMTP();
+		$this->Mail->setMailerSMTP();
 		$this->Mail->preSend();
 		$oklen  = str_repeat(str_repeat('0', $this->Mail::LINE_LENGTH_MAX)."\r\n", 2);
 		$badlen = str_repeat(str_repeat('1', $this->Mail::LINE_LENGTH_MAX + 1)."\r\n", 2);
@@ -1777,7 +1777,7 @@ EOT;
 			'Long line not detected (middle)'
 		);
 		$this->assertFalse($this->Mail->hasLineLongerThanMax($oklen), 'Long line false positive');
-		$this->Mail->isHTML(false);
+		$this->Mail->setMessageContentType(false);
 		$this->Mail->Subject  .= ': Line length test';
 		$this->Mail->CharSet  = 'UTF-8';
 		$this->Mail->Encoding = '8bit';
@@ -1819,11 +1819,11 @@ EOT;
 		$this->Mail->addCustomHeader('SomeHeader: Some Value');
 		$this->Mail->clearCustomHeaders();
 		$this->Mail->clearAttachments();
-		$this->Mail->isHTML(false);
-		$this->Mail->isSMTP();
-		$this->Mail->isMail();
-		$this->Mail->isSendmail();
-		$this->Mail->isQmail();
+		$this->Mail->setMessageContentType(false);
+		$this->Mail->setMailerSMTP();
+		$this->Mail->setMailerMail();
+		$this->Mail->setMailerSendmail();
+		$this->Mail->setMailerQmail();
 		$this->Mail->setLanguage('fr');
 		$this->Mail->Sender = '';
 		$this->Mail->createHeader();
@@ -2108,6 +2108,8 @@ EOT;
 	 * Test OAuth method
 	 */
 	public function testOAuth(){
+		$this->markTestIncomplete('@todo');
+
 		$PHPMailer  = new PHPMailer();
 		$reflection = new \ReflectionClass($PHPMailer);
 		$property   = $reflection->getProperty('oauth');

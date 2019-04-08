@@ -17,10 +17,9 @@ require '../vendor/autoload.php';
 $pop = POP3::popBeforeSmtp('pop3.example.com', 110, 30, 'username', 'password', 1);
 
 //Create a new PHPMailer instance
-//Passing true to the constructor enables the use of exceptions for error handling
-$mail = new PHPMailer(true);
+$mail = new PHPMailer;
 try{
-	$mail->isSMTP();
+	$mail->setMailerSMTP();
 	//Enable SMTP debugging
 	// 0 = off (for production use)
 	// 1 = client messages

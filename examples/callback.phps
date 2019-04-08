@@ -45,7 +45,7 @@ require_once '../vendor/autoload.php';
 $mail = new PHPMailer;
 
 try{
-	$mail->isMail();
+	$mail->setMailerMail();
 	$mail->setFrom('you@example.com', 'Your Name');
 	$mail->addAddress('jane@example.com', 'Jane Doe');
 	$mail->addCC('john@example.com', 'John Doe');

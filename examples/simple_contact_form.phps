@@ -57,7 +57,7 @@ if(array_key_exists('to', $_POST)){
 	}
 	if(!$err){
 		$mail = new PHPMailer;
-		$mail->isSMTP();
+		$mail->setMailerSMTP();
 		$mail->host    = 'localhost';
 		$mail->port    = 2500;
 		$mail->CharSet = 'utf-8';

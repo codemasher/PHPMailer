@@ -17,7 +17,7 @@ if(array_key_exists('email', $_POST)){
 	$mail = new PHPMailer;
 	//Tell PHPMailer to use SMTP - requires a local mail server
 	//Faster and safer than using mail()
-	$mail->isSMTP();
+	$mail->setMailerSMTP();
 	$mail->host = 'localhost';
 	$mail->port = 25;
 
@@ -33,7 +33,7 @@ if(array_key_exists('email', $_POST)){
 	if($mail->addReplyTo($_POST['email'], $_POST['name'])){
 		$mail->Subject = 'PHPMailer contact form';
 		//Keep it simple - don't use HTML
-		$mail->isHTML(false);
+		$mail->setMessageContentType(false);
 		//Build a simple message body
 		$mail->Body = <<<EOT
 Email: {$_POST['email']}
