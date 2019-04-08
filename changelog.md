@@ -252,7 +252,7 @@ This is a major update that breaks backwards compatibility.
 * Add Slovenian translation (Thanks to Klemen Tušar)
 * More efficient word wrapping
 * Add support for S/MIME signing with additional CA certificate (thanks to @IgitBuh)
-* Fix incorrect MIME structure when using S/MIME signing and isMail() (#372)
+* Fix incorrect MIME structure when using S/MIME signing and setMailerMail() (#372)
 * Improved checks and error messages for missing extensions
 * Store and report SMTP errors more consistently
 * Add MIME multipart preamble for better Outlook compatibility
@@ -384,7 +384,7 @@ This is a major update that breaks backwards compatibility.
 
 ## Version 5.2.4 (February 19, 2013)
 * Fix tag and version bug.
-* un-deprecate isSMTP(), isMail(), IsSendmail() and isQmail().
+* un-deprecate setMailerSMTP(), setMailerMail(), IsSendmail() and setMailerQmail().
 * Numerous translation updates
 
 ## Version 5.2.3 (February 8, 2013)
