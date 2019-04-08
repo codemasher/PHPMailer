@@ -1434,11 +1434,8 @@ EOT;
 		openssl_pkey_export($pk, $pkeyout, $password);
 		file_put_contents($keyfile, $pkeyout);
 
-		$this->Mail->sign(
-			$certfile,
-			$keyfile,
-			$password
-		);
+		$this->Mail->setSign($certfile, $keyfile, $password);
+
 		$this->assertTrue($this->Mail->send(), 'S/MIME signing failed');
 
 		$msg = $this->Mail->getSentMIMEMessage();
@@ -1520,12 +1517,8 @@ EOT;
 		openssl_pkey_export($pk, $pkeyout, $password);
 		file_put_contents($keyfile, $pkeyout);
 
-		$this->Mail->sign(
-			$certfile,
-			$keyfile,
-			$password,
-			$cacertfile
-		);
+		$this->Mail->setSign($certfile, $keyfile, $password, $cacertfile);
+
 		$this->assertTrue($this->Mail->send(), 'S/MIME signing with CA failed');
 		unlink($cacertfile);
 		unlink($cakeyfile);

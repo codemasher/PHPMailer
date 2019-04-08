@@ -1511,14 +1511,18 @@ class PHPMailer extends MailerAbstract{
 
 	/**
 	 * Close the active SMTP session if one exists.
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailer
 	 */
-	public function smtpClose():void{
+	public function smtpClose():PHPMailer{
 		if($this->smtp instanceof SMTP){
 			if($this->smtp->connected()){
 				$this->smtp->quit();
 				$this->smtp->close();
 			}
 		}
+
+		return $this;
 	}
 
 	/**
@@ -1684,11 +1688,13 @@ class PHPMailer extends MailerAbstract{
 	 * Wraps the message body to the number of chars set in the WordWrap property.
 	 * You should only do this to plain-text bodies as wrapping HTML tags may break them.
 	 * This is called automatically by createBody(), so you don't need to call it yourself.
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailer
 	 */
-	public function setWordWrap():void{
+	public function setWordWrap():PHPMailer{
 
 		if($this->WordWrap < 1){
-			return;
+			return $this;
 		}
 
 		switch($this->message_type){
@@ -1702,6 +1708,8 @@ class PHPMailer extends MailerAbstract{
 				$this->Body = $this->wrapText($this->Body, $this->WordWrap);
 				break;
 		}
+
+		return $this;
 	}
 
 	/**
@@ -2612,8 +2620,6 @@ class PHPMailer extends MailerAbstract{
 	}
 
 	/**
-	 * @todo: return $this
-	 *
 	 * Add a string or binary attachment (non-filesystem).
 	 * This method can be used to attach ascii or binary data,
 	 * such as a BLOB record from a database.
@@ -2623,6 +2629,8 @@ class PHPMailer extends MailerAbstract{
 	 * @param string $encoding    File encoding (see $Encoding)
 	 * @param string $type        File extension (MIME) type
 	 * @param string $disposition Disposition to use
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailer
 	 */
 	public function addStringAttachment(
 		string $string,
@@ -2630,7 +2638,7 @@ class PHPMailer extends MailerAbstract{
 		string $encoding = self::ENCODING_BASE64,
 		string $type = '',
 		string $disposition = 'attachment'
-	):void{
+	):PHPMailer{
 		// If a MIME type is not specified, try to work it out from the file name
 		if(empty($type)){
 			$type = filenameToType($filename);
@@ -2647,6 +2655,8 @@ class PHPMailer extends MailerAbstract{
 			6 => $disposition,
 			7 => 0,
 		];
+
+		return $this;
 	}
 
 	/**
@@ -2666,7 +2676,8 @@ class PHPMailer extends MailerAbstract{
 	 * @param string $type        File MIME type
 	 * @param string $disposition Disposition to use
 	 *
-	 * @return bool True on successfully adding an attachment
+	 * @return \PHPMailer\PHPMailer\PHPMailer
+	 * @throws \PHPMailer\PHPMailer\PHPMailerException
 	 */
 	public function addEmbeddedImage(
 		string $path,
@@ -2675,13 +2686,16 @@ class PHPMailer extends MailerAbstract{
 		string $encoding = self::ENCODING_BASE64,
 		string $type = '',
 		string $disposition = 'inline'
-	):bool{
+	):PHPMailer{
 
-		// @todo: throw exception instead return false - this is ambiguous
 		if(!isPermittedPath($path) || !@\is_file($path)){
-			$this->setError($this->lang('file_access').$path);
+			// @todo: errorhandler
+			$msg = $this->lang('file_access').$path;
+			$this->setError($msg);
 
-			return false;
+			if($this->exceptions){
+				throw new PHPMailerException($msg);
+			}
 		}
 
 		// If a MIME type is not specified, try to work it out from the file name
@@ -2706,12 +2720,10 @@ class PHPMailer extends MailerAbstract{
 			7 => $cid,
 		];
 
-		return true;
+		return $this;
 	}
 
 	/**
-	 * @todo: return $this (bool return always true)
-	 *
 	 * Add an embedded stringified attachment.
 	 * This can include images, sounds, and just about any other document type.
 	 * If your filename doesn't contain an extension, be sure to set the $type to an appropriate MIME type.
@@ -2726,7 +2738,7 @@ class PHPMailer extends MailerAbstract{
 	 * @param string $type        MIME type - will be used in preference to any automatically derived type
 	 * @param string $disposition Disposition to use
 	 *
-	 * @return bool True on successfully adding an attachment
+	 * @return \PHPMailer\PHPMailer\PHPMailer
 	 */
 	public function addStringEmbeddedImage(
 		string $string,
@@ -2735,7 +2747,7 @@ class PHPMailer extends MailerAbstract{
 		string $encoding = self::ENCODING_BASE64,
 		string $type = '',
 		string $disposition = 'inline'
-	):bool{
+	):PHPMailer{
 		// If a MIME type is not specified, try to work it out from the name
 		if(empty($type) && !empty($name)){
 			$type = filenameToType($name);
@@ -2753,7 +2765,7 @@ class PHPMailer extends MailerAbstract{
 			7 => $cid,
 		];
 
-		return true;
+		return $this;
 	}
 
 	/**
@@ -2816,13 +2828,13 @@ class PHPMailer extends MailerAbstract{
 	}
 
 	/**
-	 * @todo: return $this
-	 *
 	 * Clear queued addresses of given kind.
 	 *
 	 * @param string $kind 'to', 'cc', or 'bcc'
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailer
 	 */
-	public function clearQueuedAddresses(string $kind):void{
+	public function clearQueuedAddresses(string $kind):PHPMailer{
 
 		$this->RecipientsQueue = \array_filter(
 			$this->RecipientsQueue,
@@ -2830,14 +2842,16 @@ class PHPMailer extends MailerAbstract{
 				return $params[0] !== $kind;
 			}
 		);
+
+		return $this;
 	}
 
 	/**
-	 * @todo: return $this
-	 *
 	 * Clear all To recipients.
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailer
 	 */
-	public function clearAddresses():void{
+	public function clearAddresses():PHPMailer{
 
 		foreach($this->to as $to){
 			unset($this->all_recipients[\strtolower($to[0])]);
@@ -2845,14 +2859,16 @@ class PHPMailer extends MailerAbstract{
 
 		$this->to = [];
 		$this->clearQueuedAddresses('to');
+
+		return $this;
 	}
 
 	/**
-	 * @todo: return $this
-	 *
 	 * Clear all CC recipients.
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailer
 	 */
-	public function clearCCs():void{
+	public function clearCCs():PHPMailer{
 
 		foreach($this->cc as $cc){
 			unset($this->all_recipients[\strtolower($cc[0])]);
@@ -2860,14 +2876,16 @@ class PHPMailer extends MailerAbstract{
 
 		$this->cc = [];
 		$this->clearQueuedAddresses('cc');
+
+		return $this;
 	}
 
 	/**
-	 * @todo: return $this
-	 *
 	 * Clear all BCC recipients.
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailer
 	 */
-	public function clearBCCs():void{
+	public function clearBCCs():PHPMailer{
 
 		foreach($this->bcc as $bcc){
 			unset($this->all_recipients[\strtolower($bcc[0])]);
@@ -2875,47 +2893,57 @@ class PHPMailer extends MailerAbstract{
 
 		$this->bcc = [];
 		$this->clearQueuedAddresses('bcc');
+
+		return $this;
 	}
 
 	/**
-	 * @todo: return $this
-	 *
 	 * Clear all ReplyTo recipients.
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailer
 	 */
-	public function clearReplyTos():void{
+	public function clearReplyTos():PHPMailer{
 		$this->ReplyTo      = [];
 		$this->ReplyToQueue = [];
+
+		return $this;
 	}
 
 	/**
-	 * @todo: return $this
-	 *
 	 * Clear all recipient types.
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailer
 	 */
-	public function clearAllRecipients():void{
+	public function clearAllRecipients():PHPMailer{
 		$this->to              = [];
 		$this->cc              = [];
 		$this->bcc             = [];
 		$this->all_recipients  = [];
 		$this->RecipientsQueue = [];
+
+		return $this;
 	}
 
 	/**
-	 * @todo: return $this
-	 *
 	 * Clear all filesystem, string, and binary attachments.
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailer
 	 */
-	public function clearAttachments():void{
+	public function clearAttachments():PHPMailer{
 		$this->attachment = [];
+
+		return $this;
 	}
 
 	/**
-	 * @todo: return $this
-	 *
 	 * Clear all custom headers.
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailer
 	 */
-	public function clearCustomHeaders():void{
+	public function clearCustomHeaders():PHPMailer{
 		$this->CustomHeader = [];
+
+		return $this;
 	}
 
 	/**
@@ -2988,20 +3016,22 @@ class PHPMailer extends MailerAbstract{
 	}
 
 	/**
-	 * @todo: return $this
-	 *
 	 * Add a custom header.
 	 * $name value can be overloaded to contain
 	 * both header name and value (name:value).
 	 *
 	 * @param string      $name  Custom header name
 	 * @param string|null $value Header value
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailer
 	 */
-	public function addCustomHeader(string $name, string $value = null):void{
+	public function addCustomHeader(string $name, string $value = null):PHPMailer{
 
 		$this->CustomHeader[] = $value === null
 			? explode(':', $name, 2) // Value passed in as name:value
 			: [$name, $value];
+
+		return $this;
 	}
 
 	/**
@@ -3189,20 +3219,27 @@ class PHPMailer extends MailerAbstract{
 	}
 
 	/**
-	 * @todo: return $this
-	 *
 	 * Set the public and private key files and password for S/MIME signing.
 	 *
 	 * @param string $cert_filename
 	 * @param string $key_filename
 	 * @param string $key_pass            Password for private key
 	 * @param string $extracerts_filename Optional path to chain certificate
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailer
 	 */
-	public function sign(string $cert_filename, string $key_filename, string $key_pass, string $extracerts_filename = ''):void{
+	public function setSign(
+		string $cert_filename,
+		string $key_filename,
+		string $key_pass,
+		string $extracerts_filename = ''
+	):PHPMailer{
 		$this->sign_cert_file       = $cert_filename;
 		$this->sign_key_file        = $key_filename;
 		$this->sign_key_pass        = $key_pass;
 		$this->sign_extracerts_file = $extracerts_filename;
+
+		return $this;
 	}
 
 	/**

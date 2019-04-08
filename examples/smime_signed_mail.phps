@@ -74,7 +74,7 @@ $mail->AltBody = 'This is a plain-text message body';
 $mail->addAttachment('images/phpmailer_mini.png');
 
 //Configure message signing (the actual signing does not occur until sending)
-$mail->sign(
+$mail->setSign(
 	'/path/to/cert.crt', //The location of your certificate file
 	'/path/to/cert.key', //The location of your private key file
 	//The password you protected your private key with (not the Import Password!
