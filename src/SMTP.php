@@ -421,8 +421,10 @@ class SMTP extends MailerAbstract{
 	 * Don't use this function without first trying to use QUIT.
 	 *
 	 * @see quit()
+	 *
+	 * @return \PHPMailer\PHPMailer\SMTP
 	 */
-	public function close():void{
+	public function close():SMTP{
 		$this->setError('');
 		$this->server_caps = null;
 
@@ -432,6 +434,8 @@ class SMTP extends MailerAbstract{
 			$this->socket = null; //Makes for cleaner serialization
 			$this->edebug('Connection: closed', $this::DEBUG_CONNECTION);
 		}
+
+		return $this;
 	}
 
 	/**
