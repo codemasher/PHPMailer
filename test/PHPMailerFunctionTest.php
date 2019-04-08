@@ -532,4 +532,28 @@ class PHPMailerFunctionTest extends TestCase{
 	public function testGetMimeType(){
 		$this->assertSame('application/pdf', PHPMailer\get_mime_type('pdf'), 'MIME TYPE lookup failed');
 	}
+
+	public function testEncodeQ(){
+		$this->assertSame('=A1Hola!_Se=F1or!', PHPMailer\encodeQ("\xa1Hola! Se\xf1or!", 'text'), 'Q Encoding (text) failed');
+		$this->assertSame('=A1Hola!_Se=F1or!', PHPMailer\encodeQ("\xa1Hola! Se\xf1or!", 'comment'), 'Q Encoding (comment) failed');
+		$this->assertSame('=A1Hola!_Se=F1or!', PHPMailer\encodeQ("\xa1Hola! Se\xf1or!", 'phrase'), 'Q Encoding (phrase) failed');
+		$this->assertSame('=C2=A1Hola!_Se=C3=B1or!', PHPMailer\encodeQ("\xc2\xa1Hola! Se\xc3\xb1or!", 'text'), 'Q Encoding (text) failed');
+		//Strings containing '=' are a special case
+		$this->assertSame('Nov=C3=A1=3D', PHPMailer\encodeQ("Nov\xc3\xa1=", 'text'), 'Q Encoding (text) failed 2');
+	}
+
+	/**
+	 * DKIM header canonicalization tests.
+	 *
+	 * @see https://tools.ietf.org/html/rfc6376#section-3.4.2
+	 */
+	public function testDKIMHeaderCanonicalization(){
+		//Example from https://tools.ietf.org/html/rfc6376#section-3.4.5
+		$this->assertSame(
+			"a:X\r\nb:Y Z\r\n",
+			PHPMailer\DKIM_HeaderC("A: X\r\nB : Y\t\r\n\tZ  \r\n"),
+			'DKIM header canonicalization incorrect'
+		);
+	}
+
 }

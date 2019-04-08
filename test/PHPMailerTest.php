@@ -1372,33 +1372,6 @@ EOT;
 	 * Encoding and charset tests.
 	 */
 	public function testEncodings(){
-		$this->assertEquals(
-			'=A1Hola!_Se=F1or!',
-			$this->Mail->encodeQ("\xa1Hola! Se\xf1or!", 'text'),
-			'Q Encoding (text) failed'
-		);
-		$this->assertEquals(
-			'=A1Hola!_Se=F1or!',
-			$this->Mail->encodeQ("\xa1Hola! Se\xf1or!", 'comment'),
-			'Q Encoding (comment) failed'
-		);
-		$this->assertEquals(
-			'=A1Hola!_Se=F1or!',
-			$this->Mail->encodeQ("\xa1Hola! Se\xf1or!", 'phrase'),
-			'Q Encoding (phrase) failed'
-		);
-		$this->assertEquals(
-			'=C2=A1Hola!_Se=C3=B1or!',
-			$this->Mail->encodeQ("\xc2\xa1Hola! Se\xc3\xb1or!", 'text'),
-			'Q Encoding (text) failed'
-		);
-		//Strings containing '=' are a special case
-		$this->assertEquals(
-			'Nov=C3=A1=3D',
-			$this->Mail->encodeQ("Nov\xc3\xa1=", 'text'),
-			'Q Encoding (text) failed 2'
-		);
-
 		$this->assertEquals($this->Mail->encodeString('hello', 'binary'), 'hello', 'Binary encoding changed input');
 		$this->Mail->ErrorInfo = '';
 		$this->Mail->encodeString('hello', 'asdfghjkl');
@@ -1576,22 +1549,6 @@ EOT;
 			'DKIM canonicalized empty body hash mismatch'
 		);
 		$this->assertEquals($this->Mail->DKIM_BodyC($prebody), $postbody, 'DKIM body canonicalization incorrect');
-	}
-
-	/**
-	 * DKIM header canonicalization tests.
-	 *
-	 * @see https://tools.ietf.org/html/rfc6376#section-3.4.2
-	 */
-	public function testDKIMHeaderCanonicalization(){
-		//Example from https://tools.ietf.org/html/rfc6376#section-3.4.5
-		$preheaders  = "A: X\r\nB : Y\t\r\n\tZ  \r\n";
-		$postheaders = "a:X\r\nb:Y Z\r\n";
-		$this->assertEquals(
-			$postheaders,
-			$this->Mail->DKIM_HeaderC($preheaders),
-			'DKIM header canonicalization incorrect'
-		);
 	}
 
 	/**

@@ -472,3 +472,255 @@ function isPermittedPath(string $path):bool{
 	return !\preg_match('#^[a-z]+://#i', $path);
 }
 
+
+/**
+ * Create a unique ID to use for boundaries.
+ *
+ * @return string
+ */
+function generateId():string{
+	$bytes = \random_bytes(32); //32 bytes = 256 bits
+
+	//We don't care about messing up base64 format here, just want a random string
+	return \str_replace(['=', '+', '/'], '', \base64_encode(\hash('sha256', $bytes, true)));
+}
+
+/**
+ * Does a string contain any 8-bit chars (in any charset)?
+ *
+ * @param string $text
+ *
+ * @return bool
+ */
+function has8bitChars(string $text):bool{
+	return (bool)\preg_match('/[\x80-\xFF]/', $text);
+}
+
+/**
+ * Strip newlines to prevent header injection.
+ *
+ * @param string $str
+ *
+ * @return string
+ */
+function secureHeader(string $str):string{
+	return \trim(\str_replace(["\r", "\n"], '', $str));
+}
+
+/**
+ * Find the last character boundary prior to $maxLength in a utf-8
+ * quoted-printable encoded string.
+ * Original written by Colin Brown.
+ *
+ * @param string $encodedText utf-8 QP text
+ * @param int    $maxLength   Find the last character boundary prior to this length
+ *
+ * @return int
+ */
+function utf8CharBoundary(string $encodedText, int $maxLength):int{
+	$foundSplitPos = false;
+	$lookBack      = 3;
+
+	while(!$foundSplitPos){
+		$lastChunk      = \substr($encodedText, $maxLength - $lookBack, $lookBack);
+		$encodedCharPos = \strpos($lastChunk, '=');
+
+		if($encodedCharPos !== false){
+			// Found start of encoded character byte within $lookBack block.
+			// Check the encoded byte value (the 2 chars after the '=')
+			$hex = \substr($encodedText, $maxLength - $lookBack + $encodedCharPos + 1, 2);
+			$dec = \hexdec($hex);
+
+			if($dec < 128){
+				// Single byte character.
+				// If the encoded char was found at pos 0, it will fit
+				// otherwise reduce maxLength to start of the encoded char
+				if($encodedCharPos > 0){
+					$maxLength -= $lookBack - $encodedCharPos;
+				}
+
+				$foundSplitPos = true;
+			}
+			elseif($dec >= 192){
+				// First byte of a multi byte character
+				// Reduce maxLength to split at start of character
+				$maxLength     -= $lookBack - $encodedCharPos;
+				$foundSplitPos = true;
+			}
+			elseif($dec < 192){
+				// Middle byte of a multi byte character, look further back
+				$lookBack += 3;
+			}
+		}
+		else{
+			// No encoded character found
+			$foundSplitPos = true;
+		}
+	}
+
+	return $maxLength;
+}
+
+/**
+ * Encode a string using Q encoding.
+ *
+ * @see http://tools.ietf.org/html/rfc2047#section-4.2
+ *
+ * @param string $str      the text to encode
+ * @param string $position Where the text is going to be used, see the RFC for what that means
+ *
+ * @return string
+ */
+function encodeQ(string $str, string $position = 'text'):string{
+	// There should not be any EOL in the string
+	$pattern = '';
+	$encoded = \str_replace(["\r", "\n"], '', $str);
+
+	switch(\strtolower($position)){
+		case 'phrase':
+			// RFC 2047 section 5.3
+			$pattern = '^A-Za-z0-9!*+\/ -';
+			break;
+		/*
+		 * RFC 2047 section 5.2.
+		 * Build $pattern without including delimiters and []
+		 */
+		/* @noinspection PhpMissingBreakStatementInspection */
+		case 'comment':
+			$pattern = '\(\)"';
+		/* Intentional fall through */
+		case 'text':
+		default:
+			// RFC 2047 section 5.1
+			// Replace every high ascii, control, =, ? and _ characters
+			/** @noinspection SuspiciousAssignmentsInspection */
+			$pattern = '\000-\011\013\014\016-\037\075\077\137\177-\377'.$pattern;
+	}
+
+	$matches = [];
+
+	if(\preg_match_all("/[{$pattern}]/", $encoded, $matches)){
+		// If the string contains an '=', make sure it's the first thing we replace
+		// so as to avoid double-encoding
+		$eqkey = \array_search('=', $matches[0]);
+
+		if($eqkey !== false){
+			unset($matches[0][$eqkey]);
+			\array_unshift($matches[0], '=');
+		}
+
+		foreach(\array_unique($matches[0]) as $char){
+			$encoded = \str_replace($char, '='.\sprintf('%02X', \ord($char)), $encoded);
+		}
+	}
+
+	// Replace spaces with _ (more readable than =20)
+	// RFC 2047 section 4.2(2)
+	return \str_replace(' ', '_', $encoded);
+}
+
+/**
+ * Quoted-Printable-encode a DKIM header.
+ *
+ * @param string $str
+ *
+ * @return string
+ */
+function DKIM_QP(string $str):string{
+	$line = '';
+	$len  = \strlen($str);
+
+	for($i = 0; $i < $len; ++$i){
+		$ord = \ord($str[$i]);
+
+		$line .= ($ord > 0x21 && $ord <= 0x3A) || $ord === 0x3C || ($ord > 0x3E && $ord <= 0x7E)
+			? $str[$i]
+			: '='.\sprintf('%02X', $ord);
+	}
+
+	return $line;
+}
+
+/**
+ * Generate a DKIM canonicalization header.
+ * Uses the 'relaxed' algorithm from RFC6376 section 3.4.2.
+ * Canonicalized headers should *always* use CRLF, regardless of mailer setting.
+ *
+ * @see    https://tools.ietf.org/html/rfc6376#section-3.4.2
+ *
+ * @param string $signHeader Header
+ *
+ * @return string
+ */
+function DKIM_HeaderC(string $signHeader):string{
+	// Unfold all header continuation lines
+	// Also collapses folded whitespace.
+	// Note PCRE \s is too broad a definition of whitespace; RFC5322 defines it as `[ \t]`
+	// @see https://tools.ietf.org/html/rfc5322#section-2.2
+	// That means this may break if you do something daft like put vertical tabs in your headers.
+	$signHeader = \preg_replace('/\r\n[ \t]+/', ' ', $signHeader);
+	$lines      = \explode("\r\n", $signHeader);
+
+	foreach($lines as $key => $line){
+		// If the header is missing a :, skip it as it's invalid
+		// This is likely to happen because the explode() above will also split
+		// on the trailing LE, leaving an empty line
+		if(\strpos($line, ':') === false){
+			continue;
+		}
+
+		[$heading, $value] = \explode(':', $line, 2);
+		// Lower-case header name
+		$heading = \strtolower($heading);
+		// Collapse white space within the value
+		$value = \preg_replace('/[ \t]{2,}/', ' ', $value);
+		// RFC6376 is slightly unclear here - it says to delete space at the *end* of each value
+		// But then says to delete space before and after the colon.
+		// Net result is the same as trimming both ends of the value.
+		// by elimination, the same applies to the field name
+		$lines[$key] = \trim($heading, " \t").':'.\trim($value, " \t");
+	}
+
+	return \implode("\r\n", $lines);
+}
+
+/**
+ * Generate a DKIM signature.
+ *
+ * @param string      $signHeader
+ * @param string      $key
+ * @param string|null $passphrase
+ *
+ * @return string The DKIM signature value
+ * @throws \PHPMailer\PHPMailer\PHPMailerException
+ */
+function DKIM_Sign(string $signHeader, string $key, string $passphrase = null):string{
+
+	if(empty($key)){
+		throw new PHPMailerException('invalid DKIM private key');
+	}
+
+	if(\is_file($key)){
+
+		if(!\is_readable($key)){
+			throw new PHPMailerException('DKIM private key file not readable');
+		}
+
+		$key = \file_get_contents($key);
+	}
+
+	$privKey = !empty($passphrase)
+		? \openssl_pkey_get_private($key, $passphrase)
+		: \openssl_pkey_get_private($key);
+
+	if(\openssl_sign($signHeader, $signature, $privKey, 'sha256WithRSAEncryption')){
+		\openssl_pkey_free($privKey);
+
+		return \base64_encode($signature);
+	}
+
+	\openssl_pkey_free($privKey);
+
+	return '';
+}
+

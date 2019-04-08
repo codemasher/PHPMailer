@@ -608,8 +608,8 @@ class PHPMailer extends MailerAbstract{
 	protected function mailPassthru(string $to, string $subject, string $body, string $header, string $params = null):bool{
 		//Check overloading of mail function to avoid double-encoding
 		$subject = \ini_get('mbstring.func_overload') & 1
-			? $this->secureHeader($subject)
-			: $this->encodeHeader($this->secureHeader($subject));
+			? secureHeader($subject)
+			: $this->encodeHeader(secureHeader($subject));
 
 		//Calling mail() with null params breaks
 		return !$this->UseSendmailOptions || $params === null
@@ -773,7 +773,7 @@ class PHPMailer extends MailerAbstract{
 
 		$params = [$kind, $address, $name];
 		// Enqueue addresses with IDN until we know the PHPMailer::$CharSet.
-		if($this->has8bitChars(\substr($address, ++$pos)) && idnSupported()){
+		if(has8bitChars(\substr($address, ++$pos)) && idnSupported()){
 
 			if($kind !== 'Reply-To'){
 				if(!\array_key_exists($address, $this->RecipientsQueue)){
@@ -875,7 +875,7 @@ class PHPMailer extends MailerAbstract{
 		$pos = \strrpos($address, '@');
 		if( // @todo: clarify
 			$pos === false
-			|| (!$this->has8bitChars(\substr($address, ++$pos)) || !idnSupported())
+			|| (!has8bitChars(\substr($address, ++$pos)) || !idnSupported())
 			&& !validateAddress($address, $this->validator)
 		){
 			// @todo: errorhandler
@@ -934,7 +934,7 @@ class PHPMailer extends MailerAbstract{
 		if(idnSupported() && !empty($this->CharSet) && $pos !== false){
 			$domain = \substr($address, ++$pos);
 			// Verify CharSet string is a valid one, and domain properly encoded in this CharSet.
-			if($this->has8bitChars($domain) && @\mb_check_encoding($domain, $this->CharSet)){
+			if(has8bitChars($domain) && @\mb_check_encoding($domain, $this->CharSet)){
 				$domain = \mb_convert_encoding($domain, 'UTF-8', $this->CharSet);
 				//Ignore IDE complaints about this line - method signature changed in PHP 5.4
 				$errorcode = 0;
@@ -1065,7 +1065,7 @@ class PHPMailer extends MailerAbstract{
 					? $this->addrAppend('To', $this->to)
 					: $this->headerLine('To', 'undisclosed-recipients:;');
 
-				$this->mailHeader .= $this->headerLine('Subject', $this->encodeHeader($this->secureHeader($this->Subject)));
+				$this->mailHeader .= $this->headerLine('Subject', $this->encodeHeader(secureHeader($this->Subject)));
 			}
 
 			// Sign with DKIM if enabled
@@ -1078,7 +1078,7 @@ class PHPMailer extends MailerAbstract{
 			){
 				$header_dkim = $this->DKIM_Add(
 					$this->MIMEHeader.$this->mailHeader,
-					$this->encodeHeader($this->secureHeader($this->Subject)),
+					$this->encodeHeader(secureHeader($this->Subject)),
 					$this->MIMEBody
 				);
 
@@ -1568,10 +1568,10 @@ class PHPMailer extends MailerAbstract{
 	public function addrFormat(array $addr):string{
 
 		if(empty($addr[1])){ // No name provided
-			return $this->secureHeader($addr[0]);
+			return secureHeader($addr[0]);
 		}
 
-		return $this->encodeHeader($this->secureHeader($addr[1]), 'phrase').' <'.$this->secureHeader($addr[0]).'>';
+		return $this->encodeHeader(secureHeader($addr[1]), 'phrase').' <'.secureHeader($addr[0]).'>';
 	}
 
 	/**
@@ -1619,7 +1619,7 @@ class PHPMailer extends MailerAbstract{
 							$len = $space_left;
 
 							if($is_utf8){
-								$len = $this->utf8CharBoundary($word, $len);
+								$len = utf8CharBoundary($word, $len);
 							}
 							elseif(\substr($word, $len - 1, 1) === '='){
 								--$len;
@@ -1649,7 +1649,7 @@ class PHPMailer extends MailerAbstract{
 						$len = $length;
 
 						if($is_utf8){
-							$len = $this->utf8CharBoundary($word, $len);
+							$len = utf8CharBoundary($word, $len);
 						}
 						elseif(\substr($word, $len - 1, 1) === '='){
 							--$len;
@@ -1692,62 +1692,6 @@ class PHPMailer extends MailerAbstract{
 		}
 
 		return $message;
-	}
-
-	/**
-	 * @todo: static -> extract to functions.php
-	 *
-	 * Find the last character boundary prior to $maxLength in a utf-8
-	 * quoted-printable encoded string.
-	 * Original written by Colin Brown.
-	 *
-	 * @param string $encodedText utf-8 QP text
-	 * @param int    $maxLength   Find the last character boundary prior to this length
-	 *
-	 * @return int
-	 */
-	public function utf8CharBoundary(string $encodedText, int $maxLength):int{
-		$foundSplitPos = false;
-		$lookBack      = 3;
-
-		while(!$foundSplitPos){
-			$lastChunk      = \substr($encodedText, $maxLength - $lookBack, $lookBack);
-			$encodedCharPos = \strpos($lastChunk, '=');
-
-			if($encodedCharPos !== false){
-				// Found start of encoded character byte within $lookBack block.
-				// Check the encoded byte value (the 2 chars after the '=')
-				$hex = \substr($encodedText, $maxLength - $lookBack + $encodedCharPos + 1, 2);
-				$dec = \hexdec($hex);
-
-				if($dec < 128){
-					// Single byte character.
-					// If the encoded char was found at pos 0, it will fit
-					// otherwise reduce maxLength to start of the encoded char
-					if($encodedCharPos > 0){
-						$maxLength -= $lookBack - $encodedCharPos;
-					}
-
-					$foundSplitPos = true;
-				}
-				elseif($dec >= 192){
-					// First byte of a multi byte character
-					// Reduce maxLength to split at start of character
-					$maxLength     -= $lookBack - $encodedCharPos;
-					$foundSplitPos = true;
-				}
-				elseif($dec < 192){
-					// Middle byte of a multi byte character, look further back
-					$lookBack += 3;
-				}
-			}
-			else{
-				// No encoded character found
-				$foundSplitPos = true;
-			}
-		}
-
-		return $maxLength;
 	}
 
 	/**
@@ -1818,7 +1762,7 @@ class PHPMailer extends MailerAbstract{
 
 		// mail() sets the subject itself
 		if($this->Mailer !== 'mail'){
-			$header .= $this->headerLine('Subject', $this->encodeHeader($this->secureHeader($this->Subject)));
+			$header .= $this->headerLine('Subject', $this->encodeHeader(secureHeader($this->Subject)));
 		}
 
 		// Only allow a custom message ID if it conforms to RFC 5322 section 3.6.4
@@ -1926,20 +1870,6 @@ class PHPMailer extends MailerAbstract{
 	}
 
 	/**
-	 * @todo: static -> extract to functions.php
-	 *
-	 * Create a unique ID to use for boundaries.
-	 *
-	 * @return string
-	 */
-	protected function generateId():string{
-		$bytes = \random_bytes(32); //32 bytes = 256 bits
-
-		//We don't care about messing up base64 format here, just want a random string
-		return \str_replace(['=', '+', '/'], '', \base64_encode(\hash('sha256', $bytes, true)));
-	}
-
-	/**
 	 * Assemble the message body.
 	 * Returns an empty string on failure.
 	 *
@@ -1950,7 +1880,7 @@ class PHPMailer extends MailerAbstract{
 	public function createBody(){
 		$body = '';
 		//Create unique IDs and preset boundaries
-		$this->uniqueid    = $this->generateId();
+		$this->uniqueid    = generateId();
 		$this->boundary[1] = 'b1_'.$this->uniqueid;
 		$this->boundary[2] = 'b2_'.$this->uniqueid;
 		$this->boundary[3] = 'b3_'.$this->uniqueid;
@@ -1965,7 +1895,7 @@ class PHPMailer extends MailerAbstract{
 		$bodyCharSet  = $this->CharSet;
 
 		//Can we do a 7-bit downgrade?
-		if($bodyEncoding === $this::ENCODING_8BIT && !$this->has8bitChars($this->Body)){
+		if($bodyEncoding === $this::ENCODING_8BIT && !has8bitChars($this->Body)){
 			$bodyEncoding = $this::ENCODING_7BIT;
 			//All ISO 8859, Windows codepage and UTF-8 charsets are ascii compatible up to 7-bit
 			$bodyCharSet = 'us-ascii';
@@ -1981,7 +1911,7 @@ class PHPMailer extends MailerAbstract{
 		$altBodyCharSet  = $this->CharSet;
 
 		//Can we do a 7-bit downgrade?
-		if($altBodyEncoding === $this::ENCODING_8BIT && !$this->has8bitChars($this->AltBody)){
+		if($altBodyEncoding === $this::ENCODING_8BIT && !has8bitChars($this->AltBody)){
 			$altBodyEncoding = $this::ENCODING_7BIT;
 			//All ISO 8859, Windows codepage and UTF-8 charsets are ascii compatible up to 7-bit
 			$altBodyCharSet = 'us-ascii';
@@ -2409,7 +2339,7 @@ class PHPMailer extends MailerAbstract{
 				$mime[] = \sprintf('--%s%s', $boundary, $this->LE);
 				//Only include a filename property if we have one
 				$mime[] = !empty($name)
-					? \sprintf('Content-Type: %s; name="%s"%s', $type, $this->encodeHeader($this->secureHeader($name)), $this->LE)
+					? \sprintf('Content-Type: %s; name="%s"%s', $type, $this->encodeHeader(secureHeader($name)), $this->LE)
 					: \sprintf('Content-Type: %s%s', $type, $this->LE);
 
 				// RFC1341 part 5 says 7bit is assumed if not specified
@@ -2426,7 +2356,7 @@ class PHPMailer extends MailerAbstract{
 				// Fixes a warning in IETF's msglint MIME checker
 				// Allow for bypassing the Content-Disposition header totally
 				if(!empty($disposition)){
-					$encoded_name = $this->encodeHeader($this->secureHeader($name));
+					$encoded_name = $this->encodeHeader(secureHeader($name));
 
 					if(\preg_match('/[ \(\)<>@,;:\\"\/\[\]\?=]/', $encoded_name)){
 						$mime[] = \sprintf(
@@ -2604,7 +2534,7 @@ class PHPMailer extends MailerAbstract{
 			$encoding = 'Q';
 			//Recalc max line length for Q encoding - see comments on B encode
 			$maxlen  = $this::LINE_LENGTH_STD - $lengthsub - 8 - \strlen($this->CharSet);
-			$encoded = $this->encodeQ($str, $position);
+			$encoded = encodeQ($str, $position);
 			$encoded = $this->wrapText($encoded, $maxlen, true);
 			$encoded = \str_replace('='.$this->LE, "\n", \trim($encoded));
 			$encoded = \preg_replace('/^(.*)$/m', ' =?'.$this->CharSet."?$encoding?\\1?=", $encoded);
@@ -2638,19 +2568,6 @@ class PHPMailer extends MailerAbstract{
 	 */
 	public function hasMultiBytes(string $str):bool{
 		return \strlen($str) > \mb_strlen($str, $this->CharSet);
-	}
-
-	/**
-	 * @todo: static -> extract to functions.php
-	 *
-	 * Does a string contain any 8-bit chars (in any charset)?
-	 *
-	 * @param string $text
-	 *
-	 * @return bool
-	 */
-	public function has8bitChars(string $text):bool{
-		return (bool)\preg_match('/[\x80-\xFF]/', $text);
 	}
 
 	/**
@@ -2707,66 +2624,6 @@ class PHPMailer extends MailerAbstract{
 	 */
 	public function encodeQP(string $string):string{
 		return $this->normalizeBreaks(\quoted_printable_encode($string));
-	}
-
-	/**
-	 * @todo: static -> extract to functions.php
-	 *
-	 * Encode a string using Q encoding.
-	 *
-	 * @see http://tools.ietf.org/html/rfc2047#section-4.2
-	 *
-	 * @param string $str      the text to encode
-	 * @param string $position Where the text is going to be used, see the RFC for what that means
-	 *
-	 * @return string
-	 */
-	public function encodeQ(string $str, string $position = 'text'):string{
-		// There should not be any EOL in the string
-		$pattern = '';
-		$encoded = \str_replace(["\r", "\n"], '', $str);
-
-		switch(\strtolower($position)){
-			case 'phrase':
-				// RFC 2047 section 5.3
-				$pattern = '^A-Za-z0-9!*+\/ -';
-				break;
-			/*
-             * RFC 2047 section 5.2.
-             * Build $pattern without including delimiters and []
-             */
-			/* @noinspection PhpMissingBreakStatementInspection */
-			case 'comment':
-				$pattern = '\(\)"';
-			/* Intentional fall through */
-			case 'text':
-			default:
-				// RFC 2047 section 5.1
-				// Replace every high ascii, control, =, ? and _ characters
-				/** @noinspection SuspiciousAssignmentsInspection */
-				$pattern = '\000-\011\013\014\016-\037\075\077\137\177-\377'.$pattern;
-		}
-
-		$matches = [];
-
-		if(\preg_match_all("/[{$pattern}]/", $encoded, $matches)){
-			// If the string contains an '=', make sure it's the first thing we replace
-			// so as to avoid double-encoding
-			$eqkey = \array_search('=', $matches[0]);
-
-			if($eqkey !== false){
-				unset($matches[0][$eqkey]);
-				\array_unshift($matches[0], '=');
-			}
-
-			foreach(\array_unique($matches[0]) as $char){
-				$encoded = \str_replace($char, '='.\sprintf('%02X', \ord($char)), $encoded);
-			}
-		}
-
-		// Replace spaces with _ (more readable than =20)
-		// RFC 2047 section 4.2(2)
-		return \str_replace(' ', '_', $encoded);
 	}
 
 	/**
@@ -3324,19 +3181,6 @@ class PHPMailer extends MailerAbstract{
 	}
 
 	/**
-	 * @todo: static -> extract to functions.php
-	 *
-	 * Strip newlines to prevent header injection.
-	 *
-	 * @param string $str
-	 *
-	 * @return string
-	 */
-	public function secureHeader(string $str):string{
-		return \trim(\str_replace(["\r", "\n"], '', $str));
-	}
-
-	/**
 	 * Normalize line breaks in a string.
 	 * Converts UNIX LF, Mac CR and Windows CRLF line breaks into a single line break format.
 	 * Defaults to CRLF (for message bodies) and preserves consecutive breaks.
@@ -3377,106 +3221,6 @@ class PHPMailer extends MailerAbstract{
 	}
 
 	/**
-	 * @todo: static -> extract to functions.php
-	 *
-	 * Quoted-Printable-encode a DKIM header.
-	 *
-	 * @param string $txt
-	 *
-	 * @return string
-	 */
-	public function DKIM_QP(string $txt):string{
-		$line = '';
-		$len  = \strlen($txt);
-
-		for($i = 0; $i < $len; ++$i){
-			$ord = \ord($txt[$i]);
-
-			$line .= ($ord > 0x21 && $ord <= 0x3A) || $ord === 0x3C || ($ord > 0x3E && $ord <= 0x7E)
-				? $txt[$i]
-				: '='.\sprintf('%02X', $ord);
-		}
-
-		return $line;
-	}
-
-	/**
-	 * @todo: make static -> extract to functions.php
-	 *
-	 * Generate a DKIM signature.
-	 *
-	 * @param string $signHeader
-	 *
-	 * @return string The DKIM signature value
-	 */
-	public function DKIM_Sign(string $signHeader):string{
-
-		$privKeyStr = !empty($this->DKIM_private_string)
-			? $this->DKIM_private_string
-			// @todo: $this->DKIM_private is superfluous - add is_file() check instead
-			: \file_get_contents($this->DKIM_private);
-
-		$privKey = !empty($this->DKIM_passphrase)
-			? \openssl_pkey_get_private($privKeyStr, $this->DKIM_passphrase)
-			: \openssl_pkey_get_private($privKeyStr);
-
-		if(\openssl_sign($signHeader, $signature, $privKey, 'sha256WithRSAEncryption')){
-			\openssl_pkey_free($privKey);
-
-			return \base64_encode($signature);
-		}
-
-		\openssl_pkey_free($privKey);
-
-		return '';
-	}
-
-	/**
-	 * @todo: static -> extract to functions.php
-	 *
-	 * Generate a DKIM canonicalization header.
-	 * Uses the 'relaxed' algorithm from RFC6376 section 3.4.2.
-	 * Canonicalized headers should *always* use CRLF, regardless of mailer setting.
-	 *
-	 * @see    https://tools.ietf.org/html/rfc6376#section-3.4.2
-	 *
-	 * @param string $signHeader Header
-	 *
-	 * @return string
-	 */
-	public function DKIM_HeaderC(string $signHeader):string{
-		// Unfold all header continuation lines
-		// Also collapses folded whitespace.
-		// Note PCRE \s is too broad a definition of whitespace; RFC5322 defines it as `[ \t]`
-		// @see https://tools.ietf.org/html/rfc5322#section-2.2
-		// That means this may break if you do something daft like put vertical tabs in your headers.
-		$signHeader = \preg_replace('/\r\n[ \t]+/', ' ', $signHeader);
-		$lines      = \explode("\r\n", $signHeader);
-
-		foreach($lines as $key => $line){
-			// If the header is missing a :, skip it as it's invalid
-			// This is likely to happen because the explode() above will also split
-			// on the trailing LE, leaving an empty line
-			if(\strpos($line, ':') === false){
-				continue;
-			}
-
-			[$heading, $value] = \explode(':', $line, 2);
-			// Lower-case header name
-			$heading = \strtolower($heading);
-			// Collapse white space within the value
-			$value = \preg_replace('/[ \t]{2,}/', ' ', $value);
-			// RFC6376 is slightly unclear here - it says to delete space at the *end* of each value
-			// But then says to delete space before and after the colon.
-			// Net result is the same as trimming both ends of the value.
-			// by elimination, the same applies to the field name
-			$lines[$key] = \trim($heading, " \t").':'.\trim($value, " \t");
-		}
-
-		return \implode("\r\n", $lines);
-	}
-
-	/**
 	 * Generate a DKIM canonicalization body.
 	 * Uses the 'simple' algorithm from RFC6376 section 3.4.3.
 	 * Canonicalized bodies should *always* use CRLF, regardless of mailer setting.
@@ -3508,6 +3252,7 @@ class PHPMailer extends MailerAbstract{
 	 * @param string $body         Body
 	 *
 	 * @return string
+	 * @throws \PHPMailer\PHPMailer\PHPMailerException
 	 */
 	public function DKIM_Add(string $headers_line, string $subject, string $body):string{
 		$DKIMsignatureType     = 'rsa-sha256'; // Signature & hash algorithms
@@ -3579,15 +3324,15 @@ class PHPMailer extends MailerAbstract{
 			$extraHeaderValues .= $value."\r\n";
 
 			if($this->DKIM_copyHeaderFields){
-				$extraCopyHeaderFields .= "\t|".\str_replace('|', '=7C', $this->DKIM_QP($value)).";\r\n";
+				$extraCopyHeaderFields .= "\t|".\str_replace('|', '=7C', DKIM_QP($value)).";\r\n";
 			}
 		}
 
 		if($this->DKIM_copyHeaderFields){
-			$from               = \str_replace('|', '=7C', $this->DKIM_QP($from_header));
-			$to                 = \str_replace('|', '=7C', $this->DKIM_QP($to_header));
-			$date               = \str_replace('|', '=7C', $this->DKIM_QP($date_header));
-			$subject            = \str_replace('|', '=7C', $this->DKIM_QP($subject_header));
+			$from               = \str_replace('|', '=7C', DKIM_QP($from_header));
+			$to                 = \str_replace('|', '=7C', DKIM_QP($to_header));
+			$date               = \str_replace('|', '=7C', DKIM_QP($date_header));
+			$subject            = \str_replace('|', '=7C', DKIM_QP($subject_header));
 			$copiedHeaderFields = "\tz=$from\r\n".
 			                      "\t|$to\r\n".
 			                      "\t|$date\r\n".
@@ -3616,7 +3361,7 @@ class PHPMailer extends MailerAbstract{
 		            "\tbh=".$DKIMb64.";\r\n".
 		            "\tb=";
 
-		$toSign = $this->DKIM_HeaderC(
+		$toSign = DKIM_HeaderC(
 			$from_header."\r\n".
 			$to_header."\r\n".
 			$date_header."\r\n".
@@ -3625,7 +3370,20 @@ class PHPMailer extends MailerAbstract{
 			$dkimhdrs
 		);
 
-		$signed = $this->DKIM_Sign($toSign);
+
+		try{
+			$signed = DKIM_Sign($toSign, $this->DKIM_private, $this->DKIM_passphrase);
+		}
+		catch(PHPMailerException $e){
+			// @todo: errorhandler
+			$this->setError($e->getMessage());
+
+			if($this->exceptions){
+				throw $e;
+			}
+
+			return '';
+		}
 
 		return $this->normalizeBreaks($dkimhdrs.$signed).$this->LE;
 	}
@@ -3639,7 +3397,7 @@ class PHPMailer extends MailerAbstract{
 	 * @return bool
 	 */
 	public function hasLineLongerThanMax(string $str):bool{
-		return (bool)\preg_match('/^(.{'.($this::LINE_LENGTH_MAX + strlen($this->LE)).',})/m', $str);
+		return (bool)\preg_match('/^(.{'.($this::LINE_LENGTH_MAX + \strlen($this->LE)).',})/m', $str);
 	}
 
 	/**
