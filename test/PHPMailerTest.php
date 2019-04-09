@@ -664,33 +664,36 @@ EOT;
 	/**
 	 * createBody test of switch case
 	 *
+	 * @todo
+	 *
 	 * @group network
 	 */
 	public function testCreateBody(){
 		$PHPMailer  = new PHPMailer();
+		$uid   = \PHPMailer\PHPMailer\generateId();
 		$reflection = new \ReflectionClass($PHPMailer);
 		$property   = $reflection->getProperty('message_type');
 		$property->setAccessible(true);
 		$property->setValue($PHPMailer, 'inline');
-		$this->assertIsString($PHPMailer->createBody());
+		$this->assertIsString($PHPMailer->createBody($uid));
 
 		$property->setValue($PHPMailer, 'attach');
-		$this->assertIsString($PHPMailer->createBody());
+		$this->assertIsString($PHPMailer->createBody($uid));
 
 		$property->setValue($PHPMailer, 'inline_attach');
-		$this->assertIsString($PHPMailer->createBody());
+		$this->assertIsString($PHPMailer->createBody($uid));
 
 		$property->setValue($PHPMailer, 'alt');
-		$this->assertIsString($PHPMailer->createBody());
+		$this->assertIsString($PHPMailer->createBody($uid));
 
 		$property->setValue($PHPMailer, 'alt_inline');
-		$this->assertIsString($PHPMailer->createBody());
+		$this->assertIsString($PHPMailer->createBody($uid));
 
 		$property->setValue($PHPMailer, 'alt_attach');
-		$this->assertIsString($PHPMailer->createBody());
+		$this->assertIsString($PHPMailer->createBody($uid));
 
 		$property->setValue($PHPMailer, 'alt_inline_attach');
-		$this->assertIsString($PHPMailer->createBody());
+		$this->assertIsString($PHPMailer->createBody($uid));
 	}
 
 	/**
@@ -1124,7 +1127,6 @@ EOT;
 		$this->assertTrue($this->Mail->getAllRecipientAddresses()['cctestmailsend@example.com']);
 		$this->assertTrue($this->Mail->getAllRecipientAddresses()['bcctestmailsend@example.com']);
 
-		$this->Mail->createHeader();
 		$this->Mail->setMailerMail();
 		$this->assertTrue($this->Mail->send(), $this->Mail->ErrorInfo);
 		$msg = $this->Mail->getSentMIMEMessage();
@@ -1774,7 +1776,6 @@ EOT;
 		$this->Mail->setMailerQmail();
 		$this->Mail->setLanguage('fr');
 		$this->Mail->Sender = '';
-		$this->Mail->createHeader();
 
 		//Line break normalization
 		$eol = $this->Mail->getLE();

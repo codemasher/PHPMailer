@@ -486,6 +486,21 @@ function generateId():string{
 }
 
 /**
+ * @param string|null $uniqueid
+ *
+ * @return array
+ */
+function generateBoundary(string $uniqueid = null):array{
+	$uniqueid = $uniqueid ?? generateId();
+
+	return [
+		1 => 'b1_'.$uniqueid,
+		2 => 'b2_'.$uniqueid,
+		3 => 'b3_'.$uniqueid,
+	];
+}
+
+/**
  * Does a string contain any 8-bit chars (in any charset)?
  *
  * @param string $text
