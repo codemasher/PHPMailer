@@ -657,6 +657,28 @@ class PHPMailer extends MailerAbstract{
 	}
 
 	/**
+	 * Get the OAuth instance.
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailerOAuthInterface
+	 */
+	public function getOAuth():PHPMailerOAuthInterface{
+		return $this->oauth;
+	}
+
+	/**
+	 * Set an OAuth instance.
+	 *
+	 * @param \PHPMailer\PHPMailer\PHPMailerOAuthInterface
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailer
+	 */
+	public function setOAuth(PHPMailerOAuthInterface $oauth):PHPMailer{
+		$this->oauth = $oauth;
+
+		return$this;
+	}
+
+	/**
 	 * Add a "To" address.
 	 *
 	 * @param string      $address The email address to send to
@@ -3380,26 +3402,6 @@ class PHPMailer extends MailerAbstract{
 		if(!empty($this->action_function) && \is_callable($this->action_function)){
 			\call_user_func($this->action_function, $isSent, $to, $cc, $bcc, $subject, $body, $from, $extra);
 		}
-	}
-
-	/**
-	 * @todo
-	 * Get the OAuth instance.
-	 *
-	 * @return OAuth
-	 */
-	public function getOAuth():OAuth{
-		return $this->oauth;
-	}
-
-	/**
-	 * @todo
-	 * Set an OAuth instance.
-	 *
-	 * @param OAuth $oauth
-	 */
-	public function setOAuth(OAuth $oauth){
-		$this->oauth = $oauth;
 	}
 
 }

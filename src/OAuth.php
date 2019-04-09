@@ -23,6 +23,7 @@ namespace PHPMailer\PHPMailer;
 use League\OAuth2\Client\Grant\RefreshToken;
 use League\OAuth2\Client\Provider\AbstractProvider;
 use League\OAuth2\Client\Token\AccessToken;
+use League\OAuth2\Client\Token\AccessTokenInterface;
 
 /**
  * OAuth - OAuth2 authentication wrapper class.
@@ -32,7 +33,7 @@ use League\OAuth2\Client\Token\AccessToken;
  *
  * @author  Marcus Bointon (Synchro/coolbru) <phpmailer@synchromedia.co.uk>
  */
-class OAuth{
+class OAuth implements PHPMailerOAuthInterface{
 
 	/**
 	 * An instance of the League OAuth Client Provider.
@@ -94,18 +95,18 @@ class OAuth{
 	/**
 	 * Get a new RefreshToken.
 	 *
-	 * @return RefreshToken
+	 * @return \League\OAuth2\Client\Grant\RefreshToken
 	 */
-	protected function getGrant(){
+	protected function getGrant():RefreshToken{
 		return new RefreshToken();
 	}
 
 	/**
 	 * Get a new AccessToken.
 	 *
-	 * @return AccessToken
+	 * @return \League\OAuth2\Client\Token\AccessTokenInterface
 	 */
-	protected function getToken(){
+	protected function getToken():AccessTokenInterface{
 		return $this->provider->getAccessToken(
 			$this->getGrant(),
 			['refresh_token' => $this->oauthRefreshToken]
@@ -117,18 +118,12 @@ class OAuth{
 	 *
 	 * @return string
 	 */
-	public function getOauth64(){
+	public function getAuthString():string{
 		// Get a new token if it's not available or has expired
-		if(null === $this->oauthToken or $this->oauthToken->hasExpired()){
+		if($this->oauthToken === null || $this->oauthToken->hasExpired()){
 			$this->oauthToken = $this->getToken();
 		}
 
-		return base64_encode(
-			'user='.
-			$this->oauthUserEmail.
-			"\001auth=Bearer ".
-			$this->oauthToken.
-			"\001\001"
-		);
+		return base64_encode(sprintf($this::AUTH_XOAUTH2, $this->oauthUserEmail, $this->oauthToken));
 	}
 }

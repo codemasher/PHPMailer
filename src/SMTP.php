@@ -333,12 +333,12 @@ class SMTP extends MailerAbstract{
 
 			case 'XOAUTH2':
 				//The OAuth instance must be set up prior to requesting auth.
-				if(!$OAuth instanceof OAuth){
+				if(!$OAuth instanceof PHPMailerOAuthInterface){
 					return false;
 				}
 
 				// Start authentication
-				if(!$this->sendCommand('AUTH', 'AUTH XOAUTH2 '.$OAuth->getOauth64(), [235])){
+				if(!$this->sendCommand('AUTH', 'AUTH XOAUTH2 '.$OAuth->getAuthString(), [235])){
 					return false;
 				}
 

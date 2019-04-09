@@ -15,6 +15,7 @@ namespace PHPMailer\Test;
 use PHPMailer\PHPMailer\OAuth;
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\PHPMailerException;
+use PHPMailer\PHPMailer\PHPMailerOAuthInterface;
 use PHPMailer\PHPMailer\POP3;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
@@ -2068,9 +2069,8 @@ EOT;
 		];
 
 		$oauth = new OAuth($options);
-		$this->assertInstanceOf(OAuth::class, $oauth);
-		$subject = $this->Mail->setOAuth($oauth);
-		$this->assertNull($subject);
-		$this->assertInstanceOf(OAuth::class, $this->Mail->getOAuth());
+		$this->assertInstanceOf(PHPMailerOAuthInterface::class, $oauth);
+		$this->Mail->setOAuth($oauth);
+		$this->assertInstanceOf(PHPMailerOAuthInterface::class, $this->Mail->getOAuth());
 	}
 }
