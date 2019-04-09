@@ -2037,10 +2037,11 @@ class PHPMailer extends MailerAbstract{
 					throw new PHPMailerException($this->lang('extension_missing').'openssl');
 				}
 
-				$file = \tempnam(\sys_get_temp_dir(), 'pkcs7file');
-				\file_put_contents($file, $body);
+				$tmpdir = \sys_get_temp_dir();
+				$file   = \tempnam($tmpdir, 'pkcs7file');
+				$signed = \tempnam($tmpdir, 'pkcs7signed');
 
-				$signed = \tempnam(\sys_get_temp_dir(), 'pkcs7signed');
+				\file_put_contents($file, $body);
 				\touch($signed);
 
 				// Workaround for PHP bug https://bugs.php.net/bug.php?id=69197
