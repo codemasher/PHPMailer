@@ -2959,12 +2959,11 @@ class PHPMailer extends MailerAbstract{
 	 * @param null|callable $advanced Whether to use the internal HTML to text converter
 	 *                                or your own custom converter
 	 *
-	 * @return string $message The transformed message Body
+	 * @return \PHPMailer\PHPMailer\PHPMailer
 	 *
 	 * @see PHPMailer::html2text()
-	 *
 	 */
-	public function msgHTML(string $message, string $basedir = '', $advanced = null):string{
+	public function msgHTML(string $message, string $basedir = '', $advanced = null):PHPMailer{
 		\preg_match_all('/(src|background)=["\'](.*)["\']/Ui', $message, $images);
 
 		if(\array_key_exists(2, $images)){
@@ -3056,7 +3055,7 @@ class PHPMailer extends MailerAbstract{
 			$this->AltBody = 'This is an HTML-only message. To view it, activate HTML in your email application.'.$this->LE;
 		}
 
-		return $this->Body;
+		return $this;
 	}
 
 	/**
