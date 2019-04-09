@@ -1405,8 +1405,6 @@ EOT;
 	 * @requires extension openssl
 	 */
 	public function testSigning(){
-		$this->markTestIncomplete('fix signing in createBody()');
-
 		$this->Mail->Subject .= ': S/MIME signing';
 		$this->Mail->Body    = 'This message is S/MIME signed.';
 		$this->buildBody();
@@ -1463,8 +1461,6 @@ EOT;
 	 * @requires extension openssl
 	 */
 	public function testSigningWithCA(){
-		$this->markTestIncomplete('fix signing in createBody()');
-
 		$this->Mail->Subject .= ': S/MIME signing with CA';
 		$this->Mail->Body    = 'This message is S/MIME signed with an extra CA cert.';
 		$this->buildBody();

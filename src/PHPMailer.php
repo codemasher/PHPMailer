@@ -2037,12 +2037,14 @@ class PHPMailer extends MailerAbstract{
 					throw new PHPMailerException($this->lang('extension_missing').'openssl');
 				}
 
-				// @todo: openssl_pkcs7_sign() expects parameter 1 to be a valid path, resource given
-				$file   = \fopen('php://temp', 'rb+');
-				$signed = \fopen('php://temp', 'rb+');
-				\fwrite($file, $body);
+				$file = \tempnam(\sys_get_temp_dir(), 'pkcs7file');
+				\file_put_contents($file, $body);
 
-				// Workaround for PHP bug https://bugs.php.net/bug.php?id=69197 @todo: does this bug still exist in 7.2+???
+				$signed = \tempnam(\sys_get_temp_dir(), 'pkcs7signed');
+				\touch($signed);
+
+				// Workaround for PHP bug https://bugs.php.net/bug.php?id=69197
+				// this bug still exists in 7.2+ despite being closed and "fixed"
 				if(empty($this->sign_extracerts_file)){
 					$sign = \openssl_pkcs7_sign(
 						$file,
@@ -2064,18 +2066,18 @@ class PHPMailer extends MailerAbstract{
 					);
 				}
 
-				\fclose($file);
+				$body = \file_get_contents($signed);
+
+				\unlink($file);
+				\unlink($signed);
 
 				if($sign){
-					$body = \file_get_contents($signed);
-					\fclose($signed);
 					//The message returned by openssl contains both headers and body, so need to split them up
 					$parts            = \explode("\n\n", $body, 2);
 					$this->MIMEHeader .= $parts[0].$this->LE.$this->LE;
 					$body             = $parts[1];
 				}
 				else{
-					\fclose($signed);
 					throw new PHPMailerException($this->lang('signing').\openssl_error_string());
 				}
 			}
