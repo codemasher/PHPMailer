@@ -116,7 +116,7 @@ This is a major update that breaks backwards compatibility.
 * To reduce code footprint, the examples folder is no longer included in composer deployments or github zip files
 * Trap low-level errors in SMTP, reports via debug output
 * More reliable folding of message headers
-* Inject your own SMTP implementation via `setSMTPInstance()` instead of having to subclass and override `getSMTPInstance()`.
+* Inject your own SMTP implementation via `setSMTP()` instead of having to subclass and override `getSMTP()`.
 * Make obtaining SMTP transaction ID more reliable
 * Better handling of unreliable PHP timeouts
 * Made `SMTPDebug = 4` slightly less noisy
@@ -149,7 +149,7 @@ This is a major update that breaks backwards compatibility.
 * Add links to CVE-2017-5223 resources
 
 ## Version 5.2.22 (January 5th 2017)
-* **SECURITY** Fix [CVE-2017-5223](https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2017-5223), local file disclosure vulnerability if content passed to `msgHTML()` is sourced from unfiltered user input. Reported by Yongxiang Li of Asiasecurity. The fix for this means that calls to `msgHTML()` without a `$basedir` will not import images with relative URLs, and relative URLs containing `..` will be ignored.
+* **SECURITY** Fix [CVE-2017-5223](https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2017-5223), local file disclosure vulnerability if content passed to `messageFromHTML()` is sourced from unfiltered user input. Reported by Yongxiang Li of Asiasecurity. The fix for this means that calls to `messageFromHTML()` without a `$basedir` will not import images with relative URLs, and relative URLs containing `..` will be ignored.
 * Add simple contact form example
 * Emoji in test content
 
@@ -218,7 +218,7 @@ This is a major update that breaks backwards compatibility.
 
 ## Version 5.2.12 (Sep 1st 2015)
 * Fix incorrect composer package dependencies
-* Skip existing embedded image `cid`s in `msgHTML`
+* Skip existing embedded image `cid`s in `messageFromHTML`
 
 ## Version 5.2.11 (Aug 31st 2015)
 * Don't switch to quoted-printable for long lines if already using base64
@@ -280,7 +280,7 @@ This is a major update that breaks backwards compatibility.
 * Improve PCRE detection in older PHP versions
 * Handle debug output consistently, and always in UTF-8
 * Allow user-defined debug output method via a callable
-* msgHTML now converts data URIs to embedded images
+* messageFromHTML now converts data URIs to embedded images
 * SMTP::getLastReply() will now always be populated
 * Improved example code in README
 * Ensure long filenames in Content-Disposition are encoded correctly
@@ -343,12 +343,12 @@ This is a major update that breaks backwards compatibility.
 * Update SyntaxHighlighter
 * Major overhaul and cleanup of example code
 * New PHPMailer graphic
-* msgHTML now uses RFC2392-compliant content ids
-* Add line break normalization function and use it in msgHTML
+* messageFromHTML now uses RFC2392-compliant content ids
+* Add line break normalization function and use it in messageFromHTML
 * Don't set unnecessary reply-to addresses
 * Make fakesendmail.sh a bit cleaner and safer
 * Set a content-transfer-encoding on multiparts (fixes msglint error)
-* Fix cid generation in msgHTML (Thanks to @digitalthought)
+* Fix cid generation in messageFromHTML (Thanks to @digitalthought)
 * Fix handling of multiple SMTP servers (Thanks to @NanoCaiordo)
 * SMTP->connect() now supports stream context options (Thanks to @stanislavdavid)
 * Add support for iCal event alternatives (Thanks to @reblutus)
