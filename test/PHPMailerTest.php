@@ -248,28 +248,28 @@ final class PHPMailerTest extends TestCase{
 	 * Check which default settings have been changed for the report.
 	 */
 	private function checkChanges(){
-		if(3 != $this->Mail->Priority){
+		if($this->Mail->Priority !== 3){
 			$this->addChange('Priority', $this->Mail->Priority);
 		}
-		if('8bit' != $this->Mail->Encoding){
+		if($this->Mail->Encoding !== '8bit'){
 			$this->addChange('Encoding', $this->Mail->Encoding);
 		}
-		if('iso-8859-1' != $this->Mail->CharSet){
+		if($this->Mail->CharSet !== 'iso-8859-1'){
 			$this->addChange('CharSet', $this->Mail->CharSet);
 		}
-		if('' != $this->Mail->Sender){
+		if($this->Mail->Sender !== ''){
 			$this->addChange('Sender', $this->Mail->Sender);
 		}
-		if(0 != $this->Mail->WordWrap){
+		if($this->Mail->WordWrap !== 0){
 			$this->addChange('WordWrap', $this->Mail->WordWrap);
 		}
-		if('mail' != $this->Mail->Mailer){
-			$this->addChange('Mailer', $this->Mail->Mailer);
+		if($this->Mail->getMailer() !== $this->Mail::MAILER_MAIL){
+			$this->addChange('Mailer', $this->Mail->getMailer());
 		}
-		if(25 != $this->Mail->port){
+		if($this->Mail->port !== 25){
 			$this->addChange('Port', $this->Mail->port);
 		}
-		if('localhost.localdomain' != $this->Mail->Helo){
+		if($this->Mail->Helo !== 'localhost.localdomain'){
 			$this->addChange('Helo', $this->Mail->Helo);
 		}
 		if($this->Mail->SMTPAuth){
@@ -611,7 +611,7 @@ final class PHPMailerTest extends TestCase{
 	 * @group network
 	 */
 	public function testHtml(){
-		$this->Mail->setMessageContentType(true);
+		$this->Mail->ContentType = $this->Mail::CONTENT_TYPE_TEXT_HTML;
 		$this->Mail->Subject .= ': HTML only';
 
 		$this->Mail->Body = <<<'EOT'
@@ -640,7 +640,7 @@ EOT;
 	 * @group network
 	 */
 	public function testDsn(){
-		$this->Mail->setMessageContentType(true);
+		$this->Mail->ContentType = $this->Mail::CONTENT_TYPE_TEXT_HTML;
 		$this->Mail->Subject .= ': HTML only';
 
 		$this->Mail->Body = <<<'EOT'
@@ -702,7 +702,7 @@ EOT;
 	 * @group network
 	 */
 	public function testHtmlIso8859(){
-		$this->Mail->setMessageContentType(true);
+		$this->Mail->ContentType = $this->Mail::CONTENT_TYPE_TEXT_HTML;
 		$this->Mail->Subject .= ': ISO-8859-1 HTML';
 		$this->Mail->CharSet = 'iso-8859-1';
 
@@ -731,7 +731,7 @@ EOT;
 	 * @group network
 	 */
 	public function testHtmlUtf8(){
-		$this->Mail->setMessageContentType(true);
+		$this->Mail->ContentType = $this->Mail::CONTENT_TYPE_TEXT_HTML;
 		$this->Mail->Subject .= ': UTF-8 HTML Пустое тело сообщения';
 		$this->Mail->CharSet = 'UTF-8';
 
@@ -761,7 +761,7 @@ EOT;
 	 * @group network
 	 */
 	public function testUtf8WithEmbeddedImage(){
-		$this->Mail->setMessageContentType(true);
+		$this->Mail->ContentType = $this->Mail::CONTENT_TYPE_TEXT_HTML;
 		$this->Mail->Subject .= ': UTF-8 with embedded image';
 		$this->Mail->CharSet = 'UTF-8';
 
@@ -797,7 +797,7 @@ EOT;
 	 * @group network
 	 */
 	public function testPlainUtf8(){
-		$this->Mail->setMessageContentType(false);
+		$this->Mail->ContentType = $this->Mail::CONTENT_TYPE_PLAINTEXT;
 		$this->Mail->Subject .= ': UTF-8 plain text';
 		$this->Mail->CharSet = 'UTF-8';
 
@@ -873,7 +873,7 @@ EOT;
 	public function testHTMLAttachment(){
 		$this->Mail->Body    = 'This is the <strong>HTML</strong> part of the email.';
 		$this->Mail->Subject .= ': HTML + Attachment';
-		$this->Mail->setMessageContentType(true);
+		$this->Mail->ContentType = $this->Mail::CONTENT_TYPE_TEXT_HTML;
 		$this->Mail->CharSet = 'UTF-8';
 
 		if(!$this->Mail->addAttachment(
@@ -901,7 +901,7 @@ EOT;
 	public function testHTMLStringEmbedNoName(){
 		$this->Mail->Body    = 'This is the <strong>HTML</strong> part of the email.';
 		$this->Mail->Subject .= ': HTML + unnamed embedded image';
-		$this->Mail->setMessageContentType(true);
+		$this->Mail->ContentType = $this->Mail::CONTENT_TYPE_TEXT_HTML;
 
 		$this->Mail->addStringEmbeddedImage(
 			file_get_contents(realpath($this->INCLUDE_DIR.'/examples/images/phpmailer_mini.png')),
@@ -924,7 +924,7 @@ EOT;
 	public function testHTMLMultiAttachment(){
 		$this->Mail->Body    = 'This is the <strong>HTML</strong> part of the email.';
 		$this->Mail->Subject .= ': HTML + multiple Attachment';
-		$this->Mail->setMessageContentType(true);
+		$this->Mail->ContentType = $this->Mail::CONTENT_TYPE_TEXT_HTML;
 
 		$this->Mail->addAttachment(
 			realpath($this->INCLUDE_DIR.'/examples/images/phpmailer_mini.png'),
@@ -950,7 +950,7 @@ EOT;
 		                       'cid:my-attach">'.
 		                       'Here is an image!';
 		$this->Mail->Subject .= ': Embedded Image';
-		$this->Mail->setMessageContentType(true);
+		$this->Mail->ContentType = $this->Mail::CONTENT_TYPE_TEXT_HTML;
 
 		$this->Mail->addEmbeddedImage(
 			realpath($this->INCLUDE_DIR.'/examples/images/phpmailer.png'),
@@ -981,7 +981,7 @@ EOT;
 		                       'cid:my-attach">'.
 		                       'Here is an image!</a>';
 		$this->Mail->Subject .= ': Embedded Image + Attachment';
-		$this->Mail->setMessageContentType(true);
+		$this->Mail->ContentType = $this->Mail::CONTENT_TYPE_TEXT_HTML;
 
 		if(!$this->Mail->addEmbeddedImage(
 			realpath($this->INCLUDE_DIR.'/examples/images/phpmailer.png'),
@@ -1033,7 +1033,7 @@ EOT;
 		$this->Mail->Body    = 'This is the <strong>HTML</strong> part of the email.';
 		$this->Mail->AltBody = 'This is the text part of the email.';
 		$this->Mail->Subject .= ': AltBody + Attachment';
-		$this->Mail->setMessageContentType(true);
+		$this->Mail->ContentType = $this->Mail::CONTENT_TYPE_TEXT_HTML;
 
 		if(!$this->Mail->addAttachment(__FILE__, 'test_attach.txt')){
 			$this->assertTrue(false, $this->Mail->ErrorInfo);
@@ -1172,7 +1172,7 @@ EOT;
 			$this->Mail->hasLineLongerThanMax($this->Mail->Body),
 			'Test content does not contain long lines!'
 		);
-		$this->Mail->setMessageContentType();
+		$this->Mail->ContentType = $this->Mail::CONTENT_TYPE_PLAINTEXT;
 		$this->buildBody();
 		$this->Mail->AltBody  = $this->Mail->Body;
 		$this->Mail->Encoding = '8bit';
@@ -1727,7 +1727,7 @@ EOT;
 			'Long line not detected (middle)'
 		);
 		$this->assertFalse($this->Mail->hasLineLongerThanMax($oklen), 'Long line false positive');
-		$this->Mail->setMessageContentType(false);
+		$this->Mail->ContentType = $this->Mail::CONTENT_TYPE_PLAINTEXT;
 		$this->Mail->Subject  .= ': Line length test';
 		$this->Mail->CharSet  = 'UTF-8';
 		$this->Mail->Encoding = '8bit';
@@ -1769,7 +1769,7 @@ EOT;
 		$this->Mail->addCustomHeader('SomeHeader: Some Value');
 		$this->Mail->clearCustomHeaders();
 		$this->Mail->clearAttachments();
-		$this->Mail->setMessageContentType(false);
+		$this->Mail->ContentType = $this->Mail::CONTENT_TYPE_PLAINTEXT;
 		$this->Mail->setMailerSMTP();
 		$this->Mail->setMailerMail();
 		$this->Mail->setMailerSendmail();

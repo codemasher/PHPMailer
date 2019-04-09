@@ -57,6 +57,11 @@ abstract class MailerAbstract implements LoggerAwareInterface{
 	public const ENCODING_BINARY           = 'binary';
 	public const ENCODING_QUOTED_PRINTABLE = 'quoted-printable';
 
+	public const MAILER_SMTP     = 'smtp';
+	public const MAILER_MAIL     = 'mail';
+	public const MAILER_SENDMAIL = 'sendmail';
+	public const MAILER_QMAIL    = 'qmail';
+
 	/**
 	 * Debug level for no output.
 	 *
