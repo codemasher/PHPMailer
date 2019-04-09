@@ -1297,10 +1297,6 @@ EOT;
 		$this->assertTrue($this->Mail->addReplyTo('a@example.com'), 'Replyto Addressing failed');
 		$this->assertFalse($this->Mail->addReplyTo('a@example..com'), 'Invalid Replyto address accepted');
 		$this->assertTrue($this->Mail->setFrom('a@example.com', 'some name'), 'setFrom failed');
-
-		$this->expectException(PHPMailerException::class);
-		$this->expectExceptionMessage('Invalid address:  (From): a@example.com.');
-
 		$this->assertFalse($this->Mail->setFrom('a@example.com.', 'some name'), 'setFrom accepted invalid address');
 		$this->Mail->Sender = '';
 		$this->Mail->setFrom('a@example.com', 'some name', true);

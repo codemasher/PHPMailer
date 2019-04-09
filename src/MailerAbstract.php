@@ -192,13 +192,6 @@ abstract class MailerAbstract implements LoggerAwareInterface{
 	public $timeout = 300;
 
 	/**
-	 * Whether to throw exceptions for errors.
-	 *
-	 * @var bool
-	 */
-	public $exceptions = true;
-
-	/**
 	 * Debug output level.
 	 * Options:
 	 * * self::DEBUG_OFF (`0`) No debug output, default

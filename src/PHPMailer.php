@@ -839,8 +839,6 @@ class PHPMailer extends MailerAbstract{
 	 * @param bool   $auto Whether to also set the Sender address, defaults to true
 	 *
 	 * @return bool
-	 * @throws PHPMailerException
-	 *
 	 */
 	public function setFrom(string $address, string $name = null, bool $auto = true):bool{
 		$address = \trim($address);
@@ -853,14 +851,9 @@ class PHPMailer extends MailerAbstract{
 			|| (!has8bitChars(\substr($address, ++$pos)) || !idnSupported())
 			&& !validateAddress($address, $this->validator)
 		){
-			// @todo: errorhandler
 			$error_message = \sprintf('%s (From): %s', $this->lang('invalid_address'), $address);
 			$this->setError($error_message);
 			$this->edebug($error_message);
-
-			if($this->exceptions){
-				throw new PHPMailerException($error_message);
-			}
 
 			return false;
 		}
@@ -936,33 +929,28 @@ class PHPMailer extends MailerAbstract{
 	public function send():bool{
 
 		try{
-			if(!$this->preSend()){
-				return false;
-			}
-
-			return $this->postSend();
+			return $this
+				->preSend()
+				->postSend()
+			;
 		}
 		catch(PHPMailerException $e){
 			$this->mailHeader = '';
-			// @todo: errorhandler
 			$this->setError($e->getMessage());
+			$this->edebug($e->getMessage());
 
-			if($this->exceptions){
-				throw $e;
-			}
-
-			return false;
+			throw $e;
 		}
+
 	}
 
 	/**
 	 * Prepare a message for sending.
 	 *
-	 * @return bool
-	 * @throws PHPMailerException
-	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailer
+	 * @throws \PHPMailer\PHPMailer\PHPMailerException
 	 */
-	public function preSend():bool{
+	public function preSend():PHPMailer{
 
 		if($this->Mailer === 'smtp' || ($this->Mailer === 'mail' && \stripos(PHP_OS, 'WIN') === 0)){
 			//SMTP mandates RFC-compliant line endings
@@ -974,139 +962,107 @@ class PHPMailer extends MailerAbstract{
 			$this->setLE(PHP_EOL);
 		}
 
-		try{
-			$this->error_count = 0; // Reset errors
-			$this->mailHeader  = '';
+		$this->error_count = 0; // Reset errors
+		$this->mailHeader  = '';
 
-			// Dequeue recipient and Reply-To addresses with IDN
-			foreach(\array_merge($this->RecipientsQueue, $this->ReplyToQueue) as $params){
-				$params[1] = $this->punyencodeAddress($params[1]);
-				\call_user_func_array([$this, 'addAnAddress'], $params);
-			}
-
-			if(\count($this->to) + \count($this->cc) + \count($this->bcc) < 1){
-				throw new PHPMailerException($this->lang('provide_address'), $this::STOP_CRITICAL);
-			}
-
-			// Validate From, Sender, and ConfirmReadingTo addresses
-			foreach(['From', 'Sender', 'ConfirmReadingTo'] as $type){
-				$this->{$type} = \trim($this->{$type});
-
-				if(empty($this->{$type})){
-					continue;
-				}
-
-				$this->{$type} = $this->punyencodeAddress($this->{$type});
-
-				if(!validateAddress($this->{$type}, $this->validator)){
-					// @todo: errorhandler
-					$error_message = \sprintf('%s (%s): %s', $this->lang('invalid_address'), $type, $this->{$type});
-					$this->setError($error_message);
-					$this->edebug($error_message);
-
-					if($this->exceptions){
-						throw new PHPMailerException($error_message);
-					}
-
-					return false;
-				}
-			}
-
-			// Set whether the message is multipart/alternative
-			if($this->alternativeExists()){
-				$this->ContentType = $this::CONTENT_TYPE_MULTIPART_ALTERNATIVE;
-			}
-
-			$this->setMessageType();
-			// Refuse to send an empty message unless we are specifically allowing it
-			if(!$this->AllowEmpty && empty($this->Body)){
-				throw new PHPMailerException($this->lang('empty_message'), $this::STOP_CRITICAL);
-			}
-
-			//Trim subject consistently
-			$this->Subject    = \trim($this->Subject);
-			// Create body before headers in case body makes changes to headers (e.g. altering transfer encoding)
-			$this->MIMEHeader = '';
-			$this->MIMEBody   = $this->createBody();
-			// createBody may have added some headers, so retain them
-			$tempheaders      = $this->MIMEHeader;
-			$this->MIMEHeader = $this->createHeader();
-			$this->MIMEHeader .= $tempheaders;
-
-			// To capture the complete message when using mail(), create
-			// an extra header list which createHeader() doesn't fold in
-			if($this->Mailer === 'mail'){
-				$this->mailHeader .= \count($this->to) > 0
-					? $this->addrAppend('To', $this->to)
-					: $this->headerLine('To', 'undisclosed-recipients:;');
-
-				$this->mailHeader .= $this->headerLine('Subject', $this->encodeHeader(secureHeader($this->Subject)));
-			}
-
-			// Sign with DKIM if enabled
-			if(!empty($this->DKIM_domain) && !empty($this->DKIM_selector) && !empty($this->DKIM_private)){
-				$header_dkim = $this->DKIM_Add(
-					$this->MIMEHeader.$this->mailHeader,
-					$this->encodeHeader(secureHeader($this->Subject)),
-					$this->MIMEBody
-				);
-
-				$this->MIMEHeader = \rtrim($this->MIMEHeader, "\r\n ").$this->LE.$this->normalizeBreaks($header_dkim).$this->LE;
-			}
-
-			return true;
+		// Dequeue recipient and Reply-To addresses with IDN
+		foreach(\array_merge($this->RecipientsQueue, $this->ReplyToQueue) as $params){
+			$params[1] = $this->punyencodeAddress($params[1]);
+			\call_user_func_array([$this, 'addAnAddress'], $params);
 		}
-		catch(PHPMailerException $e){
-			// @todo: errorhandler
-			$this->setError($e->getMessage());
 
-			if($this->exceptions){
-				throw $e;
+		if(\count($this->to) + \count($this->cc) + \count($this->bcc) < 1){
+			throw new PHPMailerException($this->lang('provide_address'), $this::STOP_CRITICAL);
+		}
+
+		// Validate From, Sender, and ConfirmReadingTo addresses
+		foreach(['From', 'Sender', 'ConfirmReadingTo'] as $type){
+			$this->{$type} = \trim($this->{$type});
+
+			if(empty($this->{$type})){
+				continue;
 			}
 
-			return false;
+			$this->{$type} = $this->punyencodeAddress($this->{$type});
+
+			if(!validateAddress($this->{$type}, $this->validator)){
+				$this->edebug(\sprintf('%s (%s): %s', $this->lang('invalid_address'), $type, $this->{$type}));
+				// clear the invalid address
+				unset($this->{$type});
+			}
 		}
+
+		// Set whether the message is multipart/alternative
+		if($this->alternativeExists()){
+			$this->ContentType = $this::CONTENT_TYPE_MULTIPART_ALTERNATIVE;
+		}
+
+		$this->setMessageType();
+		// Refuse to send an empty message unless we are specifically allowing it
+		if(!$this->AllowEmpty && empty($this->Body)){
+			throw new PHPMailerException($this->lang('empty_message'), $this::STOP_CRITICAL);
+		}
+
+		//Trim subject consistently
+		$this->Subject    = \trim($this->Subject);
+		// Create body before headers in case body makes changes to headers (e.g. altering transfer encoding)
+		$this->MIMEHeader = '';
+		$this->MIMEBody   = $this->createBody();
+		// createBody may have added some headers, so retain them
+		$tempheaders      = $this->MIMEHeader;
+		$this->MIMEHeader = $this->createHeader();
+		$this->MIMEHeader .= $tempheaders;
+
+		// To capture the complete message when using mail(), create
+		// an extra header list which createHeader() doesn't fold in
+		if($this->Mailer === 'mail'){
+			$this->mailHeader .= \count($this->to) > 0
+				? $this->addrAppend('To', $this->to)
+				: $this->headerLine('To', 'undisclosed-recipients:;');
+
+			$this->mailHeader .= $this->headerLine('Subject', $this->encodeHeader(secureHeader($this->Subject)));
+		}
+
+		// Sign with DKIM if enabled
+		if(!empty($this->DKIM_domain) && !empty($this->DKIM_selector) && !empty($this->DKIM_private)){
+			$header_dkim = $this->DKIM_Add(
+				$this->MIMEHeader.$this->mailHeader,
+				$this->encodeHeader(secureHeader($this->Subject)),
+				$this->MIMEBody
+			);
+
+			$this->MIMEHeader = \rtrim($this->MIMEHeader, "\r\n ").$this->LE.$this->normalizeBreaks($header_dkim).$this->LE;
+		}
+
+		return $this;
 	}
 
 	/**
 	 * Actually send a message via the selected mechanism.
 	 *
 	 * @return bool
-	 * @throws PHPMailerException
-	 *
 	 */
 	public function postSend():bool{
 
-		try{
-			// Choose the mailer and send through it
-			switch($this->Mailer){
-				case 'sendmail':
-				case 'qmail':
-					return $this->sendmailSend($this->MIMEHeader, $this->MIMEBody);
-				case 'smtp':
-					return $this->smtpSend($this->MIMEHeader, $this->MIMEBody);
-				case 'mail':
-					return $this->mailSend($this->MIMEHeader, $this->MIMEBody);
-				default:
-					$sendMethod = $this->Mailer.'Send';
+		// Choose the mailer and send through it
+		switch($this->Mailer){
+			case 'sendmail':
+			case 'qmail':
+				return $this->sendmailSend($this->MIMEHeader, $this->MIMEBody);
+			case 'smtp':
+				return $this->smtpSend($this->MIMEHeader, $this->MIMEBody);
+			case 'mail':
+				return $this->mailSend($this->MIMEHeader, $this->MIMEBody);
+			default:
+				$sendMethod = $this->Mailer.'Send';
 
-					if(\method_exists($this, $sendMethod)){
-						return $this->$sendMethod($this->MIMEHeader, $this->MIMEBody);
-					}
+				if(\method_exists($this, $sendMethod)){
+					return $this->$sendMethod($this->MIMEHeader, $this->MIMEBody);
+				}
 
-					return $this->mailSend($this->MIMEHeader, $this->MIMEBody);
-			}
-		}
-		catch(PHPMailerException $e){
-			// @todo: errorhandler
-			$this->setError($e->getMessage());
-			$this->edebug($e->getMessage());
-			if($this->exceptions){
-				throw $e;
-			}
+				return $this->mailSend($this->MIMEHeader, $this->MIMEBody);
 		}
 
-		return false;
 	}
 
 	/**
@@ -1486,7 +1442,7 @@ class PHPMailer extends MailerAbstract{
 		// If we get here, all connection attempts have failed, so close connection hard
 		$this->smtp->close();
 		// As we've caught all exceptions, just report whatever the last one was
-		if($this->exceptions && $lastexception !== null){
+		if($lastexception !== null){
 			throw $lastexception;
 		}
 
@@ -1854,7 +1810,7 @@ class PHPMailer extends MailerAbstract{
 	 * @throws PHPMailerException
 	 *
 	 */
-	public function createBody(){
+	public function createBody():string{
 		$body = '';
 		//Create unique IDs and preset boundaries
 		$this->uniqueid    = generateId();
@@ -2024,54 +1980,43 @@ class PHPMailer extends MailerAbstract{
 		}
 
 		if($this->isError()){
-			$body = '';
-			if($this->exceptions){
-				throw new PHPMailerException($this->lang('empty_message'), $this::STOP_CRITICAL);
-			}
+			throw new PHPMailerException($this->lang('empty_message'), $this::STOP_CRITICAL);
 		}
-		elseif($this->sign_key_file){
 
-			try{
+		if($this->sign_key_file){
 
-				if(!\defined('PKCS7_TEXT')){
-					throw new PHPMailerException($this->lang('extension_missing').'openssl');
-				}
-
-				$tmpdir = \sys_get_temp_dir();
-				$file   = \tempnam($tmpdir, 'pkcs7file');
-				$signed = \tempnam($tmpdir, 'pkcs7signed'); // will be created by openssl_pkcs7_sign()
-
-				\file_put_contents($file, $body); // dump the body
-
-				$signcert = 'file://'.\realpath($this->sign_cert_file);
-				$privkey  = ['file://'.\realpath($this->sign_key_file), $this->sign_key_pass];
-
-				// Workaround for PHP bug https://bugs.php.net/bug.php?id=69197
-				// this bug still exists in 7.2+ despite being closed and "fixed"
-				$sign = empty($this->sign_extracerts_file)
-					? \openssl_pkcs7_sign($file, $signed, $signcert, $privkey, [])
-					: \openssl_pkcs7_sign($file, $signed, $signcert, $privkey, [], \PKCS7_DETACHED, $this->sign_extracerts_file);
-
-				$body = \file_get_contents($signed);
-
-				\unlink($file);
-				\unlink($signed);
-
-				if(!$sign){
-					throw new PHPMailerException($this->lang('signing').\openssl_error_string());
-				}
-
-				//The message returned by openssl contains both headers and body, so need to split them up
-				$parts            = \explode("\n\n", $body, 2);
-				$this->MIMEHeader .= $parts[0].$this->LE.$this->LE;
-				$body             = $parts[1];
+			if(!\defined('PKCS7_TEXT')){
+				throw new PHPMailerException($this->lang('extension_missing').'openssl');
 			}
-			catch(PHPMailerException $e){
-				$body = '';
-				if($this->exceptions){
-					throw $e;
-				}
+
+			$tmpdir = \sys_get_temp_dir();
+			$file   = \tempnam($tmpdir, 'pkcs7file');
+			$signed = \tempnam($tmpdir, 'pkcs7signed'); // will be created by openssl_pkcs7_sign()
+
+			\file_put_contents($file, $body); // dump the body
+
+			$signcert = 'file://'.\realpath($this->sign_cert_file);
+			$privkey  = ['file://'.\realpath($this->sign_key_file), $this->sign_key_pass];
+
+			// Workaround for PHP bug https://bugs.php.net/bug.php?id=69197
+			// this bug still exists in 7.2+ despite being closed and "fixed"
+			$sign = empty($this->sign_extracerts_file)
+				? \openssl_pkcs7_sign($file, $signed, $signcert, $privkey, [])
+				: \openssl_pkcs7_sign($file, $signed, $signcert, $privkey, [], \PKCS7_DETACHED, $this->sign_extracerts_file);
+
+			$body = \file_get_contents($signed);
+
+			\unlink($file);
+			\unlink($signed);
+
+			if(!$sign){
+				throw new PHPMailerException($this->lang('signing').\openssl_error_string());
 			}
+
+			//The message returned by openssl contains both headers and body, so need to split them up
+			$parts            = \explode("\n\n", $body, 2);
+			$this->MIMEHeader .= $parts[0].$this->LE.$this->LE;
+			$body             = $parts[1];
 		}
 
 		return $body;
@@ -2654,13 +2599,11 @@ class PHPMailer extends MailerAbstract{
 	):PHPMailer{
 
 		if(!isPermittedPath($path) || !@\is_file($path)){
-			// @todo: errorhandler
 			$msg = $this->lang('file_access').$path;
+			$this->edebug($msg);
 			$this->setError($msg);
 
-			if($this->exceptions){
-				throw new PHPMailerException($msg);
-			}
+			throw new PHPMailerException($msg);
 		}
 
 		// If a MIME type is not specified, try to work it out from the file name
@@ -3239,7 +3182,6 @@ class PHPMailer extends MailerAbstract{
 	 * @param string $body         Body
 	 *
 	 * @return string
-	 * @throws \PHPMailer\PHPMailer\PHPMailerException
 	 */
 	public function DKIM_Add(string $headers_line, string $subject, string $body):string{
 		$DKIMsignatureType     = 'rsa-sha256'; // Signature & hash algorithms
@@ -3358,19 +3300,7 @@ class PHPMailer extends MailerAbstract{
 		);
 
 
-		try{
-			$signed = DKIM_Sign($toSign, $this->DKIM_private, $this->DKIM_passphrase);
-		}
-		catch(PHPMailerException $e){
-			// @todo: errorhandler
-			$this->setError($e->getMessage());
-
-			if($this->exceptions){
-				throw $e;
-			}
-
-			return '';
-		}
+		$signed = DKIM_Sign($toSign, $this->DKIM_private, $this->DKIM_passphrase);
 
 		return $this->normalizeBreaks($dkimhdrs.$signed).$this->LE;
 	}
