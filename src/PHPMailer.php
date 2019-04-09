@@ -2039,48 +2039,32 @@ class PHPMailer extends MailerAbstract{
 
 				$tmpdir = \sys_get_temp_dir();
 				$file   = \tempnam($tmpdir, 'pkcs7file');
-				$signed = \tempnam($tmpdir, 'pkcs7signed');
+				$signed = \tempnam($tmpdir, 'pkcs7signed'); // will be created by openssl_pkcs7_sign()
 
-				\file_put_contents($file, $body);
-				\touch($signed);
+				\file_put_contents($file, $body); // dump the body
+
+				$signcert = 'file://'.\realpath($this->sign_cert_file);
+				$privkey  = ['file://'.\realpath($this->sign_key_file), $this->sign_key_pass];
 
 				// Workaround for PHP bug https://bugs.php.net/bug.php?id=69197
 				// this bug still exists in 7.2+ despite being closed and "fixed"
-				if(empty($this->sign_extracerts_file)){
-					$sign = \openssl_pkcs7_sign(
-						$file,
-						$signed,
-						'file://'.\realpath($this->sign_cert_file),
-						['file://'.\realpath($this->sign_key_file), $this->sign_key_pass],
-						[]
-					);
-				}
-				else{
-					$sign = \openssl_pkcs7_sign(
-						$file,
-						$signed,
-						'file://'.\realpath($this->sign_cert_file),
-						['file://'.\realpath($this->sign_key_file), $this->sign_key_pass],
-						[],
-						\PKCS7_DETACHED,
-						$this->sign_extracerts_file
-					);
-				}
+				$sign = empty($this->sign_extracerts_file)
+					? \openssl_pkcs7_sign($file, $signed, $signcert, $privkey, [])
+					: \openssl_pkcs7_sign($file, $signed, $signcert, $privkey, [], \PKCS7_DETACHED, $this->sign_extracerts_file);
 
 				$body = \file_get_contents($signed);
 
 				\unlink($file);
 				\unlink($signed);
 
-				if($sign){
-					//The message returned by openssl contains both headers and body, so need to split them up
-					$parts            = \explode("\n\n", $body, 2);
-					$this->MIMEHeader .= $parts[0].$this->LE.$this->LE;
-					$body             = $parts[1];
-				}
-				else{
+				if(!$sign){
 					throw new PHPMailerException($this->lang('signing').\openssl_error_string());
 				}
+
+				//The message returned by openssl contains both headers and body, so need to split them up
+				$parts            = \explode("\n\n", $body, 2);
+				$this->MIMEHeader .= $parts[0].$this->LE.$this->LE;
+				$body             = $parts[1];
 			}
 			catch(PHPMailerException $e){
 				$body = '';
