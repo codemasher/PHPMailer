@@ -33,7 +33,7 @@ class myPHPMailer extends PHPMailer{
 		//Equivalent to setting `Host`, `Port` and `SMTPSecure` all at once
 		$this->host = 'tls://smtp.example.com:587';
 		//Set an HTML and plain-text body, import relative image references
-		$this->msgHTML($body, './images/');
+		$this->messageFromHTML($body, './images/');
 		//Show debug output
 		$this->loglevel = 2;
 	}
@@ -53,7 +53,7 @@ try{
 	//Instantiate your new class, making use of the new `$body` parameter
 	$mail = new myPHPMailer('<strong>This is the message body</strong>');
 	// Now you only need to set things that are different from the defaults you defined
-	$mail->addAddress('jane@example.com', 'Jane User');
+	$mail->addTO('jane@example.com', 'Jane User');
 	$mail->Subject = 'Here is the subject';
 	$mail->addAttachment(__FILE__, 'myPHPMailer.php');
 	$mail->send(); //no need to check for errors - the exception handler will do it

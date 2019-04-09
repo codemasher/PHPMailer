@@ -12,7 +12,7 @@ if(array_key_exists('userfile', $_FILES)){
 	// Create a message
 	$mail = new PHPMailer;
 	$mail->setFrom('from@example.com', 'First Last');
-	$mail->addAddress('whoto@example.com', 'John Doe');
+	$mail->addTO('whoto@example.com', 'John Doe');
 	$mail->Subject = 'PHPMailer file sender';
 	$mail->Body    = 'My message body';
 	//Attach multiple files one by one

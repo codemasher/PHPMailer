@@ -276,7 +276,7 @@ class PHPMailer extends MailerAbstract{
 	/**
 	 * An instance of the PHPMailer OAuth class.
 	 *
-	 * @var OAuth
+	 * @var \PHPMailer\PHPMailer\PHPMailerOAuthInterface
 	 */
 	protected $oauth;
 
@@ -296,7 +296,7 @@ class PHPMailer extends MailerAbstract{
 	/**
 	 * Whether to keep SMTP connection open after each message.
 	 * If this is set to true then to close the connection
-	 * requires an explicit call to smtpClose().
+	 * requires an explicit call to closeSMTP().
 	 *
 	 * @var bool
 	 */
@@ -564,33 +564,16 @@ class PHPMailer extends MailerAbstract{
 	 */
 	public function __destruct(){
 		//Close any open SMTP connection nicely
-		$this->smtpClose();
+		$this->closeSMTP();
 	}
 
 	/**
-	 * Call mail() in a safe_mode-aware fashion.
-	 * Also, unless sendmail_path points to sendmail (or something that
-	 * claims to be sendmail), don't pass params (not a perfect fix,
-	 * but it will do).
+	 * Return the current mailer type
 	 *
-	 * @param string      $to      To
-	 * @param string      $subject Subject
-	 * @param string      $body    Message Body
-	 * @param string      $header  Additional Header(s)
-	 * @param string|null $params  Params
-	 *
-	 * @return bool
+	 * @return string
 	 */
-	protected function mailPassthru(string $to, string $subject, string $body, string $header, string $params = null):bool{
-		//Check overloading of mail function to avoid double-encoding
-		$subject = \ini_get('mbstring.func_overload') & 1
-			? secureHeader($subject)
-			: $this->encodeHeader(secureHeader($subject));
-
-		//Calling mail() with null params breaks
-		return !$this->UseSendmailOptions || $params === null
-			? @\mail($to, $subject, $body, $header)
-			: @\mail($to, $subject, $body, $header, $params);
+	public function getMailer():string{
+		return $this->Mailer;
 	}
 
 	/**
@@ -650,10 +633,48 @@ class PHPMailer extends MailerAbstract{
 	}
 
 	/**
-	 * @return string
+	 * Get an instance to use for SMTP operations.
+	 * Override this function to load your own SMTP implementation,
+	 * or set one with setSMTP.
+	 *
+	 * @return SMTP
 	 */
-	public function getMailer():string{
-		return $this->Mailer;
+	public function getSMTP():SMTP{
+
+		if(!$this->smtp instanceof SMTP){
+			$this->smtp = new SMTP;
+		}
+
+		return $this->smtp;
+	}
+
+	/**
+	 * Provide an instance to use for SMTP operations.
+	 *
+	 * @param SMTP $smtp
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailer
+	 */
+	public function setSMTP(SMTP $smtp):PHPMailer{
+		$this->smtp = $smtp;
+
+		return $this;
+	}
+
+	/**
+	 * Close the active SMTP session if one exists.
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailer
+	 */
+	public function closeSMTP():PHPMailer{
+		if($this->smtp instanceof SMTP){
+			if($this->smtp->connected()){
+				$this->smtp->quit();
+				$this->smtp->close();
+			}
+		}
+
+		return $this;
 	}
 
 	/**
@@ -675,7 +696,7 @@ class PHPMailer extends MailerAbstract{
 	public function setOAuth(PHPMailerOAuthInterface $oauth):PHPMailer{
 		$this->oauth = $oauth;
 
-		return$this;
+		return $this;
 	}
 
 	/**
@@ -686,8 +707,35 @@ class PHPMailer extends MailerAbstract{
 	 *
 	 * @return bool true on success, false if address already used or invalid in some way
 	 */
-	public function addAddress(string $address, string $name = null):bool{
+	public function addTO(string $address, string $name = null):bool{
 		return $this->addOrEnqueueAnAddress('to', $address, $name);
+	}
+
+	/**
+	 * Allows for public read access to 'to' property.
+	 * Before the send() call, queued addresses (i.e. with IDN) are not yet included.
+	 *
+	 * @return array
+	 */
+	public function getTOs():array{
+		return $this->to;
+	}
+
+	/**
+	 * Clear all To recipients.
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailer
+	 */
+	public function clearTOs():PHPMailer{
+
+		foreach($this->to as $to){
+			unset($this->all_recipients[\strtolower($to[0])]);
+		}
+
+		$this->to = [];
+		$this->clearQueuedAddresses('to');
+
+		return $this;
 	}
 
 	/**
@@ -703,6 +751,33 @@ class PHPMailer extends MailerAbstract{
 	}
 
 	/**
+	 * Allows for public read access to 'cc' property.
+	 * Before the send() call, queued addresses (i.e. with IDN) are not yet included.
+	 *
+	 * @return array
+	 */
+	public function getCCs():array{
+		return $this->cc;
+	}
+
+	/**
+	 * Clear all CC recipients.
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailer
+	 */
+	public function clearCCs():PHPMailer{
+
+		foreach($this->cc as $cc){
+			unset($this->all_recipients[\strtolower($cc[0])]);
+		}
+
+		$this->cc = [];
+		$this->clearQueuedAddresses('cc');
+
+		return $this;
+	}
+
+	/**
 	 * Add a "BCC" address.
 	 *
 	 * @param string      $address The email address to send to
@@ -715,6 +790,33 @@ class PHPMailer extends MailerAbstract{
 	}
 
 	/**
+	 * Allows for public read access to 'bcc' property.
+	 * Before the send() call, queued addresses (i.e. with IDN) are not yet included.
+	 *
+	 * @return array
+	 */
+	public function getBCCs():array{
+		return $this->bcc;
+	}
+
+	/**
+	 * Clear all BCC recipients.
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailer
+	 */
+	public function clearBCCs():PHPMailer{
+
+		foreach($this->bcc as $bcc){
+			unset($this->all_recipients[\strtolower($bcc[0])]);
+		}
+
+		$this->bcc = [];
+		$this->clearQueuedAddresses('bcc');
+
+		return $this;
+	}
+
+	/**
 	 * Add a "Reply-To" address.
 	 *
 	 * @param string      $address The email address to reply to
@@ -724,6 +826,111 @@ class PHPMailer extends MailerAbstract{
 	 */
 	public function addReplyTo(string $address, string $name = null):bool{
 		return $this->addOrEnqueueAnAddress('Reply-To', $address, $name);
+	}
+
+	/**
+	 * Allows for public read access to 'ReplyTo' property.
+	 * Before the send() call, queued addresses (i.e. with IDN) are not yet included.
+	 *
+	 * @return array
+	 */
+	public function getReplyTos():array{
+		return $this->ReplyTo;
+	}
+
+	/**
+	 * Clear all ReplyTo recipients.
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailer
+	 */
+	public function clearReplyTos():PHPMailer{
+		$this->ReplyTo      = [];
+		$this->ReplyToQueue = [];
+
+		return $this;
+	}
+
+	/**
+	 * Allows for public read access to 'all_recipients' property.
+	 * Before the send() call, queued addresses (i.e. with IDN) are not yet included.
+	 *
+	 * @return array
+	 */
+	public function getAllRecipients():array{
+		return $this->all_recipients;
+	}
+
+	/**
+	 * Clear all recipient types.
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailer
+	 */
+	public function clearAllRecipients():PHPMailer{
+		$this->to              = [];
+		$this->cc              = [];
+		$this->bcc             = [];
+		$this->all_recipients  = [];
+		$this->RecipientsQueue = [];
+
+		return $this;
+	}
+
+	/**
+	 * Clear queued addresses of given kind.
+	 *
+	 * @param string $kind 'to', 'cc', or 'bcc'
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailer
+	 */
+	public function clearQueuedAddresses(string $kind):PHPMailer{
+
+		$this->RecipientsQueue = \array_filter(
+			$this->RecipientsQueue,
+			function($params) use ($kind){
+				return $params[0] !== $kind;
+			}
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Set the From and FromName properties.
+	 *
+	 * @param string $address
+	 * @param string $name
+	 * @param bool   $auto Whether to also set the Sender address, defaults to true
+	 *
+	 * @return bool
+	 */
+	public function setFrom(string $address, string $name = null, bool $auto = true):bool{
+		$address = \trim($address);
+		$name    = \trim(\preg_replace('/[\r\n]+/', '', $name ?? '')); //Strip breaks and trim
+
+		// Don't validate now addresses with IDN. Will be done in send().
+		$pos = \strrpos($address, '@');
+		if( // @todo: clarify
+			$pos === false
+			|| (!has8bitChars(\substr($address, ++$pos)) || !idnSupported())
+			   && !validateAddress($address, $this->validator)
+		){
+			$error_message = \sprintf('%s (From): %s', $this->lang('invalid_address'), $address);
+			$this->setError($error_message);
+			$this->edebug($error_message);
+
+			return false;
+		}
+
+		$this->From     = $address;
+		$this->FromName = $name;
+
+		if($auto){
+			if(empty($this->Sender)){
+				$this->Sender = $address;
+			}
+		}
+
+		return true;
 	}
 
 	/**
@@ -830,42 +1037,289 @@ class PHPMailer extends MailerAbstract{
 	}
 
 	/**
-	 * Set the From and FromName properties.
+	 * Return the array of attachments.
 	 *
-	 * @param string $address
-	 * @param string $name
-	 * @param bool   $auto Whether to also set the Sender address, defaults to true
+	 * @return array
+	 */
+	public function getAttachments():array{
+		return $this->attachment;
+	}
+
+	/**
+	 * Clear all filesystem, string, and binary attachments.
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailer
+	 */
+	public function clearAttachments():PHPMailer{
+		$this->attachment = [];
+
+		return $this;
+	}
+
+	/**
+	 * Add an attachment from a path on the filesystem.
+	 * Never use a user-supplied path to a file!
+	 * Returns false if the file could not be found or read.
+	 * Explicitly *does not* support passing URLs; PHPMailer is not an HTTP client.
+	 * If you need to do that, fetch the resource yourself and pass it in via a local file or string.
+	 *
+	 * @param string $path        Path to the attachment
+	 * @param string $name        Overrides the attachment name
+	 * @param string $encoding    File encoding (see $Encoding)
+	 * @param string $type        File extension (MIME) type
+	 * @param string $disposition Disposition to use
 	 *
 	 * @return bool
 	 */
-	public function setFrom(string $address, string $name = null, bool $auto = true):bool{
-		$address = \trim($address);
-		$name    = \trim(\preg_replace('/[\r\n]+/', '', $name ?? '')); //Strip breaks and trim
+	public function addAttachment(
+		string $path,
+		string $name = null,
+		string $encoding = self::ENCODING_BASE64,
+		string $type = null,
+		string $disposition = 'attachment'
+	):bool{
 
-		// Don't validate now addresses with IDN. Will be done in send().
-		$pos = \strrpos($address, '@');
-		if( // @todo: clarify
-			$pos === false
-			|| (!has8bitChars(\substr($address, ++$pos)) || !idnSupported())
-			&& !validateAddress($address, $this->validator)
-		){
-			$error_message = \sprintf('%s (From): %s', $this->lang('invalid_address'), $address);
-			$this->setError($error_message);
-			$this->edebug($error_message);
+		if(!isPermittedPath($path) || !@\is_file($path)){
+			$msg = $this->lang('file_access').$path;
+
+			$this->setError($msg);
+			$this->edebug($msg);
 
 			return false;
 		}
 
-		$this->From     = $address;
-		$this->FromName = $name;
-
-		if($auto){
-			if(empty($this->Sender)){
-				$this->Sender = $address;
-			}
+		// If a MIME type is not specified, try to work it out from the file name
+		if(empty($type)){
+			$type = filenameToType($path);
 		}
 
+		$filename = \basename($path);
+		if(empty($name)){
+			$name = $filename;
+		}
+
+		$this->attachment[] = [
+			0 => $path,
+			1 => $filename,
+			2 => $name,
+			3 => $encoding,
+			4 => $type,
+			5 => false, // isStringAttachment
+			6 => $disposition,
+			7 => $name,
+		];
+
 		return true;
+	}
+
+	/**
+	 * Add a string or binary attachment (non-filesystem).
+	 * This method can be used to attach ascii or binary data,
+	 * such as a BLOB record from a database.
+	 *
+	 * @param string $string      String attachment data
+	 * @param string $filename    Name of the attachment
+	 * @param string $encoding    File encoding (see $Encoding)
+	 * @param string $type        File extension (MIME) type
+	 * @param string $disposition Disposition to use
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailer
+	 */
+	public function addStringAttachment(
+		string $string,
+		string $filename,
+		string $encoding = self::ENCODING_BASE64,
+		string $type = '',
+		string $disposition = 'attachment'
+	):PHPMailer{
+		// If a MIME type is not specified, try to work it out from the file name
+		if(empty($type)){
+			$type = filenameToType($filename);
+		}
+
+		// Append to $attachment array
+		$this->attachment[] = [
+			0 => $string,
+			1 => $filename,
+			2 => \basename($filename),
+			3 => $encoding,
+			4 => $type,
+			5 => true, // isStringAttachment
+			6 => $disposition,
+			7 => 0,
+		];
+
+		return $this;
+	}
+
+	/**
+	 * Add an embedded (inline) attachment from a file.
+	 * This can include images, sounds, and just about any other document type.
+	 * These differ from 'regular' attachments in that they are intended to be
+	 * displayed inline with the message, not just attached for download.
+	 * This is used in HTML messages that embed the images
+	 * the HTML refers to using the $cid value.
+	 * Never use a user-supplied path to a file!
+	 *
+	 * @param string $path        Path to the attachment
+	 * @param string $cid         Content ID of the attachment; Use this to reference
+	 *                            the content when using an embedded image in HTML
+	 * @param string $name        Overrides the attachment name
+	 * @param string $encoding    File encoding (see $Encoding)
+	 * @param string $type        File MIME type
+	 * @param string $disposition Disposition to use
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailer
+	 * @throws \PHPMailer\PHPMailer\PHPMailerException
+	 */
+	public function addEmbeddedImage(
+		string $path,
+		string $cid,
+		string $name = '',
+		string $encoding = self::ENCODING_BASE64,
+		string $type = '',
+		string $disposition = 'inline'
+	):PHPMailer{
+
+		if(!isPermittedPath($path) || !@\is_file($path)){
+			$msg = $this->lang('file_access').$path;
+			$this->edebug($msg);
+			$this->setError($msg);
+
+			throw new PHPMailerException($msg);
+		}
+
+		// If a MIME type is not specified, try to work it out from the file name
+		if(empty($type)){
+			$type = filenameToType($path);
+		}
+
+		$filename = \basename($path);
+		if(empty($name)){
+			$name = $filename;
+		}
+
+		// Append to $attachment array
+		$this->attachment[] = [
+			0 => $path,
+			1 => $filename,
+			2 => $name,
+			3 => $encoding,
+			4 => $type,
+			5 => false, // isStringAttachment
+			6 => $disposition,
+			7 => $cid,
+		];
+
+		return $this;
+	}
+
+	/**
+	 * Add an embedded stringified attachment.
+	 * This can include images, sounds, and just about any other document type.
+	 * If your filename doesn't contain an extension, be sure to set the $type to an appropriate MIME type.
+	 *
+	 * @param string $string      The attachment binary data
+	 * @param string $cid         Content ID of the attachment; Use this to reference
+	 *                            the content when using an embedded image in HTML
+	 * @param string $name        A filename for the attachment. If this contains an extension,
+	 *                            PHPMailer will attempt to set a MIME type for the attachment.
+	 *                            For example 'file.jpg' would get an 'image/jpeg' MIME type.
+	 * @param string $encoding    File encoding (see $Encoding), defaults to 'base64'
+	 * @param string $type        MIME type - will be used in preference to any automatically derived type
+	 * @param string $disposition Disposition to use
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailer
+	 */
+	public function addStringEmbeddedImage(
+		string $string,
+		string $cid,
+		string $name = '',
+		string $encoding = self::ENCODING_BASE64,
+		string $type = '',
+		string $disposition = 'inline'
+	):PHPMailer{
+		// If a MIME type is not specified, try to work it out from the name
+		if(empty($type) && !empty($name)){
+			$type = filenameToType($name);
+		}
+
+		// Append to $attachment array
+		$this->attachment[] = [
+			0 => $string,
+			1 => $name,
+			2 => $name,
+			3 => $encoding,
+			4 => $type,
+			5 => true, // isStringAttachment
+			6 => $disposition,
+			7 => $cid,
+		];
+
+		return $this;
+	}
+
+	/**
+	 * Add a custom header.
+	 * $name value can be overloaded to contain
+	 * both header name and value (name:value).
+	 *
+	 * @param string      $name  Custom header name
+	 * @param string|null $value Header value
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailer
+	 */
+	public function addCustomHeader(string $name, string $value = null):PHPMailer{
+
+		$this->CustomHeader[] = $value === null
+			? explode(':', $name, 2) // Value passed in as name:value
+			: [$name, $value];
+
+		return $this;
+	}
+
+	/**
+	 * Returns all custom headers.
+	 *
+	 * @return array
+	 */
+	public function getCustomHeaders():array{
+		return $this->CustomHeader;
+	}
+
+	/**
+	 * Clear all custom headers.
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailer
+	 */
+	public function clearCustomHeaders():PHPMailer{
+		$this->CustomHeader = [];
+
+		return $this;
+	}
+
+	/**
+	 * Set the public and private key files and password for S/MIME signing.
+	 *
+	 * @param string $cert_filename
+	 * @param string $key_filename
+	 * @param string $key_pass            Password for private key
+	 * @param string $extracerts_filename Optional path to chain certificate
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailer
+	 */
+	public function setSignCredentials(
+		string $cert_filename,
+		string $key_filename,
+		string $key_pass,
+		string $extracerts_filename = ''
+	):PHPMailer{
+		$this->sign_cert_file       = $cert_filename;
+		$this->sign_key_file        = $key_filename;
+		$this->sign_key_pass        = $key_pass;
+		$this->sign_extracerts_file = $extracerts_filename;
+
+		return $this;
 	}
 
 	/**
@@ -881,41 +1335,16 @@ class PHPMailer extends MailerAbstract{
 	}
 
 	/**
-	 * @todo: make protected
+	 * Returns the whole MIME message.
+	 * Includes complete headers and body.
+	 * Only valid post preSend().
 	 *
-	 * Converts IDN in given email address to its ASCII form, also known as punycode, if possible.
-	 * Important: Address must be passed in same encoding as currently set in PHPMailer::$CharSet.
-	 * This function silently returns unmodified address if:
-	 * - No conversion is necessary (i.e. domain name is not an IDN, or is already in ASCII form)
-	 * - Conversion to punycode is impossible (e.g. required PHP functions are not available)
-	 *   or fails for any reason (e.g. domain contains characters not allowed in an IDN).
-	 *
-	 * @param string $address The email address to convert
-	 *
-	 * @return string The encoded address in ASCII form
-	 * @see    PHPMailer::$CharSet
+	 * @return string
+	 * @see PHPMailer::preSend()
 	 *
 	 */
-	public function punyencodeAddress(string $address):string{
-		// Verify we have required functions, CharSet, and at-sign.
-		$pos = \strrpos($address, '@');
-		if(idnSupported() && !empty($this->CharSet) && $pos !== false){
-			$domain = \substr($address, ++$pos);
-			// Verify CharSet string is a valid one, and domain properly encoded in this CharSet.
-			if(has8bitChars($domain) && @\mb_check_encoding($domain, $this->CharSet)){
-				$domain = \mb_convert_encoding($domain, 'UTF-8', $this->CharSet);
-				//Ignore IDE complaints about this line - method signature changed in PHP 5.4
-				$errorcode = 0;
-				/** @noinspection PhpComposerExtensionStubsInspection */
-				$punycode = \idn_to_ascii($domain, $errorcode, \INTL_IDNA_VARIANT_UTS46);
-
-				if($punycode !== false){
-					return \substr($address, 0, $pos).$punycode;
-				}
-			}
-		}
-
-		return $address;
+	public function getSentMIMEMessage():string{
+		return \rtrim($this->MIMEHeader.$this->mailHeader, "\n\r").$this->LE.$this->LE.$this->MIMEBody;
 	}
 
 	/**
@@ -1199,32 +1628,67 @@ class PHPMailer extends MailerAbstract{
 	}
 
 	/**
-	 * Get an instance to use for SMTP operations.
-	 * Override this function to load your own SMTP implementation,
-	 * or set one with setSMTPInstance.
+	 * Call mail() in a safe_mode-aware fashion.
+	 * Also, unless sendmail_path points to sendmail (or something that
+	 * claims to be sendmail), don't pass params (not a perfect fix,
+	 * but it will do).
 	 *
-	 * @return SMTP
+	 * @param string      $to      To
+	 * @param string      $subject Subject
+	 * @param string      $body    Message Body
+	 * @param string      $header  Additional Header(s)
+	 * @param string|null $params  Params
+	 *
+	 * @return bool
 	 */
-	public function getSMTPInstance():SMTP{
+	protected function mailPassthru(string $to, string $subject, string $body, string $header, string $params = null):bool{
+		//Check overloading of mail function to avoid double-encoding
+		$subject = \ini_get('mbstring.func_overload') & 1
+			? secureHeader($subject)
+			: $this->encodeHeader(secureHeader($subject));
 
-		if(!$this->smtp instanceof SMTP){
-			$this->smtp = new SMTP;
-		}
-
-		return $this->smtp;
+		//Calling mail() with null params breaks
+		return !$this->UseSendmailOptions || $params === null
+			? @\mail($to, $subject, $body, $header)
+			: @\mail($to, $subject, $body, $header, $params);
 	}
 
 	/**
-	 * Provide an instance to use for SMTP operations.
+	 * @todo: make protected
 	 *
-	 * @param SMTP $smtp
+	 * Converts IDN in given email address to its ASCII form, also known as punycode, if possible.
+	 * Important: Address must be passed in same encoding as currently set in PHPMailer::$CharSet.
+	 * This function silently returns unmodified address if:
+	 * - No conversion is necessary (i.e. domain name is not an IDN, or is already in ASCII form)
+	 * - Conversion to punycode is impossible (e.g. required PHP functions are not available)
+	 *   or fails for any reason (e.g. domain contains characters not allowed in an IDN).
 	 *
-	 * @return SMTP
+	 * @param string $address The email address to convert
+	 *
+	 * @return string The encoded address in ASCII form
+	 * @see    PHPMailer::$CharSet
+	 *
 	 */
-	public function setSMTPInstance(SMTP $smtp):SMTP{
-		$this->smtp = $smtp;
+	public function punyencodeAddress(string $address):string{
+		// Verify we have required functions, CharSet, and at-sign.
+		$pos = \strrpos($address, '@');
+		if(idnSupported() && !empty($this->CharSet) && $pos !== false){
+			$domain = \substr($address, ++$pos);
+			// Verify CharSet string is a valid one, and domain properly encoded in this CharSet.
+			if(has8bitChars($domain) && @\mb_check_encoding($domain, $this->CharSet)){
+				$domain = \mb_convert_encoding($domain, 'UTF-8', $this->CharSet);
+				//Ignore IDE complaints about this line - method signature changed in PHP 5.4
+				$errorcode = 0;
+				/** @noinspection PhpComposerExtensionStubsInspection */
+				$punycode = \idn_to_ascii($domain, $errorcode, \INTL_IDNA_VARIANT_UTS46);
 
-		return $this->smtp;
+				if($punycode !== false){
+					return \substr($address, 0, $pos).$punycode;
+				}
+			}
+		}
+
+		return $address;
 	}
 
 	/**
@@ -1237,7 +1701,7 @@ class PHPMailer extends MailerAbstract{
 	 * @return bool
 	 * @throws PHPMailerException
 	 *
-	 * @see  PHPMailer::setSMTPInstance() to use a different class.
+	 * @see  PHPMailer::setSMTP() to use a different class.
 	 *
 	 * @uses \PHPMailer\PHPMailer\SMTP
 	 *
@@ -1318,6 +1782,8 @@ class PHPMailer extends MailerAbstract{
 	}
 
 	/**
+	 * @todo: make protected
+	 *
 	 * Initiate a connection to an SMTP server.
 	 * Returns false if the operation failed.
 	 *
@@ -1330,7 +1796,7 @@ class PHPMailer extends MailerAbstract{
 	 *
 	 */
 	public function smtpConnect(array $options = null):bool{
-		$this->getSMTPInstance();
+		$this->getSMTP();
 
 		$this->smtp->setLogger($this->logger);
 
@@ -1450,22 +1916,6 @@ class PHPMailer extends MailerAbstract{
 		}
 
 		return false;
-	}
-
-	/**
-	 * Close the active SMTP session if one exists.
-	 *
-	 * @return \PHPMailer\PHPMailer\PHPMailer
-	 */
-	public function smtpClose():PHPMailer{
-		if($this->smtp instanceof SMTP){
-			if($this->smtp->connected()){
-				$this->smtp->quit();
-				$this->smtp->close();
-			}
-		}
-
-		return $this;
 	}
 
 	/**
@@ -1800,19 +2250,6 @@ class PHPMailer extends MailerAbstract{
 	}
 
 	/**
-	 * Returns the whole MIME message.
-	 * Includes complete headers and body.
-	 * Only valid post preSend().
-	 *
-	 * @return string
-	 * @see PHPMailer::preSend()
-	 *
-	 */
-	public function getSentMIMEMessage():string{
-		return \rtrim($this->MIMEHeader.$this->mailHeader, "\n\r").$this->LE.$this->LE.$this->MIMEBody;
-	}
-
-	/**
 	 * @todo: make protected
 	 *
 	 * Assemble the message body.
@@ -2130,71 +2567,6 @@ class PHPMailer extends MailerAbstract{
 	 */
 	protected function textLine(string $value):string{
 		return $value.$this->LE;
-	}
-
-	/**
-	 * Add an attachment from a path on the filesystem.
-	 * Never use a user-supplied path to a file!
-	 * Returns false if the file could not be found or read.
-	 * Explicitly *does not* support passing URLs; PHPMailer is not an HTTP client.
-	 * If you need to do that, fetch the resource yourself and pass it in via a local file or string.
-	 *
-	 * @param string $path        Path to the attachment
-	 * @param string $name        Overrides the attachment name
-	 * @param string $encoding    File encoding (see $Encoding)
-	 * @param string $type        File extension (MIME) type
-	 * @param string $disposition Disposition to use
-	 *
-	 * @return bool
-	 */
-	public function addAttachment(
-		string $path,
-		string $name = null,
-		string $encoding = self::ENCODING_BASE64,
-		string $type = null,
-		string $disposition = 'attachment'
-	):bool{
-
-		if(!isPermittedPath($path) || !@\is_file($path)){
-			$msg = $this->lang('file_access').$path;
-
-			$this->setError($msg);
-			$this->edebug($msg);
-
-			return false;
-		}
-
-		// If a MIME type is not specified, try to work it out from the file name
-		if(empty($type)){
-			$type = filenameToType($path);
-		}
-
-		$filename = \basename($path);
-		if(empty($name)){
-			$name = $filename;
-		}
-
-		$this->attachment[] = [
-			0 => $path,
-			1 => $filename,
-			2 => $name,
-			3 => $encoding,
-			4 => $type,
-			5 => false, // isStringAttachment
-			6 => $disposition,
-			7 => $name,
-		];
-
-		return true;
-	}
-
-	/**
-	 * Return the array of attachments.
-	 *
-	 * @return array
-	 */
-	public function getAttachments():array{
-		return $this->attachment;
 	}
 
 	/**
@@ -2544,153 +2916,6 @@ class PHPMailer extends MailerAbstract{
 	}
 
 	/**
-	 * Add a string or binary attachment (non-filesystem).
-	 * This method can be used to attach ascii or binary data,
-	 * such as a BLOB record from a database.
-	 *
-	 * @param string $string      String attachment data
-	 * @param string $filename    Name of the attachment
-	 * @param string $encoding    File encoding (see $Encoding)
-	 * @param string $type        File extension (MIME) type
-	 * @param string $disposition Disposition to use
-	 *
-	 * @return \PHPMailer\PHPMailer\PHPMailer
-	 */
-	public function addStringAttachment(
-		string $string,
-		string $filename,
-		string $encoding = self::ENCODING_BASE64,
-		string $type = '',
-		string $disposition = 'attachment'
-	):PHPMailer{
-		// If a MIME type is not specified, try to work it out from the file name
-		if(empty($type)){
-			$type = filenameToType($filename);
-		}
-
-		// Append to $attachment array
-		$this->attachment[] = [
-			0 => $string,
-			1 => $filename,
-			2 => \basename($filename),
-			3 => $encoding,
-			4 => $type,
-			5 => true, // isStringAttachment
-			6 => $disposition,
-			7 => 0,
-		];
-
-		return $this;
-	}
-
-	/**
-	 * Add an embedded (inline) attachment from a file.
-	 * This can include images, sounds, and just about any other document type.
-	 * These differ from 'regular' attachments in that they are intended to be
-	 * displayed inline with the message, not just attached for download.
-	 * This is used in HTML messages that embed the images
-	 * the HTML refers to using the $cid value.
-	 * Never use a user-supplied path to a file!
-	 *
-	 * @param string $path        Path to the attachment
-	 * @param string $cid         Content ID of the attachment; Use this to reference
-	 *                            the content when using an embedded image in HTML
-	 * @param string $name        Overrides the attachment name
-	 * @param string $encoding    File encoding (see $Encoding)
-	 * @param string $type        File MIME type
-	 * @param string $disposition Disposition to use
-	 *
-	 * @return \PHPMailer\PHPMailer\PHPMailer
-	 * @throws \PHPMailer\PHPMailer\PHPMailerException
-	 */
-	public function addEmbeddedImage(
-		string $path,
-		string $cid,
-		string $name = '',
-		string $encoding = self::ENCODING_BASE64,
-		string $type = '',
-		string $disposition = 'inline'
-	):PHPMailer{
-
-		if(!isPermittedPath($path) || !@\is_file($path)){
-			$msg = $this->lang('file_access').$path;
-			$this->edebug($msg);
-			$this->setError($msg);
-
-			throw new PHPMailerException($msg);
-		}
-
-		// If a MIME type is not specified, try to work it out from the file name
-		if(empty($type)){
-			$type = filenameToType($path);
-		}
-
-		$filename = \basename($path);
-		if(empty($name)){
-			$name = $filename;
-		}
-
-		// Append to $attachment array
-		$this->attachment[] = [
-			0 => $path,
-			1 => $filename,
-			2 => $name,
-			3 => $encoding,
-			4 => $type,
-			5 => false, // isStringAttachment
-			6 => $disposition,
-			7 => $cid,
-		];
-
-		return $this;
-	}
-
-	/**
-	 * Add an embedded stringified attachment.
-	 * This can include images, sounds, and just about any other document type.
-	 * If your filename doesn't contain an extension, be sure to set the $type to an appropriate MIME type.
-	 *
-	 * @param string $string      The attachment binary data
-	 * @param string $cid         Content ID of the attachment; Use this to reference
-	 *                            the content when using an embedded image in HTML
-	 * @param string $name        A filename for the attachment. If this contains an extension,
-	 *                            PHPMailer will attempt to set a MIME type for the attachment.
-	 *                            For example 'file.jpg' would get an 'image/jpeg' MIME type.
-	 * @param string $encoding    File encoding (see $Encoding), defaults to 'base64'
-	 * @param string $type        MIME type - will be used in preference to any automatically derived type
-	 * @param string $disposition Disposition to use
-	 *
-	 * @return \PHPMailer\PHPMailer\PHPMailer
-	 */
-	public function addStringEmbeddedImage(
-		string $string,
-		string $cid,
-		string $name = '',
-		string $encoding = self::ENCODING_BASE64,
-		string $type = '',
-		string $disposition = 'inline'
-	):PHPMailer{
-		// If a MIME type is not specified, try to work it out from the name
-		if(empty($type) && !empty($name)){
-			$type = filenameToType($name);
-		}
-
-		// Append to $attachment array
-		$this->attachment[] = [
-			0 => $string,
-			1 => $name,
-			2 => $name,
-			3 => $encoding,
-			4 => $type,
-			5 => true, // isStringAttachment
-			6 => $disposition,
-			7 => $cid,
-		];
-
-		return $this;
-	}
-
-	/**
 	 * Check if an embedded attachment is present with this cid.
 	 *
 	 * @param string $cid
@@ -2750,156 +2975,6 @@ class PHPMailer extends MailerAbstract{
 	}
 
 	/**
-	 * Clear queued addresses of given kind.
-	 *
-	 * @param string $kind 'to', 'cc', or 'bcc'
-	 *
-	 * @return \PHPMailer\PHPMailer\PHPMailer
-	 */
-	public function clearQueuedAddresses(string $kind):PHPMailer{
-
-		$this->RecipientsQueue = \array_filter(
-			$this->RecipientsQueue,
-			function($params) use ($kind){
-				return $params[0] !== $kind;
-			}
-		);
-
-		return $this;
-	}
-
-	/**
-	 * Clear all To recipients.
-	 *
-	 * @return \PHPMailer\PHPMailer\PHPMailer
-	 */
-	public function clearAddresses():PHPMailer{
-
-		foreach($this->to as $to){
-			unset($this->all_recipients[\strtolower($to[0])]);
-		}
-
-		$this->to = [];
-		$this->clearQueuedAddresses('to');
-
-		return $this;
-	}
-
-	/**
-	 * Clear all CC recipients.
-	 *
-	 * @return \PHPMailer\PHPMailer\PHPMailer
-	 */
-	public function clearCCs():PHPMailer{
-
-		foreach($this->cc as $cc){
-			unset($this->all_recipients[\strtolower($cc[0])]);
-		}
-
-		$this->cc = [];
-		$this->clearQueuedAddresses('cc');
-
-		return $this;
-	}
-
-	/**
-	 * Clear all BCC recipients.
-	 *
-	 * @return \PHPMailer\PHPMailer\PHPMailer
-	 */
-	public function clearBCCs():PHPMailer{
-
-		foreach($this->bcc as $bcc){
-			unset($this->all_recipients[\strtolower($bcc[0])]);
-		}
-
-		$this->bcc = [];
-		$this->clearQueuedAddresses('bcc');
-
-		return $this;
-	}
-
-	/**
-	 * Clear all ReplyTo recipients.
-	 *
-	 * @return \PHPMailer\PHPMailer\PHPMailer
-	 */
-	public function clearReplyTos():PHPMailer{
-		$this->ReplyTo      = [];
-		$this->ReplyToQueue = [];
-
-		return $this;
-	}
-
-	/**
-	 * Clear all recipient types.
-	 *
-	 * @return \PHPMailer\PHPMailer\PHPMailer
-	 */
-	public function clearAllRecipients():PHPMailer{
-		$this->to              = [];
-		$this->cc              = [];
-		$this->bcc             = [];
-		$this->all_recipients  = [];
-		$this->RecipientsQueue = [];
-
-		return $this;
-	}
-
-	/**
-	 * Clear all filesystem, string, and binary attachments.
-	 *
-	 * @return \PHPMailer\PHPMailer\PHPMailer
-	 */
-	public function clearAttachments():PHPMailer{
-		$this->attachment = [];
-
-		return $this;
-	}
-
-	/**
-	 * Clear all custom headers.
-	 *
-	 * @return \PHPMailer\PHPMailer\PHPMailer
-	 */
-	public function clearCustomHeaders():PHPMailer{
-		$this->CustomHeader = [];
-
-		return $this;
-	}
-
-	/**
-	 * Add an error message to the error container.
-	 *
-	 * @param string $msg
-	 */
-	protected function setError(string $msg):void{
-		++$this->error_count;
-
-		if($this->Mailer === 'smtp' && $this->smtp instanceof SMTP){
-			$lasterror = $this->smtp->getError();
-
-			if(!empty($lasterror['error'])){
-				$msg .= $this->lang('smtp_error').$lasterror['error'];
-
-				if(!empty($lasterror['detail'])){
-					$msg .= ' Detail: '.$lasterror['detail'];
-				}
-
-				if(!empty($lasterror['smtp_code'])){
-					$msg .= ' SMTP code: '.$lasterror['smtp_code'];
-				}
-
-				if(!empty($lasterror['smtp_code_ex'])){
-					$msg .= ' Additional SMTP info: '.$lasterror['smtp_code_ex'];
-				}
-			}
-		}
-
-		$this->ErrorInfo = $msg;
-	}
-
-	/**
 	 * Get the server hostname.
 	 * Returns 'localhost.localdomain' if unknown.
 	 *
@@ -2929,43 +3004,6 @@ class PHPMailer extends MailerAbstract{
 	}
 
 	/**
-	 * Check if an error occurred.
-	 *
-	 * @return bool True if an error did occur
-	 */
-	public function isError():bool{
-		return $this->error_count > 0;
-	}
-
-	/**
-	 * Add a custom header.
-	 * $name value can be overloaded to contain
-	 * both header name and value (name:value).
-	 *
-	 * @param string      $name  Custom header name
-	 * @param string|null $value Header value
-	 *
-	 * @return \PHPMailer\PHPMailer\PHPMailer
-	 */
-	public function addCustomHeader(string $name, string $value = null):PHPMailer{
-
-		$this->CustomHeader[] = $value === null
-			? explode(':', $name, 2) // Value passed in as name:value
-			: [$name, $value];
-
-		return $this;
-	}
-
-	/**
-	 * Returns all custom headers.
-	 *
-	 * @return array
-	 */
-	public function getCustomHeaders():array{
-		return $this->CustomHeader;
-	}
-
-	/**
 	 * Create a message body from an HTML string.
 	 * Automatically inlines images and creates a plain-text version by converting the HTML,
 	 * overwriting any existing values in Body and AltBody.
@@ -2985,7 +3023,7 @@ class PHPMailer extends MailerAbstract{
 	 *
 	 * @see PHPMailer::html2text()
 	 */
-	public function msgHTML(string $message, string $basedir = '', $advanced = null):PHPMailer{
+	public function messageFromHTML(string $message, string $basedir = '', $advanced = null):PHPMailer{
 		\preg_match_all('/(src|background)=["\'](.*)["\']/Ui', $message, $images);
 
 		if(\array_key_exists(2, $images)){
@@ -3082,7 +3120,7 @@ class PHPMailer extends MailerAbstract{
 
 	/**
 	 * Convert an HTML string into plain text.
-	 * This is used by msgHTML().
+	 * This is used by messageFromHTML().
 	 * Note - older versions of this function used a bundled advanced converter
 	 * which was removed for license reasons in #232.
 	 * Example usage:
@@ -3139,30 +3177,6 @@ class PHPMailer extends MailerAbstract{
 		}
 
 		return $text;
-	}
-
-	/**
-	 * Set the public and private key files and password for S/MIME signing.
-	 *
-	 * @param string $cert_filename
-	 * @param string $key_filename
-	 * @param string $key_pass            Password for private key
-	 * @param string $extracerts_filename Optional path to chain certificate
-	 *
-	 * @return \PHPMailer\PHPMailer\PHPMailer
-	 */
-	public function setSign(
-		string $cert_filename,
-		string $key_filename,
-		string $key_pass,
-		string $extracerts_filename = ''
-	):PHPMailer{
-		$this->sign_cert_file       = $cert_filename;
-		$this->sign_key_file        = $key_filename;
-		$this->sign_key_pass        = $key_pass;
-		$this->sign_extracerts_file = $extracerts_filename;
-
-		return $this;
 	}
 
 	/**
@@ -3337,56 +3351,6 @@ class PHPMailer extends MailerAbstract{
 	}
 
 	/**
-	 * Allows for public read access to 'to' property.
-	 * Before the send() call, queued addresses (i.e. with IDN) are not yet included.
-	 *
-	 * @return array
-	 */
-	public function getToAddresses():array{
-		return $this->to;
-	}
-
-	/**
-	 * Allows for public read access to 'cc' property.
-	 * Before the send() call, queued addresses (i.e. with IDN) are not yet included.
-	 *
-	 * @return array
-	 */
-	public function getCcAddresses():array{
-		return $this->cc;
-	}
-
-	/**
-	 * Allows for public read access to 'bcc' property.
-	 * Before the send() call, queued addresses (i.e. with IDN) are not yet included.
-	 *
-	 * @return array
-	 */
-	public function getBccAddresses():array{
-		return $this->bcc;
-	}
-
-	/**
-	 * Allows for public read access to 'ReplyTo' property.
-	 * Before the send() call, queued addresses (i.e. with IDN) are not yet included.
-	 *
-	 * @return array
-	 */
-	public function getReplyToAddresses():array{
-		return $this->ReplyTo;
-	}
-
-	/**
-	 * Allows for public read access to 'all_recipients' property.
-	 * Before the send() call, queued addresses (i.e. with IDN) are not yet included.
-	 *
-	 * @return array
-	 */
-	public function getAllRecipientAddresses():array{
-		return $this->all_recipients;
-	}
-
-	/**
 	 * Perform a callback.
 	 *
 	 * @param bool   $isSent
@@ -3402,6 +3366,48 @@ class PHPMailer extends MailerAbstract{
 		if(!empty($this->action_function) && \is_callable($this->action_function)){
 			\call_user_func($this->action_function, $isSent, $to, $cc, $bcc, $subject, $body, $from, $extra);
 		}
+	}
+
+	/**
+	 * @todo
+	 * Check if an error occurred.
+	 *
+	 * @return bool True if an error did occur
+	 */
+	public function isError():bool{
+		return $this->error_count > 0;
+	}
+
+	/**
+	 * @todo
+	 * Add an error message to the error container.
+	 *
+	 * @param string $msg
+	 */
+	protected function setError(string $msg):void{
+		++$this->error_count;
+
+		if($this->Mailer === 'smtp' && $this->smtp instanceof SMTP){
+			$lasterror = $this->smtp->getError();
+
+			if(!empty($lasterror['error'])){
+				$msg .= $this->lang('smtp_error').$lasterror['error'];
+
+				if(!empty($lasterror['detail'])){
+					$msg .= ' Detail: '.$lasterror['detail'];
+				}
+
+				if(!empty($lasterror['smtp_code'])){
+					$msg .= ' SMTP code: '.$lasterror['smtp_code'];
+				}
+
+				if(!empty($lasterror['smtp_code_ex'])){
+					$msg .= ' Additional SMTP info: '.$lasterror['smtp_code_ex'];
+				}
+			}
+		}
+
+		$this->ErrorInfo = $msg;
 	}
 
 }

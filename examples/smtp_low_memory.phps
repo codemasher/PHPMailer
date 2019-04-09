@@ -121,7 +121,7 @@ class PHPMailerLowMemory extends PHPMailer{
 	 *
 	 * @return SMTP
 	 */
-	public function getSMTPInstance():SMTP{
+	public function getSMTP():SMTP{
 
 		if(!$this->smtp instanceof SMTP){
 			$this->smtp = new SMTPLowMemory;

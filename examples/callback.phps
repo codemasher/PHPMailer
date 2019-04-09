@@ -47,11 +47,11 @@ $mail = new PHPMailer;
 try{
 	$mail->setMailerMail();
 	$mail->setFrom('you@example.com', 'Your Name');
-	$mail->addAddress('jane@example.com', 'Jane Doe');
+	$mail->addTO('jane@example.com', 'Jane Doe');
 	$mail->addCC('john@example.com', 'John Doe');
 	$mail->Subject = 'PHPMailer Test Subject';
-	$mail->msgHTML(file_get_contents('../examples/contents.html'));
-	// optional - msgHTML will create an alternate automatically
+	$mail->messageFromHTML(file_get_contents('../examples/contents.html'));
+	// optional - messageFromHTML will create an alternate automatically
 	$mail->AltBody = 'To view the message, please use an HTML compatible email viewer!';
 	$mail->addAttachment('images/phpmailer_mini.png'); // attachment
 	$mail->action_function = 'callbackAction';

@@ -309,7 +309,7 @@ final class PHPMailerTest extends TestCase{
 	private function setAddress($sAddress, $sName = '', $sType = 'to'){
 		switch($sType){
 			case 'to':
-				return $this->Mail->addAddress($sAddress, $sName);
+				return $this->Mail->addTO($sAddress, $sName);
 			case 'cc':
 				return $this->Mail->addCC($sAddress, $sName);
 			case 'bcc':
@@ -337,7 +337,7 @@ final class PHPMailerTest extends TestCase{
 		$this->Mail->From       = 'from@example.com';
 		$this->Mail->Sender     = 'from@example.com';
 		$this->Mail->clearAllRecipients();
-		$this->Mail->addAddress('user@example.com');
+		$this->Mail->addTO('user@example.com');
 		$this->assertTrue($this->Mail->send(), $this->Mail->ErrorInfo);
 	}
 
@@ -369,20 +369,20 @@ final class PHPMailerTest extends TestCase{
 			return 'user@example.com' === $address;
 		};
 		$this->assertTrue(
-			$this->Mail->addAddress('user@example.com'),
+			$this->Mail->addTO('user@example.com'),
 			'Custom default validator false negative'
 		);
 		$this->assertFalse(
 		//Need to pick a failing value which would pass all other validators
 		//to be sure we're using our custom one
-			$this->Mail->addAddress('bananas@example.com'),
+			$this->Mail->addTO('bananas@example.com'),
 			'Custom default validator false positive'
 		);
 		//Set default validator to PHP built-in
 		$this->Mail->validator = 'php';
 		$this->assertFalse(
 		//This is a valid address that FILTER_VALIDATE_EMAIL thinks is invalid
-			$this->Mail->addAddress('first.last@example.123'),
+			$this->Mail->addTO('first.last@example.123'),
 			'PHP validator not behaving as expected'
 		);
 	}
@@ -713,7 +713,7 @@ EOT;
 		// This is the string 'éèîüçÅñæß' in ISO-8859-1, base-64 encoded
 		$check = base64_decode('6eju/OfF8ebf');
 		//Make sure it really is in ISO-8859-1!
-		$this->Mail->msgHTML(
+		$this->Mail->messageFromHTML(
 			mb_convert_encoding(
 				$content,
 				'ISO-8859-1',
@@ -825,17 +825,17 @@ EOT;
 		$this->Mail->Body    = '';
 		$this->Mail->AltBody = '';
 		//Uses internal HTML to text conversion
-		$this->Mail->msgHTML($message, realpath($this->INCLUDE_DIR.'/examples'));
-		$sub                 = $this->Mail->Subject.': msgHTML';
+		$this->Mail->messageFromHTML($message, realpath($this->INCLUDE_DIR.'/examples'));
+		$sub                 = $this->Mail->Subject.': messageFromHTML';
 		$this->Mail->Subject .= $sub;
 
-		$this->assertNotEmpty($this->Mail->Body, 'Body not set by msgHTML');
-		$this->assertNotEmpty($this->Mail->AltBody, 'AltBody not set by msgHTML');
+		$this->assertNotEmpty($this->Mail->Body, 'Body not set by messageFromHTML');
+		$this->assertNotEmpty($this->Mail->AltBody, 'AltBody not set by messageFromHTML');
 		$this->assertTrue($this->Mail->send(), $this->Mail->ErrorInfo);
 
 		//Again, using a custom HTML to text converter
 		$this->Mail->AltBody = '';
-		$this->Mail->msgHTML(
+		$this->Mail->messageFromHTML(
 			$message,
 			realpath($this->INCLUDE_DIR.'/examples'),
 			function($html){
@@ -846,23 +846,23 @@ EOT;
 		$this->assertTrue($this->Mail->send(), $this->Mail->ErrorInfo);
 
 		//Test that local paths without a basedir are ignored
-		$this->Mail->msgHTML('<img src="/etc/hostname">test');
+		$this->Mail->messageFromHTML('<img src="/etc/hostname">test');
 		$this->assertStringContainsString('src="/etc/hostname"', $this->Mail->Body);
 		//Test that local paths with a basedir are not ignored
-		$this->Mail->msgHTML('<img src="composer.json">test', realpath($this->INCLUDE_DIR));
+		$this->Mail->messageFromHTML('<img src="composer.json">test', realpath($this->INCLUDE_DIR));
 		$this->assertStringNotContainsString('src="composer.json"', $this->Mail->Body);
 		//Test that local paths with parent traversal are ignored
-		$this->Mail->msgHTML('<img src="../composer.json">test', realpath($this->INCLUDE_DIR));
+		$this->Mail->messageFromHTML('<img src="../composer.json">test', realpath($this->INCLUDE_DIR));
 		$this->assertStringNotContainsString('src="composer.json"', $this->Mail->Body);
 		//Test that existing embedded URLs are ignored
-		$this->Mail->msgHTML('<img src="cid:5d41402abc4b2a76b9719d911017c592">test');
+		$this->Mail->messageFromHTML('<img src="cid:5d41402abc4b2a76b9719d911017c592">test');
 		$this->assertStringContainsString('src="cid:5d41402abc4b2a76b9719d911017c592"', $this->Mail->Body);
 		//Test that absolute URLs are ignored
-		$this->Mail->msgHTML('<img src="https://github.com/PHPMailer/PHPMailer/blob/master/composer.json">test');
+		$this->Mail->messageFromHTML('<img src="https://github.com/PHPMailer/PHPMailer/blob/master/composer.json">test');
 		$this->assertStringContainsString('src="https://github.com/PHPMailer/PHPMailer/blob/master/composer.json"', $this->Mail->Body);
 		//Test that absolute URLs with anonymous/relative protocol are ignored
 		//Note that such URLs will not work in email anyway because they have no protocol to be relative to
-		$this->Mail->msgHTML('<img src="//github.com/PHPMailer/PHPMailer/blob/master/composer.json">test');
+		$this->Mail->messageFromHTML('<img src="//github.com/PHPMailer/PHPMailer/blob/master/composer.json">test');
 		$this->assertStringContainsString('src="//github.com/PHPMailer/PHPMailer/blob/master/composer.json"', $this->Mail->Body);
 	}
 
@@ -1113,20 +1113,20 @@ EOT;
 		$this->Mail->Body = 'Sending via mail()';
 		$this->buildBody();
 		$this->Mail->Subject = $this->Mail->Subject.': mail()';
-		$this->Mail->clearAddresses();
+		$this->Mail->clearTOs();
 		$this->Mail->clearCCs();
 		$this->Mail->clearBCCs();
 		$this->setAddress('testmailsend@example.com', 'totest');
 		$this->setAddress('cctestmailsend@example.com', 'cctest', $sType = 'cc');
 		$this->setAddress('bcctestmailsend@example.com', 'bcctest', $sType = 'bcc');
 		$this->Mail->addReplyTo('replytotestmailsend@example.com', 'replytotest');
-		$this->assertContains('testmailsend@example.com', $this->Mail->getToAddresses()[0]);
-		$this->assertContains('cctestmailsend@example.com', $this->Mail->getCcAddresses()[0]);
-		$this->assertContains('bcctestmailsend@example.com', $this->Mail->getBccAddresses()[0]);
-		$this->assertContains('replytotestmailsend@example.com', $this->Mail->getReplyToAddresses()['replytotestmailsend@example.com']);
-		$this->assertTrue($this->Mail->getAllRecipientAddresses()['testmailsend@example.com']);
-		$this->assertTrue($this->Mail->getAllRecipientAddresses()['cctestmailsend@example.com']);
-		$this->assertTrue($this->Mail->getAllRecipientAddresses()['bcctestmailsend@example.com']);
+		$this->assertContains('testmailsend@example.com', $this->Mail->getTOs()[0]);
+		$this->assertContains('cctestmailsend@example.com', $this->Mail->getCCs()[0]);
+		$this->assertContains('bcctestmailsend@example.com', $this->Mail->getBCCs()[0]);
+		$this->assertContains('replytotestmailsend@example.com', $this->Mail->getReplyTos()['replytotestmailsend@example.com']);
+		$this->assertTrue($this->Mail->getAllRecipients()['testmailsend@example.com']);
+		$this->assertTrue($this->Mail->getAllRecipients()['cctestmailsend@example.com']);
+		$this->assertTrue($this->Mail->getAllRecipients()['bcctestmailsend@example.com']);
 
 		$this->Mail->setMailerMail();
 		$this->assertTrue($this->Mail->send(), $this->Mail->ErrorInfo);
@@ -1230,7 +1230,7 @@ EOT;
 
 		$this->Mail->Subject = $subject.': SMTP keep-alive 2';
 		$this->assertTrue($this->Mail->send(), $this->Mail->ErrorInfo);
-		$this->Mail->smtpClose();
+		$this->Mail->closeSMTP();
 	}
 
 	/**
@@ -1278,7 +1278,7 @@ EOT;
 		$this->assertTrue($this->Mail->send() == false, 'send succeeded');
 		$this->assertTrue($this->Mail->isError(), 'No error found');
 		$this->assertEquals('You must provide at least one recipient email address.', $this->Mail->ErrorInfo);
-		$this->Mail->addAddress(TEST_MAIL_TO);
+		$this->Mail->addTO(TEST_MAIL_TO);
 		$this->assertTrue($this->Mail->send(), 'send failed');
 	}
 
@@ -1286,11 +1286,11 @@ EOT;
 	 * Test addressing.
 	 */
 	public function testAddressing(){
-		$this->assertFalse($this->Mail->addAddress(''), 'Empty address accepted');
-		$this->assertFalse($this->Mail->addAddress('', 'Nobody'), 'Empty address with name accepted');
-		$this->assertFalse($this->Mail->addAddress('a@example..com'), 'Invalid address accepted');
-		$this->assertTrue($this->Mail->addAddress('a@example.com'), 'Addressing failed');
-		$this->assertFalse($this->Mail->addAddress('a@example.com'), 'Duplicate addressing failed');
+		$this->assertFalse($this->Mail->addTO(''), 'Empty address accepted');
+		$this->assertFalse($this->Mail->addTO('', 'Nobody'), 'Empty address with name accepted');
+		$this->assertFalse($this->Mail->addTO('a@example..com'), 'Invalid address accepted');
+		$this->assertTrue($this->Mail->addTO('a@example.com'), 'Addressing failed');
+		$this->assertFalse($this->Mail->addTO('a@example.com'), 'Duplicate addressing failed');
 		$this->assertTrue($this->Mail->addCC('b@example.com'), 'CC addressing failed');
 		$this->assertFalse($this->Mail->addCC('b@example.com'), 'CC duplicate addressing failed');
 		$this->assertFalse($this->Mail->addCC('a@example.com'), 'CC duplicate addressing failed (2)');
@@ -1317,8 +1317,8 @@ EOT;
 	 */
 	public function testAddressEscaping(){
 		$this->Mail->Subject .= ': Address escaping';
-		$this->Mail->clearAddresses();
-		$this->Mail->addAddress('foo@example.com', 'Tim "The Book" O\'Reilly');
+		$this->Mail->clearTOs();
+		$this->Mail->addTO('foo@example.com', 'Tim "The Book" O\'Reilly');
 		$this->Mail->Body = 'Test correct escaping of quotes in addresses.';
 		$this->buildBody();
 		$this->Mail->preSend();
@@ -1326,9 +1326,9 @@ EOT;
 		$this->assertStringContainsString('To: "Tim \"The Book\" O\'Reilly" <foo@example.com>', $b);
 
 		$this->Mail->Subject .= ': Address escaping invalid';
-		$this->Mail->clearAddresses();
-		$this->Mail->addAddress('foo@example.com', 'Tim "The Book" O\'Reilly');
-		$this->Mail->addAddress('invalidaddressexample.com', 'invalidaddress');
+		$this->Mail->clearTOs();
+		$this->Mail->addTO('foo@example.com', 'Tim "The Book" O\'Reilly');
+		$this->Mail->addTO('invalidaddressexample.com', 'invalidaddress');
 		$this->Mail->Body = 'invalid address';
 		$this->buildBody();
 		$this->Mail->preSend();
@@ -1365,7 +1365,7 @@ EOT;
 		$this->Mail->Subject .= ': BCC-only addressing';
 		$this->buildBody();
 		$this->Mail->clearAllRecipients();
-		$this->Mail->addAddress('foo@example.com', 'Foo');
+		$this->Mail->addTO('foo@example.com', 'Foo');
 		$this->Mail->preSend();
 		$b = $this->Mail->getSentMIMEMessage();
 		$this->assertTrue($this->Mail->addBCC('a@example.com'), 'BCC addressing failed');
@@ -1439,7 +1439,7 @@ EOT;
 		openssl_pkey_export($pk, $pkeyout, $password);
 		file_put_contents($keyfile, $pkeyout);
 
-		$this->Mail->setSign($certfile, $keyfile, $password);
+		$this->Mail->setSignCredentials($certfile, $keyfile, $password);
 
 		$this->assertTrue($this->Mail->send(), 'S/MIME signing failed');
 
@@ -1522,7 +1522,7 @@ EOT;
 		openssl_pkey_export($pk, $pkeyout, $password);
 		file_put_contents($keyfile, $pkeyout);
 
-		$this->Mail->setSign($certfile, $keyfile, $password, $cacertfile);
+		$this->Mail->setSignCredentials($certfile, $keyfile, $password, $cacertfile);
 
 		$this->assertTrue($this->Mail->send(), 'S/MIME signing with CA failed');
 		unlink($cacertfile);
@@ -1794,7 +1794,7 @@ EOT;
 	 */
 	public function testBadSMTP(){
 		$this->Mail->smtpConnect();
-		$smtp = $this->Mail->getSMTPInstance();
+		$smtp = $this->Mail->getSMTP();
 		$this->assertFalse($smtp->mail("somewhere\nbad"), 'Bad SMTP command containing breaks accepted');
 	}
 
@@ -1881,16 +1881,16 @@ EOT;
 
 		// This file is UTF-8 encoded. Create a domain encoded in "iso-8859-1".
 		$domain = '@'.mb_convert_encoding('françois.ch', 'ISO-8859-1', 'UTF-8');
-		$this->Mail->addAddress('test'.$domain);
+		$this->Mail->addTO('test'.$domain);
 		$this->Mail->addCC('test+cc'.$domain);
 		$this->Mail->addBCC('test+bcc'.$domain);
 		$this->Mail->addReplyTo('test+replyto'.$domain);
 
 		// Queued addresses are not returned by get*Addresses() before send() call.
-		$this->assertEmpty($this->Mail->getToAddresses(), 'Bad "to" recipients');
-		$this->assertEmpty($this->Mail->getCcAddresses(), 'Bad "cc" recipients');
-		$this->assertEmpty($this->Mail->getBccAddresses(), 'Bad "bcc" recipients');
-		$this->assertEmpty($this->Mail->getReplyToAddresses(), 'Bad "reply-to" recipients');
+		$this->assertEmpty($this->Mail->getTOs(), 'Bad "to" recipients');
+		$this->assertEmpty($this->Mail->getCCs(), 'Bad "cc" recipients');
+		$this->assertEmpty($this->Mail->getBCCs(), 'Bad "bcc" recipients');
+		$this->assertEmpty($this->Mail->getReplyTos(), 'Bad "reply-to" recipients');
 
 		// Clear queued BCC recipient.
 		$this->Mail->clearBCCs();
@@ -1902,18 +1902,18 @@ EOT;
 		$domain = $this->Mail->punyencodeAddress($domain);
 		$this->assertEquals(
 			[['test'.$domain, '']],
-			$this->Mail->getToAddresses(),
+			$this->Mail->getTOs(),
 			'Bad "to" recipients'
 		);
 		$this->assertEquals(
 			[['test+cc'.$domain, '']],
-			$this->Mail->getCcAddresses(),
+			$this->Mail->getCCs(),
 			'Bad "cc" recipients'
 		);
-		$this->assertEmpty($this->Mail->getBccAddresses(), 'Bad "bcc" recipients');
+		$this->assertEmpty($this->Mail->getBCCs(), 'Bad "bcc" recipients');
 		$this->assertEquals(
 			['test+replyto'.$domain => ['test+replyto'.$domain, '']],
-			$this->Mail->getReplyToAddresses(),
+			$this->Mail->getReplyTos(),
 			'Bad "reply-to" addresses'
 		);
 	}
@@ -1933,13 +1933,13 @@ EOT;
 
 		$this->Mail->CharSet = 'utf-8';
 
-		$this->assertTrue($this->Mail->addAddress('test@françois.ch'));
-		$this->assertFalse($this->Mail->addAddress('test@françois.ch'));
-		$this->assertTrue($this->Mail->addAddress('test@FRANÇOIS.CH'));
-		$this->assertFalse($this->Mail->addAddress('test@FRANÇOIS.CH'));
-		$this->assertTrue($this->Mail->addAddress('test@xn--franois-xxa.ch'));
-		$this->assertFalse($this->Mail->addAddress('test@xn--franois-xxa.ch'));
-		$this->assertFalse($this->Mail->addAddress('test@XN--FRANOIS-XXA.CH'));
+		$this->assertTrue($this->Mail->addTO('test@françois.ch'));
+		$this->assertFalse($this->Mail->addTO('test@françois.ch'));
+		$this->assertTrue($this->Mail->addTO('test@FRANÇOIS.CH'));
+		$this->assertFalse($this->Mail->addTO('test@FRANÇOIS.CH'));
+		$this->assertTrue($this->Mail->addTO('test@xn--franois-xxa.ch'));
+		$this->assertFalse($this->Mail->addTO('test@xn--franois-xxa.ch'));
+		$this->assertFalse($this->Mail->addTO('test@XN--FRANOIS-XXA.CH'));
 
 		$this->assertTrue($this->Mail->addReplyTo('test+replyto@françois.ch'));
 		$this->assertFalse($this->Mail->addReplyTo('test+replyto@françois.ch'));
@@ -1955,12 +1955,12 @@ EOT;
 		// There should be only one "To" address and one "Reply-To" address.
 		$this->assertEquals(
 			1,
-			\count($this->Mail->getToAddresses()),
+			\count($this->Mail->getTOs()),
 			'Bad count of "to" recipients'
 		);
 		$this->assertEquals(
 			1,
-			\count($this->Mail->getReplyToAddresses()),
+			\count($this->Mail->getReplyTos()),
 			'Bad count of "reply-to" addresses'
 		);
 	}
@@ -2026,33 +2026,32 @@ EOT;
 	public function testSmtpConnect(){
 		$this->Mail->loglevel = $this->Mail::DEBUG_LOWLEVEL; //Show connection-level errors
 		$this->assertTrue($this->Mail->smtpConnect(), 'SMTP single connect failed');
-		$this->Mail->smtpClose();
+		$this->Mail->closeSMTP();
 
 		// $this->Mail->Host = 'localhost:12345;10.10.10.10:54321;' . TEST_MAIL_HOST;
 		// $this->assertTrue($this->Mail->smtpConnect(), 'SMTP multi-connect failed');
-		// $this->Mail->smtpClose();
+		// $this->Mail->closeSMTP();
 		// $this->Mail->Host = '[::1]:' . $this->Mail->Port . ';' . TEST_MAIL_HOST;
 		// $this->assertTrue($this->Mail->smtpConnect(), 'SMTP IPv6 literal multi-connect failed');
-		// $this->Mail->smtpClose();
+		// $this->Mail->closeSMTP();
 
 		// All these hosts are expected to fail
 		// $this->Mail->Host = 'xyz://bogus:25;tls://[bogus]:25;ssl://localhost:12345;tls://localhost:587;10.10.10.10:54321;localhost:12345;10.10.10.10'. TEST_MAIL_HOST.' ';
 		// $this->assertFalse($this->Mail->smtpConnect());
-		// $this->Mail->smtpClose();
+		// $this->Mail->closeSMTP();
 
 		$this->Mail->host = ' localhost:12345 ; '.TEST_MAIL_HOST.' ';
 		$this->assertTrue($this->Mail->smtpConnect(), 'SMTP hosts with stray spaces failed');
-		$this->Mail->smtpClose();
+		$this->Mail->closeSMTP();
 
 		// Need to pick a harmless option so as not cause problems of its own! socket:bind doesn't work with Travis-CI
 		$this->Mail->host = TEST_MAIL_HOST;
 		$this->assertTrue($this->Mail->smtpConnect(['ssl' => ['verify_depth' => 10]]));
 
-		$this->Smtp = $this->Mail->getSMTPInstance();
-		$this->assertInstanceOf(\get_class($this->Smtp), $this->Mail->setSMTPInstance($this->Smtp));
+		$this->Smtp = $this->Mail->getSMTP();
 		$this->assertFalse($this->Smtp->startTLS(), 'SMTP connect with options failed');
 		$this->assertFalse($this->Mail->SMTPAuth);
-		$this->Mail->smtpClose();
+		$this->Mail->closeSMTP();
 	}
 
 	/**
