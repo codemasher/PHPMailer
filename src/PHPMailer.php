@@ -869,6 +869,8 @@ class PHPMailer extends MailerAbstract{
 	}
 
 	/**
+	 * @todo: make protected
+	 *
 	 * Converts IDN in given email address to its ASCII form, also known as punycode, if possible.
 	 * Important: Address must be passed in same encoding as currently set in PHPMailer::$CharSet.
 	 * This function silently returns unmodified address if:
@@ -1465,7 +1467,7 @@ class PHPMailer extends MailerAbstract{
 	 *
 	 * @return string
 	 */
-	public function addrAppend(string $type, array $addr):string{
+	protected function addrAppend(string $type, array $addr):string{
 		$addresses = [];
 
 		foreach($addr as $address){
@@ -1483,7 +1485,7 @@ class PHPMailer extends MailerAbstract{
 	 *
 	 * @return string
 	 */
-	public function addrFormat(array $addr):string{
+	protected function addrFormat(array $addr):string{
 
 		if(empty($addr[1])){ // No name provided
 			return secureHeader($addr[0]);
@@ -1493,6 +1495,8 @@ class PHPMailer extends MailerAbstract{
 	}
 
 	/**
+	 * @todo: make protected
+	 *
 	 * Word-wrap message.
 	 * For use with mailers that do not automatically perform wrapping
 	 * and for quoted-printable encoded messages.
@@ -1620,7 +1624,7 @@ class PHPMailer extends MailerAbstract{
 	 *
 	 * @return \PHPMailer\PHPMailer\PHPMailer
 	 */
-	public function setWordWrap():PHPMailer{
+	protected function setWordWrap():PHPMailer{
 
 		if($this->WordWrap < 1){
 			return $this;
@@ -1797,6 +1801,8 @@ class PHPMailer extends MailerAbstract{
 	}
 
 	/**
+	 * @todo: make protected
+	 *
 	 * Assemble the message body.
 	 * Returns an empty string on failure.
 	 *
@@ -2099,7 +2105,7 @@ class PHPMailer extends MailerAbstract{
 	 *
 	 * @return string
 	 */
-	public function headerLine(string $name, string $value):string{
+	protected function headerLine(string $name, string $value):string{
 		return $name.': '.$value.$this->LE;
 	}
 
@@ -2110,7 +2116,7 @@ class PHPMailer extends MailerAbstract{
 	 *
 	 * @return string
 	 */
-	public function textLine(string $value):string{
+	protected function textLine(string $value):string{
 		return $value.$this->LE;
 	}
 
@@ -2128,8 +2134,6 @@ class PHPMailer extends MailerAbstract{
 	 * @param string $disposition Disposition to use
 	 *
 	 * @return bool
-	 * @throws PHPMailerException
-	 *
 	 */
 	public function addAttachment(
 		string $path,
@@ -2323,6 +2327,8 @@ class PHPMailer extends MailerAbstract{
 	}
 
 	/**
+	 * @todo: make protected
+	 *
 	 * Encode a string in requested format.
 	 * Returns an empty string on failure.
 	 *
@@ -2360,6 +2366,8 @@ class PHPMailer extends MailerAbstract{
 	}
 
 	/**
+	 * @todo: make protected
+	 *
 	 * Encode a header value (not including its label) optimally.
 	 * Picks shortest of Q, B, or none. Result includes folding if needed.
 	 * See RFC822 definitions for phrase, comment and text positions.
@@ -2461,7 +2469,7 @@ class PHPMailer extends MailerAbstract{
 	 *
 	 * @return bool
 	 */
-	public function hasMultiBytes(string $str):bool{
+	protected function hasMultiBytes(string $str):bool{
 		return \strlen($str) > \mb_strlen($str, $this->CharSet);
 	}
 
@@ -2477,7 +2485,7 @@ class PHPMailer extends MailerAbstract{
 	 *
 	 * @return string
 	 */
-	public function base64EncodeWrapMB(string $str, string $linebreak = null){
+	protected function base64EncodeWrapMB(string $str, string $linebreak = null):string{
 		$linebreak = $linebreak ?? $this->LE;
 		$start     = '=?'.$this->CharSet.'?B?';
 		$end       = '?=';
@@ -2510,6 +2518,8 @@ class PHPMailer extends MailerAbstract{
 	}
 
 	/**
+	 * @todo: make protected
+	 *
 	 * Encode a string in quoted-printable format.
 	 * According to RFC2045 section 6.7.
 	 *
@@ -2723,7 +2733,7 @@ class PHPMailer extends MailerAbstract{
 	 *
 	 * @return bool
 	 */
-	public function alternativeExists():bool{
+	protected function alternativeExists():bool{
 		return !empty($this->AltBody);
 	}
 
@@ -3081,7 +3091,7 @@ class PHPMailer extends MailerAbstract{
 	 *
 	 * @return string
 	 */
-	public function html2text(string $html, $advanced = null):string{
+	protected function html2text(string $html, $advanced = null):string{
 
 		if(\is_callable($advanced)){
 			return \call_user_func($advanced, $html);
@@ -3095,6 +3105,8 @@ class PHPMailer extends MailerAbstract{
 	}
 
 	/**
+	 * @todo: make protected
+	 *
 	 * Normalize line breaks in a string.
 	 * Converts UNIX LF, Mac CR and Windows CRLF line breaks into a single line break format.
 	 * Defaults to CRLF (for message bodies) and preserves consecutive breaks.
@@ -3142,6 +3154,8 @@ class PHPMailer extends MailerAbstract{
 	}
 
 	/**
+	 * @todo: make protected
+	 *
 	 * Generate a DKIM canonicalization body.
 	 * Uses the 'simple' algorithm from RFC6376 section 3.4.3.
 	 * Canonicalized bodies should *always* use CRLF, regardless of mailer setting.
@@ -3297,6 +3311,8 @@ class PHPMailer extends MailerAbstract{
 	}
 
 	/**
+	 * @todo: make protected
+	 *
 	 * Detect if a string contains a line longer than the maximum line length
 	 * allowed by RFC 2822 section 2.1.1.
 	 *
