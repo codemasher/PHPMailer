@@ -196,7 +196,7 @@ abstract class MailerAbstract implements LoggerAwareInterface{
 	 *
 	 * @var bool
 	 */
-	public $exceptions = false;
+	public $exceptions = true;
 
 	/**
 	 * Debug output level.

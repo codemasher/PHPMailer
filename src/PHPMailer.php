@@ -739,8 +739,6 @@ class PHPMailer extends MailerAbstract{
 	 * @param string|null $name
 	 *
 	 * @return bool true on success, false if address already used or invalid in some way
-	 * @throws PHPMailerException
-	 *
 	 */
 	protected function addOrEnqueueAnAddress(string $kind, string $address, string $name = null):bool{
 		$address = \trim($address);
@@ -754,10 +752,6 @@ class PHPMailer extends MailerAbstract{
 
 			$this->setError($error_message);
 			$this->edebug($error_message);
-
-			if($this->exceptions){
-				throw new PHPMailerException($error_message);
-			}
 
 			return false;
 		}
@@ -797,7 +791,6 @@ class PHPMailer extends MailerAbstract{
 	 * @param string|null $name
 	 *
 	 * @return bool true on success, false if address already used or invalid in some way
-	 * @throws PHPMailerException
 	 */
 	protected function addAnAddress(string $kind, string $address, string $name = null):bool{
 
@@ -807,23 +800,14 @@ class PHPMailer extends MailerAbstract{
 			$this->setError($error_message);
 			$this->edebug($error_message);
 
-			if($this->exceptions){
-				throw new PHPMailerException($error_message);
-			}
-
 			return false;
 		}
 
 		if(!validateAddress($address, $this->validator)){
-			// @todo: errorhandler
 			$error_message = \sprintf('%s (%s): %s', $this->lang('invalid_address'), $kind, $address);
 
 			$this->setError($error_message);
 			$this->edebug($error_message);
-
-			if($this->exceptions){
-				throw new PHPMailerException($error_message);
-			}
 
 			return false;
 		}
@@ -2053,13 +2037,14 @@ class PHPMailer extends MailerAbstract{
 					throw new PHPMailerException($this->lang('extension_missing').'openssl');
 				}
 
+				// @todo: openssl_pkcs7_sign() expects parameter 1 to be a valid path, resource given
 				$file   = \fopen('php://temp', 'rb+');
 				$signed = \fopen('php://temp', 'rb+');
 				\fwrite($file, $body);
 
 				// Workaround for PHP bug https://bugs.php.net/bug.php?id=69197 @todo: does this bug still exist in 7.2+???
 				if(empty($this->sign_extracerts_file)){
-					$sign = @\openssl_pkcs7_sign(
+					$sign = \openssl_pkcs7_sign(
 						$file,
 						$signed,
 						'file://'.\realpath($this->sign_cert_file),
@@ -2068,7 +2053,7 @@ class PHPMailer extends MailerAbstract{
 					);
 				}
 				else{
-					$sign = @\openssl_pkcs7_sign(
+					$sign = \openssl_pkcs7_sign(
 						$file,
 						$signed,
 						'file://'.\realpath($this->sign_cert_file),
@@ -2230,42 +2215,35 @@ class PHPMailer extends MailerAbstract{
 		string $disposition = 'attachment'
 	):bool{
 
-		try{
-			if(!isPermittedPath($path) || !@\is_file($path)){
-				throw new PHPMailerException($this->lang('file_access').$path, $this::STOP_CONTINUE);
-			}
+		if(!isPermittedPath($path) || !@\is_file($path)){
+			$msg = $this->lang('file_access').$path;
 
-			// If a MIME type is not specified, try to work it out from the file name
-			if(empty($type)){
-				$type = filenameToType($path);
-			}
-
-			$filename = \basename($path);
-			if(empty($name)){
-				$name = $filename;
-			}
-
-			$this->attachment[] = [
-				0 => $path,
-				1 => $filename,
-				2 => $name,
-				3 => $encoding,
-				4 => $type,
-				5 => false, // isStringAttachment
-				6 => $disposition,
-				7 => $name,
-			];
-		}
-		catch(PHPMailerException $e){
-			// @todo: errorhandler
-			$this->setError($e->getMessage());
-			$this->edebug($e->getMessage());
-			if($this->exceptions){
-				throw $e;
-			}
+			$this->setError($msg);
+			$this->edebug($msg);
 
 			return false;
 		}
+
+		// If a MIME type is not specified, try to work it out from the file name
+		if(empty($type)){
+			$type = filenameToType($path);
+		}
+
+		$filename = \basename($path);
+		if(empty($name)){
+			$name = $filename;
+		}
+
+		$this->attachment[] = [
+			0 => $path,
+			1 => $filename,
+			2 => $name,
+			3 => $encoding,
+			4 => $type,
+			5 => false, // isStringAttachment
+			6 => $disposition,
+			7 => $name,
+		];
 
 		return true;
 	}
