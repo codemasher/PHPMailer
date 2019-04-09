@@ -101,7 +101,6 @@ class PHPMailer extends MailerAbstract{
 
 	/**
 	 * An HTML or plain text message body.
-	 * If HTML then call setMessageContentType(true).
 	 *
 	 * @var string
 	 */
@@ -166,7 +165,7 @@ class PHPMailer extends MailerAbstract{
 	 *
 	 * @var string
 	 */
-	public $Mailer = 'mail';
+	protected $Mailer = self::MAILER_MAIL;
 
 	/**
 	 * The path to the sendmail program.
@@ -595,28 +594,12 @@ class PHPMailer extends MailerAbstract{
 	}
 
 	/**
-	 * Sets message type to HTML or plain.
-	 *
-	 * @param bool $isHtml True for HTML mode
-	 *
-	 * @return \PHPMailer\PHPMailer\PHPMailer
-	 */
-	public function setMessageContentType(bool $isHtml = true):PHPMailer{
-
-		$this->ContentType = $isHtml
-			? $this::CONTENT_TYPE_TEXT_HTML
-			: $this::CONTENT_TYPE_PLAINTEXT;
-
-		return $this;
-	}
-
-	/**
 	 * Send messages using SMTP.
 	 *
 	 * @return \PHPMailer\PHPMailer\PHPMailer
 	 */
 	public function setMailerSMTP():PHPMailer{
-		$this->Mailer = 'smtp';
+		$this->Mailer = $this::MAILER_SMTP;
 
 		return $this;
 	}
@@ -627,7 +610,7 @@ class PHPMailer extends MailerAbstract{
 	 * @return \PHPMailer\PHPMailer\PHPMailer
 	 */
 	public function setMailerMail():PHPMailer{
-		$this->Mailer = 'mail';
+		$this->Mailer = $this::MAILER_MAIL;
 
 		return $this;
 	}
@@ -644,7 +627,7 @@ class PHPMailer extends MailerAbstract{
 			? '/usr/sbin/sendmail'
 			: $ini_sendmail_path;
 
-		$this->Mailer = 'sendmail';
+		$this->Mailer = $this::MAILER_SENDMAIL;
 
 		return $this;
 	}
@@ -661,9 +644,16 @@ class PHPMailer extends MailerAbstract{
 			? '/var/qmail/bin/qmail-inject'
 			: $ini_sendmail_path;
 
-		$this->Mailer = 'qmail';
+		$this->Mailer = $this::MAILER_QMAIL;
 
 		return $this;
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getMailer():string{
+		return $this->Mailer;
 	}
 
 	/**
@@ -3056,7 +3046,7 @@ class PHPMailer extends MailerAbstract{
 			}
 		}
 
-		$this->setMessageContentType(true);
+		$this->ContentType = $this::CONTENT_TYPE_TEXT_HTML;
 		// Convert all message body line breaks to LE, makes quoted-printable encoding work much better
 		$this->Body    = $this->normalizeBreaks($message);
 		$this->AltBody = $this->normalizeBreaks($this->html2text($message, $advanced));
