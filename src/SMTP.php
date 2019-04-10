@@ -219,16 +219,20 @@ class SMTP extends MailerAbstract{
 	 * Perform SMTP authentication.
 	 * Must be run after hello().
 	 *
-	 * @param string $username The user name
-	 * @param string $password The password
-	 * @param string $authtype The auth type (CRAM-MD5, PLAIN, LOGIN, XOAUTH2)
-	 * @param OAuth  $OAuth    An optional OAuth instance for XOAUTH2 authentication
+	 * @param string                          $username The user name
+	 * @param string                          $password The password
+	 * @param string                          $authtype The auth type (CRAM-MD5, PLAIN, LOGIN, XOAUTH2)
+	 * @param PHPMailerOAuthInterface $OAuth  $OAuth    An optional OAuth instance for XOAUTH2 authentication
 	 *
 	 * @return bool True if successfully authenticated
 	 * @see    hello()
-	 *
 	 */
-	public function authenticate(string $username, string $password, string $authtype = null, OAuth $OAuth = null):bool{
+	public function authenticate(
+		string $username,
+		string $password,
+		string $authtype = null,
+		PHPMailerOAuthInterface $OAuth = null
+	):bool{
 
 		if(!$this->server_caps){
 			$this->setError('Authentication is not allowed before HELO/EHLO');
