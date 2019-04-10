@@ -2405,6 +2405,13 @@ class PHPMailer extends MailerAbstract{
 		return $body;
 	}
 
+	/**
+	 * @param array  $boundary
+	 * @param string $bodyCharSet
+	 * @param string $bodyEncoding
+	 *
+	 * @return string
+	 */
 	protected function body_inline(array $boundary, string $bodyCharSet, string $bodyEncoding):string{
 		return $this->getBoundary($boundary[1], $bodyCharSet, '', $bodyEncoding)
 			.$this->encodeString($this->Body, $bodyEncoding)
@@ -2412,6 +2419,13 @@ class PHPMailer extends MailerAbstract{
 			.$this->attachAll('inline', $boundary[1]);
 	}
 
+	/**
+	 * @param array  $boundary
+	 * @param string $bodyCharSet
+	 * @param string $bodyEncoding
+	 *
+	 * @return string
+	 */
 	protected function body_attach(array $boundary, string $bodyCharSet, string $bodyEncoding):string{
 		return $this->getBoundary($boundary[1], $bodyCharSet, '', $bodyEncoding)
 			.$this->encodeString($this->Body, $bodyEncoding)
@@ -2419,6 +2433,13 @@ class PHPMailer extends MailerAbstract{
 			.$this->attachAll('attachment', $boundary[1]);
 	}
 
+	/**
+	 * @param array  $boundary
+	 * @param string $bodyCharSet
+	 * @param string $bodyEncoding
+	 *
+	 * @return string
+	 */
 	protected function body_inline_attach(array $boundary, string $bodyCharSet, string $bodyEncoding):string{
 		return $this->textLine('--'.$boundary[1])
 			.$this->headerLine('Content-Type', $this::CONTENT_TYPE_MULTIPART_RELATED.';')
@@ -2432,6 +2453,15 @@ class PHPMailer extends MailerAbstract{
 			.$this->attachAll('attachment', $boundary[1]);
 	}
 
+	/**
+	 * @param array  $boundary
+	 * @param string $bodyCharSet
+	 * @param string $bodyEncoding
+	 * @param string $altBodyCharSet
+	 * @param string $altBodyEncoding
+	 *
+	 * @return string
+	 */
 	protected function body_alt(array $boundary, string $bodyCharSet, string $bodyEncoding, string $altBodyCharSet, string $altBodyEncoding):string{
 		$body = $this->getBoundary($boundary[1], $altBodyCharSet, $this::CONTENT_TYPE_PLAINTEXT, $altBodyEncoding)
 			.$this->encodeString($this->AltBody, $altBodyEncoding)
@@ -2451,6 +2481,15 @@ class PHPMailer extends MailerAbstract{
 		return $body;
 	}
 
+	/**
+	 * @param array  $boundary
+	 * @param string $bodyCharSet
+	 * @param string $bodyEncoding
+	 * @param string $altBodyCharSet
+	 * @param string $altBodyEncoding
+	 *
+	 * @return string
+	 */
 	protected function body_alt_inline(array $boundary, string $bodyCharSet, string $bodyEncoding, string $altBodyCharSet, string $altBodyEncoding):string{
 		return $this->getBoundary($boundary[1], $altBodyCharSet, $this::CONTENT_TYPE_PLAINTEXT, $altBodyEncoding)
 			.$this->encodeString($this->AltBody, $altBodyEncoding)
@@ -2467,6 +2506,15 @@ class PHPMailer extends MailerAbstract{
 			.$this->endBoundary($boundary[1]);
 	}
 
+	/**
+	 * @param array  $boundary
+	 * @param string $bodyCharSet
+	 * @param string $bodyEncoding
+	 * @param string $altBodyCharSet
+	 * @param string $altBodyEncoding
+	 *
+	 * @return string
+	 */
 	protected function body_alt_attach(array $boundary, string $bodyCharSet, string $bodyEncoding, string $altBodyCharSet, string $altBodyEncoding):string{
 		$body = $this->textLine('--'.$boundary[1])
 			.$this->headerLine('Content-Type', $this::CONTENT_TYPE_MULTIPART_ALTERNATIVE.';')
@@ -2491,6 +2539,15 @@ class PHPMailer extends MailerAbstract{
 		return $body;
 	}
 
+	/**
+	 * @param array  $boundary
+	 * @param string $bodyCharSet
+	 * @param string $bodyEncoding
+	 * @param string $altBodyCharSet
+	 * @param string $altBodyEncoding
+	 *
+	 * @return string
+	 */
 	protected function body_alt_inline_attach(array $boundary, string $bodyCharSet, string $bodyEncoding, string $altBodyCharSet, string $altBodyEncoding):string{
 		return $this->textLine('--'.$boundary[1])
 			.$this->headerLine('Content-Type', $this::CONTENT_TYPE_MULTIPART_ALTERNATIVE.';')
