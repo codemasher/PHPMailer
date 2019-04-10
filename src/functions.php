@@ -472,6 +472,16 @@ function isPermittedPath(string $path):bool{
 	return !\preg_match('#^[a-z]+://#i', $path);
 }
 
+/**
+ * Checks whether a file (or link) exists & is readable
+ *
+ * @param string $file
+ *
+ * @return bool
+ */
+function fileCheck(string $file):bool{
+	return \file_exists($file) && \is_readable($file) && (\is_file($file) || (\is_link($file) && \is_file(\readlink($file))));
+}
 
 /**
  * Create a unique ID to use for boundaries.
@@ -715,11 +725,7 @@ function DKIM_Sign(string $signHeader, string $key, string $passphrase = null):s
 		throw new PHPMailerException('invalid DKIM private key');
 	}
 
-	if(\file_exists($key) && \is_file($key)){
-
-		if(!\is_readable($key)){
-			throw new PHPMailerException('DKIM private key file not readable');
-		}
+	if(fileCheck($key)){
 
 		if(!isPermittedPath($key)){
 			throw new PHPMailerException('path to DKIM private key is not permitted');
