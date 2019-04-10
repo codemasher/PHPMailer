@@ -208,10 +208,11 @@ final class PHPMailerTest extends TestCase{
 		if(count($attachments) > 0){
 			$ReportBody .= 'Attachments:'.$eol;
 			$ReportBody .= $list_start;
+			/** @var \PHPMailer\PHPMailer\Attachment $attachment */
 			foreach($attachments as $attachment){
-				$ReportBody .= $bullet_start.'Name: '.$attachment[1].', ';
-				$ReportBody .= 'Encoding: '.$attachment[3].', ';
-				$ReportBody .= 'Type: '.$attachment[4].$bullet_end;
+				$ReportBody .= $bullet_start.'Name: '.$attachment->name.', ';
+				$ReportBody .= 'Encoding: '.$attachment->encoding.', ';
+				$ReportBody .= 'Type: '.$attachment->type.$bullet_end;
 			}
 			$ReportBody .= $list_end.$eol;
 		}
