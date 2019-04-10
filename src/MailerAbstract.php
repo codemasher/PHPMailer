@@ -237,9 +237,18 @@ abstract class MailerAbstract implements LoggerAwareInterface{
 
 	/**
 	 * MailerAbstract constructor.
+	 *
+	 * @throws \PHPMailer\PHPMailer\PHPMailerException
 	 */
 	public function __construct(){
 		$this->logger = new NullLogger;
+
+		// check for missing extensions first (may ocur if not installed via composer)
+		foreach(['ctype', 'filter', 'mbstring', 'openssl'] as $ext){
+			if(!\extension_loaded($ext)){
+				throw new PHPMailerException($this->lang('extension_missing').$ext);
+			}
+		}
 
 		// This is enabled by default since 5.0.0 but some providers disable it
 		// Check this once and cache the result
