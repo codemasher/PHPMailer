@@ -14,7 +14,7 @@ require '../vendor/autoload.php';
 //Authenticate via POP3.
 //After this you should be allowed to submit messages over SMTP for a few minutes.
 //Only applies if your host supports POP-before-SMTP.
-$pop = POP3::popBeforeSmtp('pop3.example.com', 110, 30, 'username', 'password', 1);
+$pop = (new POP3)->authorise('pop3.example.com', 110, 30, 'username', 'password', 1);
 
 //Create a new PHPMailer instance
 $mail = new PHPMailer;
