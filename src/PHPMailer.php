@@ -326,19 +326,27 @@ class PHPMailer extends MailerAbstract{
 	public $AllowEmpty = false;
 
 	/**
+	 * DKIM signing domain name.
+	 *
+	 * @example 'example.com'
+	 *
+	 * @var string
+	 */
+	protected $DKIM_domain;
+
+	/**
 	 * DKIM selector.
 	 *
 	 * @var string
 	 */
-	public $DKIM_selector = '';
+	protected $DKIM_selector;
 
 	/**
-	 * DKIM Identity.
-	 * Usually the email address used as the source of the email.
+	 * DKIM private key file path or key string.
 	 *
 	 * @var string
 	 */
-	public $DKIM_identity = '';
+	protected $DKIM_key;
 
 	/**
 	 * DKIM passphrase.
@@ -346,23 +354,15 @@ class PHPMailer extends MailerAbstract{
 	 *
 	 * @var string
 	 */
-	public $DKIM_passphrase = '';
+	protected $DKIM_passphrase;
 
 	/**
-	 * DKIM signing domain name.
-	 *
-	 * @example 'example.com'
+	 * DKIM Identity.
+	 * Usually the email address used as the source of the email.
 	 *
 	 * @var string
 	 */
-	public $DKIM_domain = '';
-
-	/**
-	 * DKIM Copy header field values for diagnostic use.
-	 *
-	 * @var bool
-	 */
-	public $DKIM_copyHeaderFields = true;
+	protected $DKIM_identity;
 
 	/**
 	 * DKIM Extra signing headers.
@@ -371,14 +371,24 @@ class PHPMailer extends MailerAbstract{
 	 *
 	 * @var array
 	 */
-	public $DKIM_extraHeaders = [];
+	protected $DKIM_headers = [];
 
 	/**
-	 * DKIM private key file path or key string.
+	 * DKIM Copy header field values for diagnostic use.
 	 *
-	 * @var string
+	 * @var bool
 	 */
-	public $DKIM_private = '';
+	protected $DKIM_copyHeaders = true;
+
+	/**
+	 * @var bool
+	 */
+	protected $DKIMCredentials = false;
+
+	/**
+	 * @var bool
+	 */
+	public $DKIMSign = false;
 
 	/**
 	 * Callback Action function name.
@@ -558,6 +568,22 @@ class PHPMailer extends MailerAbstract{
 	 * @var string
 	 */
 	protected $sign_key_pass = '';
+
+	/**
+	 * Determines whether sign credentials are set
+	 *
+	 * @see setSignCredentials()
+	 *
+	 * @var bool
+	 */
+	protected $signCredentials = false;
+
+	/**
+	 * Wheter or not to sign a message
+	 *
+	 * @var bool
+	 */
+	public $sign = false;
 
 	/**
 	 * Destructor.
@@ -1312,17 +1338,92 @@ class PHPMailer extends MailerAbstract{
 	 * @param string $extracerts_filename Optional path to chain certificate
 	 *
 	 * @return \PHPMailer\PHPMailer\PHPMailer
+	 * @throws \PHPMailer\PHPMailer\PHPMailerException
 	 */
 	public function setSignCredentials(
 		string $cert_filename,
 		string $key_filename,
 		string $key_pass,
-		string $extracerts_filename = ''
+		string $extracerts_filename = null
 	):PHPMailer{
-		$this->sign_cert_file       = $cert_filename;
-		$this->sign_key_file        = $key_filename;
-		$this->sign_key_pass        = $key_pass;
-		$this->sign_extracerts_file = $extracerts_filename;
+
+		if(!fileCheck($cert_filename) || !isPermittedPath($cert_filename)){
+			throw new PHPMailerException('invalid sign cert file: '.$cert_filename);
+		}
+
+		if(!fileCheck($key_filename) || !isPermittedPath($key_filename)){
+			throw new PHPMailerException('invalid sign key file: '.$key_filename);
+		}
+
+		if(empty($key_pass)){
+			throw new PHPMailerException('invalid sign key passphrase');
+		}
+
+		$this->sign_cert_file = $cert_filename;
+		$this->sign_key_file  = $key_filename;
+		$this->sign_key_pass  = $key_pass;
+
+		if($extracerts_filename !== null){
+
+			if(!fileCheck($extracerts_filename) || !isPermittedPath($extracerts_filename)){
+				throw new PHPMailerException('invalid extra certs file: '.$extracerts_filename);
+			}
+
+			$this->sign_extracerts_file = $extracerts_filename;
+		}
+
+		$this->signCredentials = true;
+		// enable signing as soon as we get credentials
+		$this->sign            = true;
+
+		return $this;
+	}
+
+	/**
+	 * Sets the credentials for DKIM authentication
+	 *
+	 * @param string      $domain
+	 * @param string      $selector
+	 * @param string      $key
+	 * @param string|null $keyPassphrase
+	 * @param string|null $identity
+	 * @param array|null  $headers
+	 * @param bool|null   $copyHeaders
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailer
+	 * @throws \PHPMailer\PHPMailer\PHPMailerException
+	 */
+	public function setDKIMCredentials(
+		string $domain,
+		string $selector,
+		string $key,
+		string $keyPassphrase = null,
+		string $identity = null,
+		array $headers = null,
+		bool $copyHeaders = null
+	):PHPMailer{
+
+		foreach(['domain', 'selector', 'key'] as $arg){
+			${$arg} = \trim(${$arg});
+
+			if(empty(${$arg})){
+				throw new PHPMailerException($arg.' must not be empty');
+			}
+
+			$this->{'DKIM_'.$arg} = ${$arg};
+		}
+
+		if(fileCheck($key) && !isPermittedPath($key)){
+			throw new PHPMailerException('invalid key file path: '.$key);
+		}
+
+		$this->DKIM_passphrase  = !empty($keyPassphrase) ? $keyPassphrase : null;
+		$this->DKIM_identity    = $identity;
+		$this->DKIM_headers     = $headers ?? [];
+		$this->DKIM_copyHeaders = $copyHeaders ?? true;
+
+		$this->DKIMCredentials  = true;
+		$this->DKIMSign         = true;
 
 		return $this;
 	}
@@ -1445,6 +1546,20 @@ class PHPMailer extends MailerAbstract{
 		// Create body before headers in case body makes changes to headers (e.g. altering transfer encoding)
 		$this->MIMEHeader = '';
 		$this->MIMEBody   = $this->createBody($uniqueid);
+
+		if($this->isError()){
+			throw new PHPMailerException($this->lang('empty_message'), $this::STOP_CRITICAL);
+		}
+
+		if($this->sign){
+
+			if(!$this->signCredentials){
+				throw new PHPMailerException('no sign credentials set');
+			}
+
+			$this->MIMEBody = $this->pkcs7Sign($this->MIMEBody);
+		}
+
 		// createBody may have added some headers, so retain them
 		$tempheaders      = $this->MIMEHeader;
 		$this->MIMEHeader = $this->createHeader($uniqueid);
@@ -1461,7 +1576,7 @@ class PHPMailer extends MailerAbstract{
 		}
 
 		// Sign with DKIM if enabled
-		if(!empty($this->DKIM_domain) && !empty($this->DKIM_selector) && !empty($this->DKIM_private)){
+		if($this->DKIMSign && $this->DKIMCredentials){
 			$header_dkim = $this->DKIM_Add(
 				$this->MIMEHeader.$this->mailHeader,
 				$this->encodeHeader(secureHeader($this->Subject)),
@@ -2222,7 +2337,7 @@ class PHPMailer extends MailerAbstract{
 			$header .= $this->headerLine(\trim($h[0]), $this->encodeHeader(\trim($h[1])));
 		}
 
-		if(!$this->sign_key_file){
+		if(!$this->sign || !$this->signCredentials){
 			$header .= $this->headerLine('MIME-Version', '1.0');
 			$header .= $this->getMailMIME($uniqueid);
 		}
@@ -2296,14 +2411,13 @@ class PHPMailer extends MailerAbstract{
 	 * @param string $uniqueid
 	 *
 	 * @return string The assembled message body
-	 * @throws \PHPMailer\PHPMailer\PHPMailerException
 	 */
 	public function createBody(string $uniqueid):string{
 		$boundary = generateBoundary($uniqueid);
 
 		$body = '';
 
-		if($this->sign_key_file){
+		if($this->sign && $this->signCredentials){
 			$body .= $this->getMailMIME($uniqueid).$this->LE;
 		}
 
@@ -2366,15 +2480,6 @@ class PHPMailer extends MailerAbstract{
 			//Reset the `Encoding` property in case we changed it for line length reasons
 			$this->Encoding = $bodyEncoding;
 			$body           .= $this->encodeString($this->Body, $this->Encoding);
-		}
-
-		if($this->isError()){
-			throw new PHPMailerException($this->lang('empty_message'), $this::STOP_CRITICAL);
-		}
-
-		// @todo: make signing optional
-		if(file_exists($this->sign_cert_file) && file_exists($this->sign_key_file)){
-			$body = $this->pkcs7Sign($body);
 		}
 
 		return $body;
@@ -3302,9 +3407,9 @@ class PHPMailer extends MailerAbstract{
 				$date_header = $header;
 				$current     = 'date_header';
 			}
-			elseif(!empty($this->DKIM_extraHeaders)){
+			elseif(!empty($this->DKIM_headers)){
 
-				foreach($this->DKIM_extraHeaders as $extraHeader){
+				foreach($this->DKIM_headers as $extraHeader){
 
 					if(\strpos($header, $extraHeader.':') === 0){
 						$headerValue = $header;
@@ -3340,12 +3445,12 @@ class PHPMailer extends MailerAbstract{
 			$extraHeaderKeys   .= ':'.$key;
 			$extraHeaderValues .= $value."\r\n";
 
-			if($this->DKIM_copyHeaderFields){
+			if($this->DKIM_copyHeaders){
 				$extraCopyHeaderFields .= "\t|".\str_replace('|', '=7C', DKIM_QP($value)).";\r\n";
 			}
 		}
 
-		if($this->DKIM_copyHeaderFields){
+		if($this->DKIM_copyHeaders){
 			$from               = \str_replace('|', '=7C', DKIM_QP($from_header));
 			$to                 = \str_replace('|', '=7C', DKIM_QP($to_header));
 			$date               = \str_replace('|', '=7C', DKIM_QP($date_header));
@@ -3388,7 +3493,7 @@ class PHPMailer extends MailerAbstract{
 		);
 
 
-		$signed = DKIM_Sign($toSign, $this->DKIM_private, $this->DKIM_passphrase);
+		$signed = DKIM_Sign($toSign, $this->DKIM_key, $this->DKIM_passphrase);
 
 		return $this->normalizeBreaks($dkimhdrs.$signed).$this->LE;
 	}

@@ -1566,7 +1566,6 @@ EOT;
 			]
 		);
 		openssl_pkey_export_to_file($pk, $privatekeyfile);
-		$this->Mail->DKIM_private = 'dkim_private.pem';
 
 		//Example from https://tools.ietf.org/html/rfc6376#section-3.5
 		$from    = 'from@example.com';
@@ -1577,14 +1576,14 @@ EOT;
 		$headerLines      = "From:$from\r\nTo:$to\r\nDate:$date\r\n";
 		$copyHeaderFields = "\tz=From:$from\r\n\t|To:$to\r\n\t|Date:$date\r\n\t|Subject:=20$subject;\r\n";
 
-		$this->Mail->DKIM_copyHeaderFields = true;
+		$this->Mail->setDKIMCredentials('example.com', 'phpmailer', 'dkim_private.pem', null, null, null, true);
 		$this->assertStringContainsString(
 			$copyHeaderFields,
 			$this->Mail->DKIM_Add($headerLines, $subject, ''),
 			'DKIM header with copied header fields incorrect'
 		);
 
-		$this->Mail->DKIM_copyHeaderFields = false;
+		$this->Mail->setDKIMCredentials('example.com', 'phpmailer', 'dkim_private.pem', null, null, null, false);
 		$this->assertStringNotContainsString(
 			$copyHeaderFields,
 			$this->Mail->DKIM_Add($headerLines, $subject, ''),
@@ -1608,7 +1607,8 @@ EOT;
 			]
 		);
 		openssl_pkey_export_to_file($pk, $privatekeyfile);
-		$this->Mail->DKIM_private = 'dkim_private.pem';
+
+		$this->Mail->setDKIMCredentials('example.com', 'phpmailer', 'dkim_private.pem', null, null, ['Baz', 'List-Unsubscribe']);
 
 		//Example from https://tools.ietf.org/html/rfc6376#section-3.5
 		$from           = 'from@example.com';
@@ -1622,8 +1622,6 @@ EOT;
 		$this->Mail->addCustomHeader('X-AnyHeader', $anyHeader);
 		$this->Mail->addCustomHeader('Baz', 'bar');
 		$this->Mail->addCustomHeader('List-Unsubscribe', $unsubscribeUrl);
-
-		$this->Mail->DKIM_extraHeaders = ['Baz', 'List-Unsubscribe'];
 
 		$headerLines = "From:$from\r\nTo:$to\r\nDate:$date\r\n";
 		$headerLines .= "X-AnyHeader:$anyHeader\r\nBaz:bar\r\n";
@@ -1660,10 +1658,9 @@ EOT;
 			]
 		);
 		openssl_pkey_export_to_file($pk, $privatekeyfile);
-		$this->Mail->DKIM_domain     = 'example.com';
-		$this->Mail->DKIM_private    = $privatekeyfile;
-		$this->Mail->DKIM_selector   = 'phpmailer';
-		$this->Mail->DKIM_passphrase = ''; //key is not encrypted
+
+		$this->Mail->setDKIMCredentials('example.com', 'phpmailer', $privatekeyfile);
+
 		$this->assertTrue($this->Mail->send(), 'DKIM signed mail failed');
 		$this->Mail->setMailerMail();
 		$this->assertTrue($this->Mail->send(), 'DKIM signed mail via mail() failed');
