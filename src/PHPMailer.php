@@ -2372,124 +2372,25 @@ class PHPMailer extends MailerAbstract{
 		//Use this as a preamble in all multipart message types
 		$mimepre = 'This is a multi-part message in MIME format.'.$this->LE;
 
-		// @todo: extract to separate methods/class
-		switch($this->message_type){
-			case 'inline':
-				$body .= $mimepre;
-				$body .= $this->getBoundary($boundary[1], $bodyCharSet, '', $bodyEncoding);
-				$body .= $this->encodeString($this->Body, $bodyEncoding);
-				$body .= $this->LE;
-				$body .= $this->attachAll('inline', $boundary[1]);
-				break;
-
-			case 'attach':
-				$body .= $mimepre;
-				$body .= $this->getBoundary($boundary[1], $bodyCharSet, '', $bodyEncoding);
-				$body .= $this->encodeString($this->Body, $bodyEncoding);
-				$body .= $this->LE;
-				$body .= $this->attachAll('attachment', $boundary[1]);
-				break;
-
-			case 'inline_attach':
-				$body .= $mimepre;
-				$body .= $this->textLine('--'.$boundary[1]);
-				$body .= $this->headerLine('Content-Type', $this::CONTENT_TYPE_MULTIPART_RELATED.';');
-				$body .= $this->textLine("\tboundary=\"".$boundary[2].'"');
-				$body .= $this->LE;
-				$body .= $this->getBoundary($boundary[2], $bodyCharSet, '', $bodyEncoding);
-				$body .= $this->encodeString($this->Body, $bodyEncoding);
-				$body .= $this->LE;
-				$body .= $this->attachAll('inline', $boundary[2]);
-				$body .= $this->LE;
-				$body .= $this->attachAll('attachment', $boundary[1]);
-				break;
-
-			case 'alt':
-				$body .= $mimepre;
-				$body .= $this->getBoundary($boundary[1], $altBodyCharSet, $this::CONTENT_TYPE_PLAINTEXT, $altBodyEncoding);
-				$body .= $this->encodeString($this->AltBody, $altBodyEncoding);
-				$body .= $this->LE;
-				$body .= $this->getBoundary($boundary[1], $bodyCharSet, $this::CONTENT_TYPE_TEXT_HTML, $bodyEncoding);
-				$body .= $this->encodeString($this->Body, $bodyEncoding);
-				$body .= $this->LE;
-
-				if(!empty($this->Ical)){
-					$body .= $this->getBoundary($boundary[1], '', $this::CONTENT_TYPE_TEXT_CALENDAR.'; method=REQUEST', '');
-					$body .= $this->encodeString($this->Ical, $this->Encoding);
-					$body .= $this->LE;
-				}
-
-				$body .= $this->endBoundary($boundary[1]);
-				break;
-
-			case 'alt_inline':
-				$body .= $mimepre;
-				$body .= $this->getBoundary($boundary[1], $altBodyCharSet, $this::CONTENT_TYPE_PLAINTEXT, $altBodyEncoding);
-				$body .= $this->encodeString($this->AltBody, $altBodyEncoding);
-				$body .= $this->LE;
-				$body .= $this->textLine('--'.$boundary[1]);
-				$body .= $this->headerLine('Content-Type', $this::CONTENT_TYPE_MULTIPART_RELATED.';');
-				$body .= $this->textLine("\tboundary=\"".$boundary[2].'"');
-				$body .= $this->LE;
-				$body .= $this->getBoundary($boundary[2], $bodyCharSet, $this::CONTENT_TYPE_TEXT_HTML, $bodyEncoding);
-				$body .= $this->encodeString($this->Body, $bodyEncoding);
-				$body .= $this->LE;
-				$body .= $this->attachAll('inline', $boundary[2]);
-				$body .= $this->LE;
-				$body .= $this->endBoundary($boundary[1]);
-				break;
-
-			case 'alt_attach':
-				$body .= $mimepre;
-				$body .= $this->textLine('--'.$boundary[1]);
-				$body .= $this->headerLine('Content-Type', $this::CONTENT_TYPE_MULTIPART_ALTERNATIVE.';');
-				$body .= $this->textLine("\tboundary=\"".$boundary[2].'"');
-				$body .= $this->LE;
-				$body .= $this->getBoundary($boundary[2], $altBodyCharSet, $this::CONTENT_TYPE_PLAINTEXT, $altBodyEncoding);
-				$body .= $this->encodeString($this->AltBody, $altBodyEncoding);
-				$body .= $this->LE;
-				$body .= $this->getBoundary($boundary[2], $bodyCharSet, $this::CONTENT_TYPE_TEXT_HTML, $bodyEncoding);
-				$body .= $this->encodeString($this->Body, $bodyEncoding);
-				$body .= $this->LE;
-
-				if(!empty($this->Ical)){
-					$body .= $this->getBoundary($boundary[2], '', $this::CONTENT_TYPE_TEXT_CALENDAR.'; method=REQUEST', '');
-					$body .= $this->encodeString($this->Ical, $this->Encoding);
-				}
-
-				$body .= $this->endBoundary($boundary[2]);
-				$body .= $this->LE;
-				$body .= $this->attachAll('attachment', $boundary[1]);
-				break;
-
-			case 'alt_inline_attach':
-				$body .= $mimepre;
-				$body .= $this->textLine('--'.$boundary[1]);
-				$body .= $this->headerLine('Content-Type', $this::CONTENT_TYPE_MULTIPART_ALTERNATIVE.';');
-				$body .= $this->textLine("\tboundary=\"".$boundary[2].'"');
-				$body .= $this->LE;
-				$body .= $this->getBoundary($boundary[2], $altBodyCharSet, $this::CONTENT_TYPE_PLAINTEXT, $altBodyEncoding);
-				$body .= $this->encodeString($this->AltBody, $altBodyEncoding);
-				$body .= $this->LE;
-				$body .= $this->textLine('--'.$boundary[2]);
-				$body .= $this->headerLine('Content-Type', $this::CONTENT_TYPE_MULTIPART_RELATED.';');
-				$body .= $this->textLine("\tboundary=\"".$boundary[3].'"');
-				$body .= $this->LE;
-				$body .= $this->getBoundary($boundary[3], $bodyCharSet, $this::CONTENT_TYPE_TEXT_HTML, $bodyEncoding);
-				$body .= $this->encodeString($this->Body, $bodyEncoding);
-				$body .= $this->LE;
-				$body .= $this->attachAll('inline', $boundary[3]);
-				$body .= $this->LE;
-				$body .= $this->endBoundary($boundary[2]);
-				$body .= $this->LE;
-				$body .= $this->attachAll('attachment', $boundary[1]);
-				break;
-
-			default:
-				// Catch case 'plain' and case '', applies to simple `text/plain` and `text/html` body content types
-				//Reset the `Encoding` property in case we changed it for line length reasons
-				$this->Encoding = $bodyEncoding;
-				$body           .= $this->encodeString($this->Body, $this->Encoding);
+		if(\in_array($this->message_type, ['inline', 'attach', 'inline_attach'])){
+			$body .= $mimepre;
+			$body .= \call_user_func_array(
+				[$this, 'body_'.$this->message_type],
+				[$boundary, $bodyCharSet, $bodyEncoding]
+			);
+		}
+		elseif(\in_array($this->message_type, ['alt', 'alt_inline', 'alt_attach', 'alt_inline_attach'])){
+			$body .= $mimepre;
+			$body .= \call_user_func_array(
+				[$this, 'body_'.$this->message_type],
+				[$boundary, $bodyCharSet, $bodyEncoding, $altBodyCharSet, $altBodyEncoding]
+			);
+		}
+		else{
+			// Catch case 'plain' and case '', applies to simple `text/plain` and `text/html` body content types
+			//Reset the `Encoding` property in case we changed it for line length reasons
+			$this->Encoding = $bodyEncoding;
+			$body           .= $this->encodeString($this->Body, $this->Encoding);
 		}
 
 		if($this->isError()){
@@ -2502,6 +2403,114 @@ class PHPMailer extends MailerAbstract{
 		}
 
 		return $body;
+	}
+
+	protected function body_inline(array $boundary, string $bodyCharSet, string $bodyEncoding):string{
+		return $this->getBoundary($boundary[1], $bodyCharSet, '', $bodyEncoding)
+			.$this->encodeString($this->Body, $bodyEncoding)
+			.$this->LE
+			.$this->attachAll('inline', $boundary[1]);
+	}
+
+	protected function body_attach(array $boundary, string $bodyCharSet, string $bodyEncoding):string{
+		return $this->getBoundary($boundary[1], $bodyCharSet, '', $bodyEncoding)
+			.$this->encodeString($this->Body, $bodyEncoding)
+			.$this->LE
+			.$this->attachAll('attachment', $boundary[1]);
+	}
+
+	protected function body_inline_attach(array $boundary, string $bodyCharSet, string $bodyEncoding):string{
+		return $this->textLine('--'.$boundary[1])
+			.$this->headerLine('Content-Type', $this::CONTENT_TYPE_MULTIPART_RELATED.';')
+			.$this->textLine("\tboundary=\"".$boundary[2].'"')
+			.$this->LE
+			.$this->getBoundary($boundary[2], $bodyCharSet, '', $bodyEncoding)
+			.$this->encodeString($this->Body, $bodyEncoding)
+			.$this->LE
+			.$this->attachAll('inline', $boundary[2])
+			.$this->LE
+			.$this->attachAll('attachment', $boundary[1]);
+	}
+
+	protected function body_alt(array $boundary, string $bodyCharSet, string $bodyEncoding, string $altBodyCharSet, string $altBodyEncoding):string{
+		$body = $this->getBoundary($boundary[1], $altBodyCharSet, $this::CONTENT_TYPE_PLAINTEXT, $altBodyEncoding)
+			.$this->encodeString($this->AltBody, $altBodyEncoding)
+			.$this->LE
+			.$this->getBoundary($boundary[1], $bodyCharSet, $this::CONTENT_TYPE_TEXT_HTML, $bodyEncoding)
+			.$this->encodeString($this->Body, $bodyEncoding)
+			.$this->LE;
+
+		if(!empty($this->Ical)){
+			$body .= $this->getBoundary($boundary[1], '', $this::CONTENT_TYPE_TEXT_CALENDAR.'; method=REQUEST', '')
+				.$this->encodeString($this->Ical, $this->Encoding)
+				.$this->LE;
+		}
+
+		$body .= $this->endBoundary($boundary[1]);
+
+		return $body;
+	}
+
+	protected function body_alt_inline(array $boundary, string $bodyCharSet, string $bodyEncoding, string $altBodyCharSet, string $altBodyEncoding):string{
+		return $this->getBoundary($boundary[1], $altBodyCharSet, $this::CONTENT_TYPE_PLAINTEXT, $altBodyEncoding)
+			.$this->encodeString($this->AltBody, $altBodyEncoding)
+			.$this->LE
+			.$this->textLine('--'.$boundary[1])
+			.$this->headerLine('Content-Type', $this::CONTENT_TYPE_MULTIPART_RELATED.';')
+			.$this->textLine("\tboundary=\"".$boundary[2].'"')
+			.$this->LE
+			.$this->getBoundary($boundary[2], $bodyCharSet, $this::CONTENT_TYPE_TEXT_HTML, $bodyEncoding)
+			.$this->encodeString($this->Body, $bodyEncoding)
+			.$this->LE
+			.$this->attachAll('inline', $boundary[2])
+			.$this->LE
+			.$this->endBoundary($boundary[1]);
+	}
+
+	protected function body_alt_attach(array $boundary, string $bodyCharSet, string $bodyEncoding, string $altBodyCharSet, string $altBodyEncoding):string{
+		$body = $this->textLine('--'.$boundary[1])
+			.$this->headerLine('Content-Type', $this::CONTENT_TYPE_MULTIPART_ALTERNATIVE.';')
+			.$this->textLine("\tboundary=\"".$boundary[2].'"')
+			.$this->LE
+			.$this->getBoundary($boundary[2], $altBodyCharSet, $this::CONTENT_TYPE_PLAINTEXT, $altBodyEncoding)
+			.$this->encodeString($this->AltBody, $altBodyEncoding)
+			.$this->LE
+			.$this->getBoundary($boundary[2], $bodyCharSet, $this::CONTENT_TYPE_TEXT_HTML, $bodyEncoding)
+			.$this->encodeString($this->Body, $bodyEncoding)
+			.$this->LE;
+
+		if(!empty($this->Ical)){
+			$body .= $this->getBoundary($boundary[2], '', $this::CONTENT_TYPE_TEXT_CALENDAR.'; method=REQUEST', '')
+				.$this->encodeString($this->Ical, $this->Encoding);
+		}
+
+		$body .= $this->endBoundary($boundary[2])
+			.$this->LE
+			.$this->attachAll('attachment', $boundary[1]);
+
+		return $body;
+	}
+
+	protected function body_alt_inline_attach(array $boundary, string $bodyCharSet, string $bodyEncoding, string $altBodyCharSet, string $altBodyEncoding):string{
+		return $this->textLine('--'.$boundary[1])
+			.$this->headerLine('Content-Type', $this::CONTENT_TYPE_MULTIPART_ALTERNATIVE.';')
+			.$this->textLine("\tboundary=\"".$boundary[2].'"')
+			.$this->LE
+			.$this->getBoundary($boundary[2], $altBodyCharSet, $this::CONTENT_TYPE_PLAINTEXT, $altBodyEncoding)
+			.$this->encodeString($this->AltBody, $altBodyEncoding)
+			.$this->LE
+			.$this->textLine('--'.$boundary[2])
+			.$this->headerLine('Content-Type', $this::CONTENT_TYPE_MULTIPART_RELATED.';')
+			.$this->textLine("\tboundary=\"".$boundary[3].'"')
+			.$this->LE
+			.$this->getBoundary($boundary[3], $bodyCharSet, $this::CONTENT_TYPE_TEXT_HTML, $bodyEncoding)
+			.$this->encodeString($this->Body, $bodyEncoding)
+			.$this->LE
+			.$this->attachAll('inline', $boundary[3])
+			.$this->LE
+			.$this->endBoundary($boundary[2])
+			.$this->LE
+			.$this->attachAll('attachment', $boundary[1]);
 	}
 
 	/**
