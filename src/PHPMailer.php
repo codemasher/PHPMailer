@@ -1470,6 +1470,110 @@ class PHPMailer extends MailerAbstract{
 	}
 
 	/**
+	 * Converts IDN in given email address to its ASCII form, also known as punycode, if possible.
+	 * Important: Address must be passed in same encoding as currently set in PHPMailer::$CharSet.
+	 * This function silently returns unmodified address if:
+	 * - No conversion is necessary (i.e. domain name is not an IDN, or is already in ASCII form)
+	 * - Conversion to punycode is impossible (e.g. required PHP functions are not available)
+	 *   or fails for any reason (e.g. domain contains characters not allowed in an IDN).
+	 *
+	 * @param string $address The email address to convert
+	 *
+	 * @return string The encoded address in ASCII form
+	 * @see    PHPMailer::$CharSet
+	 *
+	 */
+	protected function punyencodeAddress(string $address):string{
+		// Verify we have required functions, CharSet, and at-sign.
+		$pos = \strrpos($address, '@');
+		if(idnSupported() && !empty($this->CharSet) && $pos !== false){
+			$domain = \substr($address, ++$pos);
+			// Verify CharSet string is a valid one, and domain properly encoded in this CharSet.
+			if(has8bitChars($domain) && @\mb_check_encoding($domain, $this->CharSet)){
+				$domain = \mb_convert_encoding($domain, 'UTF-8', $this->CharSet);
+				//Ignore IDE complaints about this line - method signature changed in PHP 5.4
+				$errorcode = 0;
+				/** @noinspection PhpComposerExtensionStubsInspection */
+				$punycode = \idn_to_ascii($domain, $errorcode, \INTL_IDNA_VARIANT_UTS46);
+
+				if($punycode !== false){
+					return \substr($address, 0, $pos).$punycode;
+				}
+			}
+		}
+
+		return $address;
+	}
+
+	/**
+	 * Set the message type.
+	 * PHPMailer only supports some preset message types, not arbitrary MIME structures.
+	 */
+	protected function setMessageType():void{
+		$type = [];
+
+		if($this->alternativeExists()){
+			$type[] = 'alt';
+		}
+
+		if($this->inlineImageExists()){
+			$type[] = 'inline';
+		}
+
+		if($this->attachmentExists()){
+			$type[] = 'attach';
+		}
+
+		$this->message_type = \implode('_', $type);
+
+		if(empty($this->message_type)){
+			//The 'plain' message_type refers to the message having a single body element, not that it is plain-text
+			$this->message_type = 'plain';
+		}
+	}
+
+	/**
+	 * Check if an inline attachment is present.
+	 *
+	 * @return bool
+	 */
+	public function inlineImageExists():bool{
+
+		foreach($this->attachment as $attachment){
+			if($attachment[6] === 'inline'){
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Check if an attachment (non-inline) is present.
+	 *
+	 * @return bool
+	 */
+	public function attachmentExists():bool{
+
+		foreach($this->attachment as $attachment){
+			if($attachment[6] === 'attachment'){
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Check if this message has an alternative body set.
+	 *
+	 * @return bool
+	 */
+	protected function alternativeExists():bool{
+		return !empty($this->AltBody);
+	}
+
+	/**
 	 * Actually send a message via the selected mechanism.
 	 *
 	 * @return bool
@@ -1651,44 +1755,6 @@ class PHPMailer extends MailerAbstract{
 		return !$this->UseSendmailOptions || $params === null
 			? @\mail($to, $subject, $body, $header)
 			: @\mail($to, $subject, $body, $header, $params);
-	}
-
-	/**
-	 * @todo: make protected
-	 *
-	 * Converts IDN in given email address to its ASCII form, also known as punycode, if possible.
-	 * Important: Address must be passed in same encoding as currently set in PHPMailer::$CharSet.
-	 * This function silently returns unmodified address if:
-	 * - No conversion is necessary (i.e. domain name is not an IDN, or is already in ASCII form)
-	 * - Conversion to punycode is impossible (e.g. required PHP functions are not available)
-	 *   or fails for any reason (e.g. domain contains characters not allowed in an IDN).
-	 *
-	 * @param string $address The email address to convert
-	 *
-	 * @return string The encoded address in ASCII form
-	 * @see    PHPMailer::$CharSet
-	 *
-	 */
-	public function punyencodeAddress(string $address):string{
-		// Verify we have required functions, CharSet, and at-sign.
-		$pos = \strrpos($address, '@');
-		if(idnSupported() && !empty($this->CharSet) && $pos !== false){
-			$domain = \substr($address, ++$pos);
-			// Verify CharSet string is a valid one, and domain properly encoded in this CharSet.
-			if(has8bitChars($domain) && @\mb_check_encoding($domain, $this->CharSet)){
-				$domain = \mb_convert_encoding($domain, 'UTF-8', $this->CharSet);
-				//Ignore IDE complaints about this line - method signature changed in PHP 5.4
-				$errorcode = 0;
-				/** @noinspection PhpComposerExtensionStubsInspection */
-				$punycode = \idn_to_ascii($domain, $errorcode, \INTL_IDNA_VARIANT_UTS46);
-
-				if($punycode !== false){
-					return \substr($address, 0, $pos).$punycode;
-				}
-			}
-		}
-
-		return $address;
 	}
 
 	/**
@@ -2520,33 +2586,6 @@ class PHPMailer extends MailerAbstract{
 	}
 
 	/**
-	 * Set the message type.
-	 * PHPMailer only supports some preset message types, not arbitrary MIME structures.
-	 */
-	protected function setMessageType():void{
-		$type = [];
-
-		if($this->alternativeExists()){
-			$type[] = 'alt';
-		}
-
-		if($this->inlineImageExists()){
-			$type[] = 'inline';
-		}
-
-		if($this->attachmentExists()){
-			$type[] = 'attach';
-		}
-
-		$this->message_type = \implode('_', $type);
-
-		if(empty($this->message_type)){
-			//The 'plain' message_type refers to the message having a single body element, not that it is plain-text
-			$this->message_type = 'plain';
-		}
-	}
-
-	/**
 	 * Format a header line.
 	 *
 	 * @param string $name
@@ -2931,47 +2970,6 @@ class PHPMailer extends MailerAbstract{
 		}
 
 		return false;
-	}
-
-	/**
-	 * Check if an inline attachment is present.
-	 *
-	 * @return bool
-	 */
-	public function inlineImageExists():bool{
-
-		foreach($this->attachment as $attachment){
-			if($attachment[6] === 'inline'){
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	/**
-	 * Check if an attachment (non-inline) is present.
-	 *
-	 * @return bool
-	 */
-	public function attachmentExists():bool{
-
-		foreach($this->attachment as $attachment){
-			if($attachment[6] === 'attachment'){
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	/**
-	 * Check if this message has an alternative body set.
-	 *
-	 * @return bool
-	 */
-	protected function alternativeExists():bool{
-		return !empty($this->AltBody);
 	}
 
 	/**
