@@ -498,9 +498,9 @@ class PHPMailer extends MailerAbstract{
 	/**
 	 * The array of attachments.
 	 *
-	 * @var [][] @todo: simple attachment objects instead of arrays
+	 * @var \PHPMailer\PHPMailer\Attachment[]
 	 */
-	protected $attachment = [];
+	protected $attachments = [];
 
 	/**
 	 * The array of custom headers.
@@ -1042,7 +1042,7 @@ class PHPMailer extends MailerAbstract{
 	 * @return array
 	 */
 	public function getAttachments():array{
-		return $this->attachment;
+		return $this->attachments;
 	}
 
 	/**
@@ -1051,7 +1051,7 @@ class PHPMailer extends MailerAbstract{
 	 * @return \PHPMailer\PHPMailer\PHPMailer
 	 */
 	public function clearAttachments():PHPMailer{
-		$this->attachment = [];
+		$this->attachments = [];
 
 		return $this;
 	}
@@ -1098,16 +1098,18 @@ class PHPMailer extends MailerAbstract{
 			$name = $filename;
 		}
 
-		$this->attachment[] = [
-			0 => $path,
-			1 => $filename,
-			2 => $name,
-			3 => $encoding,
-			4 => $type,
-			5 => false, // isStringAttachment
-			6 => $disposition,
-			7 => $name,
-		];
+		$a = new Attachment;
+
+		$a->content            = $path;
+		$a->filename           = $filename;
+		$a->name               = $name;
+		$a->encoding           = $encoding;
+		$a->type               = $type;
+		$a->isStringAttachment = false;
+		$a->disposition        = $disposition;
+		$a->cid                = $name;
+
+		$this->attachments[] = $a;
 
 		return true;
 	}
@@ -1137,17 +1139,18 @@ class PHPMailer extends MailerAbstract{
 			$type = filenameToType($filename);
 		}
 
-		// Append to $attachment array
-		$this->attachment[] = [
-			0 => $string,
-			1 => $filename,
-			2 => \basename($filename),
-			3 => $encoding,
-			4 => $type,
-			5 => true, // isStringAttachment
-			6 => $disposition,
-			7 => 0,
-		];
+		$a = new Attachment;
+
+		$a->content            = $string;
+		$a->filename           = $filename;
+		$a->name               = \basename($filename);
+		$a->encoding           = $encoding;
+		$a->type               = $type;
+		$a->isStringAttachment = true;
+		$a->disposition        = $disposition;
+		$a->cid                = 0;
+
+		$this->attachments[] = $a;
 
 		return $this;
 	}
@@ -1199,17 +1202,18 @@ class PHPMailer extends MailerAbstract{
 			$name = $filename;
 		}
 
-		// Append to $attachment array
-		$this->attachment[] = [
-			0 => $path,
-			1 => $filename,
-			2 => $name,
-			3 => $encoding,
-			4 => $type,
-			5 => false, // isStringAttachment
-			6 => $disposition,
-			7 => $cid,
-		];
+		$a = new Attachment;
+
+		$a->content            = $path;
+		$a->filename           = $filename;
+		$a->name               = $name;
+		$a->encoding           = $encoding;
+		$a->type               = $type;
+		$a->isStringAttachment = false;
+		$a->disposition        = $disposition;
+		$a->cid                = $cid;
+
+		$this->attachments[] = $a;
 
 		return $this;
 	}
@@ -1244,17 +1248,18 @@ class PHPMailer extends MailerAbstract{
 			$type = filenameToType($name);
 		}
 
-		// Append to $attachment array
-		$this->attachment[] = [
-			0 => $string,
-			1 => $name,
-			2 => $name,
-			3 => $encoding,
-			4 => $type,
-			5 => true, // isStringAttachment
-			6 => $disposition,
-			7 => $cid,
-		];
+		$a = new Attachment;
+
+		$a->content            = $string;
+		$a->filename           = $name;
+		$a->name               = $name;
+		$a->encoding           = $encoding;
+		$a->type               = $type;
+		$a->isStringAttachment = true;
+		$a->disposition        = $disposition;
+		$a->cid                = $cid;
+
+		$this->attachments[] = $a;
 
 		return $this;
 	}
@@ -1539,8 +1544,8 @@ class PHPMailer extends MailerAbstract{
 	 */
 	public function inlineImageExists():bool{
 
-		foreach($this->attachment as $attachment){
-			if($attachment[6] === 'inline'){
+		foreach($this->attachments as $attachment){
+			if($attachment->disposition === 'inline'){
 				return true;
 			}
 		}
@@ -1555,8 +1560,8 @@ class PHPMailer extends MailerAbstract{
 	 */
 	public function attachmentExists():bool{
 
-		foreach($this->attachment as $attachment){
-			if($attachment[6] === 'attachment'){
+		foreach($this->attachments as $attachment){
+			if($attachment->disposition === 'attachment'){
 				return true;
 			}
 		}
@@ -2697,19 +2702,18 @@ class PHPMailer extends MailerAbstract{
 		$incl    = [];
 
 		// Add all attachments
-		foreach($this->attachment as $attachment){
+		foreach($this->attachments as $attachment){
 			// Check if it is a valid disposition_filter
-			if($attachment[6] === $disposition_type){
+			if($attachment->disposition === $disposition_type){
 				// Check for string attachment
 				$string  = '';
 				$path    = '';
-				$bString = $attachment[5];
 
-				if($bString){
-					$string = $attachment[0];
+				if($attachment->isStringAttachment){
+					$string = $attachment->content;
 				}
 				else{
-					$path = $attachment[0];
+					$path = $attachment->content;
 				}
 
 				$inclhash = \hash('sha256', \serialize($attachment));
@@ -2718,53 +2722,58 @@ class PHPMailer extends MailerAbstract{
 					continue;
 				}
 
-				$incl[]      = $inclhash;
-				$name        = $attachment[2];
-				$encoding    = $attachment[3];
-				$type        = $attachment[4];
-				$disposition = $attachment[6];
-				$cid         = $attachment[7];
+				$incl[] = $inclhash;
 
-				if($disposition === 'inline' && \array_key_exists($cid, $cidUniq)){
+				if($attachment->disposition === 'inline' && \array_key_exists($attachment->cid, $cidUniq)){
 					continue;
 				}
 
-				$cidUniq[$cid] = true;
+				$cidUniq[$attachment->cid] = true;
 
 				$mime[] = \sprintf('--%s%s', $boundary, $this->LE);
 				//Only include a filename property if we have one
-				$mime[] = !empty($name)
-					? \sprintf('Content-Type: %s; name="%s"%s', $type, $this->encodeHeader(secureHeader($name)), $this->LE)
-					: \sprintf('Content-Type: %s%s', $type, $this->LE);
+				$mime[] = !empty($attachment->name)
+					? \sprintf(
+						'Content-Type: %s; name="%s"%s',
+						$attachment->type,
+						$this->encodeHeader(secureHeader($attachment->name)),
+						$this->LE
+					  )
+					: \sprintf('Content-Type: %s%s', $attachment->type, $this->LE);
 
 				// RFC1341 part 5 says 7bit is assumed if not specified
-				if($encoding !== $this::ENCODING_7BIT){
-					$mime[] = \sprintf('Content-Transfer-Encoding: %s%s', $encoding, $this->LE);
+				if($attachment->encoding !== $this::ENCODING_7BIT){
+					$mime[] = \sprintf('Content-Transfer-Encoding: %s%s', $attachment->encoding, $this->LE);
 				}
 
-				if(!empty($cid)){
-					$mime[] = \sprintf('Content-ID: <%s>%s', $cid, $this->LE);
+				if(!empty($attachment->cid)){
+					$mime[] = \sprintf('Content-ID: <%s>%s', $attachment->cid, $this->LE);
 				}
 
 				// If a filename contains any of these chars, it should be quoted,
 				// but not otherwise: RFC2183 & RFC2045 5.1
 				// Fixes a warning in IETF's msglint MIME checker
 				// Allow for bypassing the Content-Disposition header totally
-				if(!empty($disposition)){
-					$encoded_name = $this->encodeHeader(secureHeader($name));
+				if(!empty($attachment->disposition)){
+					$encoded_name = $this->encodeHeader(secureHeader($attachment->name));
 
 					if(\preg_match('/[ \(\)<>@,;:\\"\/\[\]\?=]/', $encoded_name)){
 						$mime[] = \sprintf(
 							'Content-Disposition: %s; filename="%s"%s',
-							$disposition,
+							$attachment->disposition,
 							$encoded_name,
 							$this->LE.$this->LE
 						);
 					}
 					else{
 						$mime[] = !empty($encoded_name)
-							? \sprintf('Content-Disposition: %s; filename=%s%s', $disposition, $encoded_name, $this->LE.$this->LE)
-							: \sprintf('Content-Disposition: %s%s', $disposition, $this->LE.$this->LE);
+							? \sprintf(
+								'Content-Disposition: %s; filename=%s%s',
+								$attachment->disposition,
+								$encoded_name,
+								$this->LE.$this->LE
+							  )
+							: \sprintf('Content-Disposition: %s%s', $attachment->disposition, $this->LE.$this->LE);
 					}
 				}
 				else{
@@ -2772,9 +2781,9 @@ class PHPMailer extends MailerAbstract{
 				}
 
 				// Encode as string attachment
-				$mime[] = $bString
-					? $this->encodeString($string, $encoding)
-					: $this->encodeFile($path, $encoding);
+				$mime[] = $attachment->isStringAttachment
+					? $this->encodeString($string, $attachment->encoding)
+					: $this->encodeFile($path, $attachment->encoding);
 
 				if($this->isError()){
 					return '';
@@ -3036,8 +3045,8 @@ class PHPMailer extends MailerAbstract{
 	 */
 	protected function cidExists(string $cid):bool{
 
-		foreach($this->attachment as $attachment){
-			if($attachment[6] === 'inline' && $attachment[7] === $cid){
+		foreach($this->attachments as $attachment){
+			if($attachment->disposition === 'inline' && $attachment->cid === $cid){
 				return true;
 			}
 		}
