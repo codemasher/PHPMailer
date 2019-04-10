@@ -2496,43 +2496,50 @@ class PHPMailer extends MailerAbstract{
 			throw new PHPMailerException($this->lang('empty_message'), $this::STOP_CRITICAL);
 		}
 
-		if($this->sign_key_file){
-
-			if(!\defined('PKCS7_TEXT')){
-				throw new PHPMailerException($this->lang('extension_missing').'openssl');
-			}
-
-			$tmpdir = \sys_get_temp_dir();
-			$file   = \tempnam($tmpdir, 'pkcs7file');
-			$signed = \tempnam($tmpdir, 'pkcs7signed'); // will be created by openssl_pkcs7_sign()
-
-			\file_put_contents($file, $body); // dump the body
-
-			$signcert = 'file://'.\realpath($this->sign_cert_file);
-			$privkey  = ['file://'.\realpath($this->sign_key_file), $this->sign_key_pass];
-
-			// Workaround for PHP bug https://bugs.php.net/bug.php?id=69197
-			// this bug still exists in 7.2+ despite being closed and "fixed"
-			$sign = empty($this->sign_extracerts_file)
-				? \openssl_pkcs7_sign($file, $signed, $signcert, $privkey, [])
-				: \openssl_pkcs7_sign($file, $signed, $signcert, $privkey, [], \PKCS7_DETACHED, $this->sign_extracerts_file);
-
-			$body = \file_get_contents($signed);
-
-			\unlink($file);
-			\unlink($signed);
-
-			if(!$sign){
-				throw new PHPMailerException($this->lang('signing').\openssl_error_string());
-			}
-
-			//The message returned by openssl contains both headers and body, so need to split them up
-			$parts            = \explode("\n\n", $body, 2);
-			$this->MIMEHeader .= $parts[0].$this->LE.$this->LE;
-			$body             = $parts[1];
+		// @todo: make signing optional
+		if(file_exists($this->sign_cert_file) && file_exists($this->sign_key_file)){
+			$body = $this->pkcs7Sign($body);
 		}
 
 		return $body;
+	}
+
+	/**
+	 * @param string $message
+	 *
+	 * @return string
+	 * @throws \PHPMailer\PHPMailer\PHPMailerException
+	 */
+	protected function pkcs7Sign(string $message):string{
+		$tmpdir = \sys_get_temp_dir();
+		$file   = \tempnam($tmpdir, 'pkcs7file');
+		$signed = \tempnam($tmpdir, 'pkcs7signed'); // will be created by openssl_pkcs7_sign()
+
+		\file_put_contents($file, $message); // dump the body
+
+		$signcert = 'file://'.\realpath($this->sign_cert_file);
+		$privkey  = ['file://'.\realpath($this->sign_key_file), $this->sign_key_pass];
+
+		// Workaround for PHP bug https://bugs.php.net/bug.php?id=69197
+		// this bug still exists in 7.2+ despite being closed and "fixed"
+		$sign = empty($this->sign_extracerts_file)
+			? \openssl_pkcs7_sign($file, $signed, $signcert, $privkey, [])
+			: \openssl_pkcs7_sign($file, $signed, $signcert, $privkey, [], \PKCS7_DETACHED, $this->sign_extracerts_file);
+
+		$message = \file_get_contents($signed);
+
+		\unlink($file);
+		\unlink($signed);
+
+		if(!$sign){
+			throw new PHPMailerException($this->lang('signing').\openssl_error_string());
+		}
+
+		//The message returned by openssl contains both headers and body, so need to split them up
+		$parts            = \explode("\n\n", $message, 2);
+		$this->MIMEHeader .= $parts[0].$this->LE.$this->LE;
+
+		return $parts[1];
 	}
 
 	/**
