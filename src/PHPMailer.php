@@ -1039,7 +1039,7 @@ class PHPMailer extends MailerAbstract{
 	/**
 	 * Return the array of attachments.
 	 *
-	 * @return array
+	 * @return \PHPMailer\PHPMailer\Attachment[]
 	 */
 	public function getAttachments():array{
 		return $this->attachments;
@@ -1427,7 +1427,7 @@ class PHPMailer extends MailerAbstract{
 		}
 
 		// Set whether the message is multipart/alternative
-		if($this->alternativeExists()){
+		if(!empty($this->AltBody)){
 			$this->ContentType = $this::CONTENT_TYPE_MULTIPART_ALTERNATIVE;
 		}
 
@@ -1517,7 +1517,7 @@ class PHPMailer extends MailerAbstract{
 	protected function setMessageType():void{
 		$type = [];
 
-		if($this->alternativeExists()){
+		if(!empty($this->AltBody)){
 			$type[] = 'alt';
 		}
 
@@ -1567,15 +1567,6 @@ class PHPMailer extends MailerAbstract{
 		}
 
 		return false;
-	}
-
-	/**
-	 * Check if this message has an alternative body set.
-	 *
-	 * @return bool
-	 */
-	protected function alternativeExists():bool{
-		return !empty($this->AltBody);
 	}
 
 	/**
@@ -2041,7 +2032,12 @@ class PHPMailer extends MailerAbstract{
 	 *
 	 * @return string
 	 */
-	public function wrapText(string $message, int $length, bool $qp_mode = false){
+	public function wrapText(string $message, int $length, bool $qp_mode = false):string{
+
+		if($length < 1){
+			return $message;
+		}
+
 		$soft_break = $qp_mode ? \sprintf(' =%s', $this->LE) : $this->LE;
 
 		// If utf-8 encoding is used, we will need to make sure we don't
@@ -2147,35 +2143,6 @@ class PHPMailer extends MailerAbstract{
 		}
 
 		return $message;
-	}
-
-	/**
-	 * Apply word wrapping to the message body.
-	 * Wraps the message body to the number of chars set in the WordWrap property.
-	 * You should only do this to plain-text bodies as wrapping HTML tags may break them.
-	 * This is called automatically by createBody(), so you don't need to call it yourself.
-	 *
-	 * @return \PHPMailer\PHPMailer\PHPMailer
-	 */
-	protected function setWordWrap():PHPMailer{
-
-		if($this->WordWrap < 1){
-			return $this;
-		}
-
-		switch($this->message_type){
-			case 'alt':
-			case 'alt_inline':
-			case 'alt_attach':
-			case 'alt_inline_attach':
-				$this->AltBody = $this->wrapText($this->AltBody, $this->WordWrap);
-				break;
-			default:
-				$this->Body = $this->wrapText($this->Body, $this->WordWrap);
-				break;
-		}
-
-		return $this;
 	}
 
 	/**
@@ -2340,7 +2307,7 @@ class PHPMailer extends MailerAbstract{
 			$body .= $this->getMailMIME($uniqueid).$this->LE;
 		}
 
-		$this->setWordWrap();
+		$this->Body = $this->wrapText($this->Body, $this->WordWrap);
 
 		$bodyEncoding = $this->Encoding;
 		$bodyCharSet  = $this->CharSet;
@@ -2358,22 +2325,6 @@ class PHPMailer extends MailerAbstract{
 			$bodyEncoding = $this::ENCODING_QUOTED_PRINTABLE;
 		}
 
-		$altBodyEncoding = $this->Encoding;
-		$altBodyCharSet  = $this->CharSet;
-
-		//Can we do a 7-bit downgrade?
-		if($altBodyEncoding === $this::ENCODING_8BIT && !has8bitChars($this->AltBody)){
-			$altBodyEncoding = $this::ENCODING_7BIT;
-			//All ISO 8859, Windows codepage and UTF-8 charsets are ascii compatible up to 7-bit
-			$altBodyCharSet = 'us-ascii';
-		}
-
-		//If lines are too long, and we're not already using an encoding that will shorten them,
-		//change to quoted-printable transfer encoding for the alt body part only
-		if($altBodyEncoding !== $this::ENCODING_BASE64 && $this->hasLineLongerThanMax($this->AltBody)){
-			$altBodyEncoding = $this::ENCODING_QUOTED_PRINTABLE;
-		}
-
 		//Use this as a preamble in all multipart message types
 		$mimepre = 'This is a multi-part message in MIME format.'.$this->LE;
 
@@ -2381,14 +2332,33 @@ class PHPMailer extends MailerAbstract{
 			$body .= $mimepre;
 			$body .= \call_user_func_array(
 				[$this, 'body_'.$this->message_type],
-				[$boundary, $bodyCharSet, $bodyEncoding]
+				[$this->Body, $boundary, $bodyCharSet, $bodyEncoding]
 			);
 		}
 		elseif(\in_array($this->message_type, ['alt', 'alt_inline', 'alt_attach', 'alt_inline_attach'])){
+
+			$this->AltBody = $this->wrapText($this->AltBody, $this->WordWrap);
+
+			$altBodyEncoding = $this->Encoding;
+			$altBodyCharSet  = $this->CharSet;
+
+			//Can we do a 7-bit downgrade?
+			if($altBodyEncoding === $this::ENCODING_8BIT && !has8bitChars($this->AltBody)){
+				$altBodyEncoding = $this::ENCODING_7BIT;
+				//All ISO 8859, Windows codepage and UTF-8 charsets are ascii compatible up to 7-bit
+				$altBodyCharSet = 'us-ascii';
+			}
+
+			//If lines are too long, and we're not already using an encoding that will shorten them,
+			//change to quoted-printable transfer encoding for the alt body part only
+			if($altBodyEncoding !== $this::ENCODING_BASE64 && $this->hasLineLongerThanMax($this->AltBody)){
+				$altBodyEncoding = $this::ENCODING_QUOTED_PRINTABLE;
+			}
+
 			$body .= $mimepre;
 			$body .= \call_user_func_array(
 				[$this, 'body_'.$this->message_type],
-				[$boundary, $bodyCharSet, $bodyEncoding, $altBodyCharSet, $altBodyEncoding]
+				[$this->Body, $boundary, $bodyCharSet, $bodyEncoding, $altBodyCharSet, $altBodyEncoding]
 			);
 		}
 		else{
@@ -2411,47 +2381,50 @@ class PHPMailer extends MailerAbstract{
 	}
 
 	/**
+	 * @param string $messageBody
 	 * @param array  $boundary
 	 * @param string $bodyCharSet
 	 * @param string $bodyEncoding
 	 *
 	 * @return string
 	 */
-	protected function body_inline(array $boundary, string $bodyCharSet, string $bodyEncoding):string{
+	protected function body_inline(string $messageBody, array $boundary, string $bodyCharSet, string $bodyEncoding):string{
 		return $this->getBoundary($boundary[1], $bodyCharSet, '', $bodyEncoding)
-			.$this->encodeString($this->Body, $bodyEncoding)
+			.$this->encodeString($messageBody, $bodyEncoding)
 			.$this->LE
 			.$this->attachAll('inline', $boundary[1]);
 	}
 
 	/**
+	 * @param string $messageBody
 	 * @param array  $boundary
 	 * @param string $bodyCharSet
 	 * @param string $bodyEncoding
 	 *
 	 * @return string
 	 */
-	protected function body_attach(array $boundary, string $bodyCharSet, string $bodyEncoding):string{
+	protected function body_attach(string $messageBody, array $boundary, string $bodyCharSet, string $bodyEncoding):string{
 		return $this->getBoundary($boundary[1], $bodyCharSet, '', $bodyEncoding)
-			.$this->encodeString($this->Body, $bodyEncoding)
+			.$this->encodeString($messageBody, $bodyEncoding)
 			.$this->LE
 			.$this->attachAll('attachment', $boundary[1]);
 	}
 
 	/**
+	 * @param string $messageBody
 	 * @param array  $boundary
 	 * @param string $bodyCharSet
 	 * @param string $bodyEncoding
 	 *
 	 * @return string
 	 */
-	protected function body_inline_attach(array $boundary, string $bodyCharSet, string $bodyEncoding):string{
+	protected function body_inline_attach(string $messageBody, array $boundary, string $bodyCharSet, string $bodyEncoding):string{
 		return $this->textLine('--'.$boundary[1])
 			.$this->headerLine('Content-Type', $this::CONTENT_TYPE_MULTIPART_RELATED.';')
 			.$this->textLine("\tboundary=\"".$boundary[2].'"')
 			.$this->LE
 			.$this->getBoundary($boundary[2], $bodyCharSet, '', $bodyEncoding)
-			.$this->encodeString($this->Body, $bodyEncoding)
+			.$this->encodeString($messageBody, $bodyEncoding)
 			.$this->LE
 			.$this->attachAll('inline', $boundary[2])
 			.$this->LE
@@ -2459,6 +2432,7 @@ class PHPMailer extends MailerAbstract{
 	}
 
 	/**
+	 * @param string $messageBody
 	 * @param array  $boundary
 	 * @param string $bodyCharSet
 	 * @param string $bodyEncoding
@@ -2467,12 +2441,12 @@ class PHPMailer extends MailerAbstract{
 	 *
 	 * @return string
 	 */
-	protected function body_alt(array $boundary, string $bodyCharSet, string $bodyEncoding, string $altBodyCharSet, string $altBodyEncoding):string{
+	protected function body_alt(string $messageBody, array $boundary, string $bodyCharSet, string $bodyEncoding, string $altBodyCharSet, string $altBodyEncoding):string{
 		$body = $this->getBoundary($boundary[1], $altBodyCharSet, $this::CONTENT_TYPE_PLAINTEXT, $altBodyEncoding)
 			.$this->encodeString($this->AltBody, $altBodyEncoding)
 			.$this->LE
 			.$this->getBoundary($boundary[1], $bodyCharSet, $this::CONTENT_TYPE_TEXT_HTML, $bodyEncoding)
-			.$this->encodeString($this->Body, $bodyEncoding)
+			.$this->encodeString($messageBody, $bodyEncoding)
 			.$this->LE;
 
 		if(!empty($this->Ical)){
@@ -2487,6 +2461,7 @@ class PHPMailer extends MailerAbstract{
 	}
 
 	/**
+	 * @param string $messageBody
 	 * @param array  $boundary
 	 * @param string $bodyCharSet
 	 * @param string $bodyEncoding
@@ -2495,7 +2470,7 @@ class PHPMailer extends MailerAbstract{
 	 *
 	 * @return string
 	 */
-	protected function body_alt_inline(array $boundary, string $bodyCharSet, string $bodyEncoding, string $altBodyCharSet, string $altBodyEncoding):string{
+	protected function body_alt_inline(string $messageBody, array $boundary, string $bodyCharSet, string $bodyEncoding, string $altBodyCharSet, string $altBodyEncoding):string{
 		return $this->getBoundary($boundary[1], $altBodyCharSet, $this::CONTENT_TYPE_PLAINTEXT, $altBodyEncoding)
 			.$this->encodeString($this->AltBody, $altBodyEncoding)
 			.$this->LE
@@ -2504,7 +2479,7 @@ class PHPMailer extends MailerAbstract{
 			.$this->textLine("\tboundary=\"".$boundary[2].'"')
 			.$this->LE
 			.$this->getBoundary($boundary[2], $bodyCharSet, $this::CONTENT_TYPE_TEXT_HTML, $bodyEncoding)
-			.$this->encodeString($this->Body, $bodyEncoding)
+			.$this->encodeString($messageBody, $bodyEncoding)
 			.$this->LE
 			.$this->attachAll('inline', $boundary[2])
 			.$this->LE
@@ -2512,6 +2487,7 @@ class PHPMailer extends MailerAbstract{
 	}
 
 	/**
+	 * @param string $messageBody
 	 * @param array  $boundary
 	 * @param string $bodyCharSet
 	 * @param string $bodyEncoding
@@ -2520,7 +2496,7 @@ class PHPMailer extends MailerAbstract{
 	 *
 	 * @return string
 	 */
-	protected function body_alt_attach(array $boundary, string $bodyCharSet, string $bodyEncoding, string $altBodyCharSet, string $altBodyEncoding):string{
+	protected function body_alt_attach(string $messageBody, array $boundary, string $bodyCharSet, string $bodyEncoding, string $altBodyCharSet, string $altBodyEncoding):string{
 		$body = $this->textLine('--'.$boundary[1])
 			.$this->headerLine('Content-Type', $this::CONTENT_TYPE_MULTIPART_ALTERNATIVE.';')
 			.$this->textLine("\tboundary=\"".$boundary[2].'"')
@@ -2529,7 +2505,7 @@ class PHPMailer extends MailerAbstract{
 			.$this->encodeString($this->AltBody, $altBodyEncoding)
 			.$this->LE
 			.$this->getBoundary($boundary[2], $bodyCharSet, $this::CONTENT_TYPE_TEXT_HTML, $bodyEncoding)
-			.$this->encodeString($this->Body, $bodyEncoding)
+			.$this->encodeString($messageBody, $bodyEncoding)
 			.$this->LE;
 
 		if(!empty($this->Ical)){
@@ -2545,6 +2521,7 @@ class PHPMailer extends MailerAbstract{
 	}
 
 	/**
+	 * @param string $messageBody
 	 * @param array  $boundary
 	 * @param string $bodyCharSet
 	 * @param string $bodyEncoding
@@ -2553,7 +2530,7 @@ class PHPMailer extends MailerAbstract{
 	 *
 	 * @return string
 	 */
-	protected function body_alt_inline_attach(array $boundary, string $bodyCharSet, string $bodyEncoding, string $altBodyCharSet, string $altBodyEncoding):string{
+	protected function body_alt_inline_attach(string $messageBody, array $boundary, string $bodyCharSet, string $bodyEncoding, string $altBodyCharSet, string $altBodyEncoding):string{
 		return $this->textLine('--'.$boundary[1])
 			.$this->headerLine('Content-Type', $this::CONTENT_TYPE_MULTIPART_ALTERNATIVE.';')
 			.$this->textLine("\tboundary=\"".$boundary[2].'"')
@@ -2566,7 +2543,7 @@ class PHPMailer extends MailerAbstract{
 			.$this->textLine("\tboundary=\"".$boundary[3].'"')
 			.$this->LE
 			.$this->getBoundary($boundary[3], $bodyCharSet, $this::CONTENT_TYPE_TEXT_HTML, $bodyEncoding)
-			.$this->encodeString($this->Body, $bodyEncoding)
+			.$this->encodeString($messageBody, $bodyEncoding)
 			.$this->LE
 			.$this->attachAll('inline', $boundary[3])
 			.$this->LE
@@ -3191,7 +3168,7 @@ class PHPMailer extends MailerAbstract{
 		$this->Body    = $this->normalizeBreaks($message);
 		$this->AltBody = $this->normalizeBreaks($this->html2text($message, $advanced));
 
-		if(!$this->alternativeExists()){
+		if(!empty($this->AltBody)){
 			$this->AltBody = 'This is an HTML-only message. To view it, activate HTML in your email application.'.$this->LE;
 		}
 
