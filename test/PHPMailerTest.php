@@ -1899,7 +1899,7 @@ EOT;
 		$this->assertTrue($this->Mail->send(), $this->Mail->ErrorInfo);
 
 		// Addresses with IDN are returned by get*Addresses() after send() call.
-		$domain = $this->Mail->punyencodeAddress($domain);
+		$domain = '@xn--franois-xxa.ch';// $this->Mail->punyencodeAddress($domain);
 		$this->assertEquals(
 			[['test'.$domain, '']],
 			$this->Mail->getTOs(),
