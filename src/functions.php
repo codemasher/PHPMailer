@@ -749,3 +749,38 @@ function DKIM_Sign(string $signHeader, string $key, string $passphrase = null):s
 	return '';
 }
 
+/**
+ * Converts IDN in given email address to its ASCII form, also known as punycode, if possible.
+ * Important: Address must be passed in same encoding as currently set in PHPMailer::$CharSet.
+ * This function silently returns unmodified address if:
+ * - No conversion is necessary (i.e. domain name is not an IDN, or is already in ASCII form)
+ * - Conversion to punycode is impossible (e.g. required PHP functions are not available)
+ *   or fails for any reason (e.g. domain contains characters not allowed in an IDN).
+ *
+ * @param string $address The email address to convert
+ * @param string $charset
+ *
+ * @return string The encoded address in ASCII form
+ * @see    PHPMailer::$CharSet
+ */
+function punyencodeAddress(string $address, string $charset = PHPMailer::CHARSET_ISO88591):string{
+	// Verify we have required functions, CharSet, and at-sign.
+	$pos = \strrpos($address, '@');
+	if(idnSupported() && !empty($charset) && $pos !== false){
+		$domain = \substr($address, ++$pos);
+		// Verify CharSet string is a valid one, and domain properly encoded in this CharSet.
+		if(has8bitChars($domain) && @\mb_check_encoding($domain, $charset)){
+			$domain = \mb_convert_encoding($domain, 'UTF-8', $charset);
+			//Ignore IDE complaints about this line - method signature changed in PHP 5.4
+			$errorcode = 0;
+			/** @noinspection PhpComposerExtensionStubsInspection */
+			$punycode = \idn_to_ascii($domain, $errorcode, \INTL_IDNA_VARIANT_UTS46);
+
+			if($punycode !== false){
+				return \substr($address, 0, $pos).$punycode;
+			}
+		}
+	}
+
+	return $address;
+}

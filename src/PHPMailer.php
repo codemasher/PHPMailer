@@ -1502,7 +1502,7 @@ class PHPMailer extends MailerAbstract{
 
 		// Dequeue recipient and Reply-To addresses with IDN
 		foreach(\array_merge($this->RecipientsQueue, $this->ReplyToQueue) as $params){
-			$params[1] = $this->punyencodeAddress($params[1]);
+			$params[1] = punyencodeAddress($params[1], $this->CharSet);
 			\call_user_func_array([$this, 'addAnAddress'], $params);
 		}
 
@@ -1518,7 +1518,7 @@ class PHPMailer extends MailerAbstract{
 				continue;
 			}
 
-			$this->{$type} = $this->punyencodeAddress($this->{$type});
+			$this->{$type} = punyencodeAddress($this->{$type}, $this->CharSet);
 
 			if(!validateAddress($this->{$type}, $this->validator)){
 				$this->edebug(\sprintf('%s (%s): %s', $this->lang('invalid_address'), $type, $this->{$type}));
@@ -1587,42 +1587,6 @@ class PHPMailer extends MailerAbstract{
 		}
 
 		return $this;
-	}
-
-	/**
-	 * Converts IDN in given email address to its ASCII form, also known as punycode, if possible.
-	 * Important: Address must be passed in same encoding as currently set in PHPMailer::$CharSet.
-	 * This function silently returns unmodified address if:
-	 * - No conversion is necessary (i.e. domain name is not an IDN, or is already in ASCII form)
-	 * - Conversion to punycode is impossible (e.g. required PHP functions are not available)
-	 *   or fails for any reason (e.g. domain contains characters not allowed in an IDN).
-	 *
-	 * @param string $address The email address to convert
-	 *
-	 * @return string The encoded address in ASCII form
-	 * @see    PHPMailer::$CharSet
-	 *
-	 */
-	protected function punyencodeAddress(string $address):string{
-		// Verify we have required functions, CharSet, and at-sign.
-		$pos = \strrpos($address, '@');
-		if(idnSupported() && !empty($this->CharSet) && $pos !== false){
-			$domain = \substr($address, ++$pos);
-			// Verify CharSet string is a valid one, and domain properly encoded in this CharSet.
-			if(has8bitChars($domain) && @\mb_check_encoding($domain, $this->CharSet)){
-				$domain = \mb_convert_encoding($domain, 'UTF-8', $this->CharSet);
-				//Ignore IDE complaints about this line - method signature changed in PHP 5.4
-				$errorcode = 0;
-				/** @noinspection PhpComposerExtensionStubsInspection */
-				$punycode = \idn_to_ascii($domain, $errorcode, \INTL_IDNA_VARIANT_UTS46);
-
-				if($punycode !== false){
-					return \substr($address, 0, $pos).$punycode;
-				}
-			}
-		}
-
-		return $address;
 	}
 
 	/**

@@ -556,4 +556,24 @@ class PHPMailerFunctionTest extends TestCase{
 		);
 	}
 
+	public function punycodeAddresProvider(){
+		return [
+			['foo', 'foo'], // coverage - no @
+			['@françois.ch', '@xn--franois-xxa.ch'],
+		];
+	}
+
+	/**
+	 * @dataProvider punycodeAddresProvider
+	 *
+	 * @param string $addr
+	 * @param string $expected
+	 */
+	public function testPunyencodeAddress(string $addr, string $expected){
+		$addr   = mb_convert_encoding($addr, 'ISO-8859-1', 'UTF-8');
+		$result = PHPMailer\punyencodeAddress($addr);
+
+		$this->assertSame($expected, $result);
+	}
+
 }
