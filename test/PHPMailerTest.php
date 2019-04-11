@@ -23,6 +23,8 @@ use Psr\Log\LoggerInterface;
 
 /**
  * PHPMailer - PHP email transport unit test class.
+ *
+ * @link http://nilhcem.com/FakeSMTP/download.html Windows
  */
 final class PHPMailerTest extends TestCase{
 
@@ -1068,7 +1070,7 @@ EOT;
 	/**
 	 * Test sending using SendMail.
 	 *
-	 * @group network
+	 * @group alternative-mailers
 	 */
 	public function testSendmailSend(){
 		$this->Mail->Body = 'Sending via sendmail';
@@ -1103,7 +1105,7 @@ EOT;
 	/**
 	 * Test sending using PHP mail() function.
 	 *
-	 * @group network
+	 * @group alternative-mailers
 	 */
 	public function testMailSend(){
 		$sendmail = ini_get('sendmail_path');
@@ -1150,7 +1152,7 @@ EOT;
 		$this->buildBody();
 		$this->Mail->Body    = '';
 		$this->Mail->Subject = $this->Mail->Subject.': Empty Body';
-		$this->Mail->setMailerMail();
+		$this->Mail->setMailerSMTP();
 		$this->Mail->AllowEmpty = true;
 		$this->assertTrue($this->Mail->send(), $this->Mail->ErrorInfo);
 
@@ -1662,7 +1664,7 @@ EOT;
 		$this->Mail->setDKIMCredentials('example.com', 'phpmailer', $privatekeyfile);
 
 		$this->assertTrue($this->Mail->send(), 'DKIM signed mail failed');
-		$this->Mail->setMailerMail();
+		$this->Mail->setMailerSMTP();
 		$this->assertTrue($this->Mail->send(), 'DKIM signed mail via mail() failed');
 		unlink($privatekeyfile);
 	}
