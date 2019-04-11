@@ -1561,9 +1561,7 @@ class PHPMailer extends MailerAbstract{
 		}
 
 		// createBody may have added some headers, so retain them
-		$tempheaders      = $this->MIMEHeader;
-		$this->MIMEHeader = $this->createHeader($uniqueid);
-		$this->MIMEHeader .= $tempheaders;
+		$this->MIMEHeader = $this->createHeader($uniqueid).$this->MIMEHeader;
 
 		// To capture the complete message when using mail(), create
 		// an extra header list which createHeader() doesn't fold in
