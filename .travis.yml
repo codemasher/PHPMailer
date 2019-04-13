@@ -12,7 +12,7 @@ install: composer install --no-interaction --prefer-source
 
 before_script:
   - sudo service postfix stop
-  - sudo mkdir -p logs
+  - mkdir -p logs
   - sudo mkdir -p /var/qmail/bin
   - smtp-sink -d "./logs/%d.%H.%M.%S" localhost:2500 1000 &
   - chmod +x scripts/travis.fakesendmail.sh
