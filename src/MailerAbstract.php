@@ -22,7 +22,7 @@ abstract class MailerAbstract implements LoggerAwareInterface{
 	 *
 	 * @var string
 	 */
-	public const VERSION = '6.0.7';
+	public const VERSION = '7.0.0-dev';
 
 	/**
 	 * The maximum line length allowed by RFC 2822 section 2.1.1.

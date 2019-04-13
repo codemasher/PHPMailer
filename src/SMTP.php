@@ -168,7 +168,7 @@ class SMTP extends MailerAbstract{
 
 		// SMTP server can take longer to respond, give longer timeout for first read
 		// Windows does not have support for this timeout function
-		if(\substr(\PHP_OS, 0, 3) !== 'WIN'){
+		if(PHP_OS_FAMILY !== 'Windows'){
 			$max = (int)\ini_get('max_execution_time');
 
 			// Don't bother if unlimited
@@ -181,7 +181,7 @@ class SMTP extends MailerAbstract{
 
 		// Get any announcement
 		$announce = $this->getLines();
-		$this->edebug('SERVER -> CLIENT: '.$announce, $this::DEBUG_SERVER);
+		$this->edebug('[SRV > CLI] '.$announce, $this::DEBUG_SERVER);
 
 		return true;
 	}
@@ -762,7 +762,7 @@ class SMTP extends MailerAbstract{
 			$detail  = \substr($this->last_reply, 4);
 		}
 
-		$this->edebug('SERVER -> CLIENT: '.$this->last_reply, $this::DEBUG_SERVER);
+		$this->edebug('[SRV > CLI] '.$this->last_reply, $this::DEBUG_SERVER);
 
 		if(!\in_array($code, $expect)){
 			$this->setError($command.' command failed', $detail, $code, $code_ex);
@@ -846,8 +846,8 @@ class SMTP extends MailerAbstract{
 		//If SMTP transcripts are left enabled, or debug output is posted online
 		//it can leak credentials, so hide credentials in all but lowest level
 		$this->loglevel <= $this::DEBUG_LOWLEVEL && \in_array($command, ['User & Password', 'Username', 'Password'], true)
-			? $this->edebug('CLIENT -> SERVER: <credentials hidden>', $this::DEBUG_CLIENT)
-			: $this->edebug('CLIENT -> SERVER: '.$data, $this::DEBUG_CLIENT);
+			? $this->edebug('[CLI > SRV] <credentials hidden>', $this::DEBUG_CLIENT)
+			: $this->edebug('[CLI > SRV] '.$data, $this::DEBUG_CLIENT);
 
 		\set_error_handler([$this, 'errorHandler']);
 		$result = \fwrite($this->socket, $data);

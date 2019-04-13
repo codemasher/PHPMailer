@@ -978,7 +978,6 @@ class PHPMailer extends MailerAbstract{
 
 		if($pos === false){
 			// At-sign is missing.
-			// @todo: errorhandler
 			$error_message = \sprintf('%s (%s): %s', $this->lang('invalid_address'), $kind, $address);
 
 			$this->setError($error_message);
@@ -1095,7 +1094,8 @@ class PHPMailer extends MailerAbstract{
 	 * @param string $type        File extension (MIME) type
 	 * @param string $disposition Disposition to use
 	 *
-	 * @return bool
+	 * @return \PHPMailer\PHPMailer\PHPMailer
+	 * @throws \PHPMailer\PHPMailer\PHPMailerException
 	 */
 	public function addAttachment(
 		string $path,
@@ -1103,7 +1103,7 @@ class PHPMailer extends MailerAbstract{
 		string $encoding = self::ENCODING_BASE64,
 		string $type = null,
 		string $disposition = 'attachment'
-	):bool{
+	):PHPMailer{
 
 		if(!isPermittedPath($path) || !@\is_file($path)){
 			$msg = $this->lang('file_access').$path;
@@ -1111,7 +1111,7 @@ class PHPMailer extends MailerAbstract{
 			$this->setError($msg);
 			$this->edebug($msg);
 
-			return false;
+			throw new PHPMailerException($msg);
 		}
 
 		// If a MIME type is not specified, try to work it out from the file name
@@ -1137,7 +1137,7 @@ class PHPMailer extends MailerAbstract{
 
 		$this->attachments[] = $a;
 
-		return true;
+		return $this;
 	}
 
 	/**
@@ -1204,7 +1204,7 @@ class PHPMailer extends MailerAbstract{
 	public function addEmbeddedImage(
 		string $path,
 		string $cid,
-		string $name = '',
+		string $name = '', // @todo: warning/error or don't accept empty name?
 		string $encoding = self::ENCODING_BASE64,
 		string $type = '',
 		string $disposition = 'inline'
@@ -1264,7 +1264,7 @@ class PHPMailer extends MailerAbstract{
 	public function addStringEmbeddedImage(
 		string $string,
 		string $cid,
-		string $name = '',
+		string $name = '', // @todo: warning/error or don't accept empty name?
 		string $encoding = self::ENCODING_BASE64,
 		string $type = '',
 		string $disposition = 'inline'
@@ -1487,7 +1487,8 @@ class PHPMailer extends MailerAbstract{
 	 */
 	public function preSend():PHPMailer{
 
-		if($this->Mailer === 'smtp' || ($this->Mailer === 'mail' && \stripos(PHP_OS, 'WIN') === 0)){
+		// @todo: $this::LE is only set here which might cause problems
+		if($this->Mailer === 'smtp' || ($this->Mailer === 'mail' && PHP_OS_FAMILY === 'Windows')){
 			//SMTP mandates RFC-compliant line endings
 			//and it's also used with mail() on Windows
 			$this->setLE("\r\n");
@@ -1650,28 +1651,16 @@ class PHPMailer extends MailerAbstract{
 	 * Actually send a message via the selected mechanism.
 	 *
 	 * @return bool
+	 * @throws \PHPMailer\PHPMailer\PHPMailerException
 	 */
 	public function postSend():bool{
+		$sendMethod = $this->Mailer.'Send';
 
-		// Choose the mailer and send through it
-		switch($this->Mailer){
-			case 'sendmail':
-			case 'qmail':
-				return $this->sendmailSend($this->MIMEHeader, $this->MIMEBody);
-			case 'smtp':
-				return $this->smtpSend($this->MIMEHeader, $this->MIMEBody);
-			case 'mail':
-				return $this->mailSend($this->MIMEHeader, $this->MIMEBody);
-			default:
-				$sendMethod = $this->Mailer.'Send';
-
-				if(\method_exists($this, $sendMethod)){
-					return $this->$sendMethod($this->MIMEHeader, $this->MIMEBody);
-				}
-
-				return $this->mailSend($this->MIMEHeader, $this->MIMEBody);
+		if(!\method_exists($this, $sendMethod)){
+			throw new PHPMailerException('invalid send method: '.$sendMethod);
 		}
 
+		return $this->$sendMethod($this->MIMEHeader, $this->MIMEBody);
 	}
 
 	/**
@@ -1826,8 +1815,8 @@ class PHPMailer extends MailerAbstract{
 
 		//Calling mail() with null params breaks
 		return !$this->UseSendmailOptions || $params === null
-			? @\mail($to, $subject, $body, $header)
-			: @\mail($to, $subject, $body, $header, $params);
+			? \mail($to, $subject, $body, $header)
+			: \mail($to, $subject, $body, $header, $params);
 	}
 
 	/**
@@ -2850,29 +2839,23 @@ class PHPMailer extends MailerAbstract{
 	 * @param string $encoding The encoding to use; one of 'base64', '7bit', '8bit', 'binary', 'quoted-printable'
 	 *
 	 * @return string
+	 * @throws \PHPMailer\PHPMailer\PHPMailerException
 	 */
 	protected function encodeFile(string $path, string $encoding = self::ENCODING_BASE64):string{
 
-		try{
-			if(!isPermittedPath($path) || !\file_exists($path)){
-				throw new PHPMailerException($this->lang('file_open').$path, $this::STOP_CONTINUE);
-			}
-
-			$file_buffer = \file_get_contents($path);
-
-			if($file_buffer === false){
-				throw new PHPMailerException($this->lang('file_open').$path, $this::STOP_CONTINUE);
-			}
-
-			$file_buffer = $this->encodeString($file_buffer, $encoding);
-
-			return $file_buffer;
+		if(!fileCheck($path) || !isPermittedPath($path)){
+			throw new PHPMailerException($this->lang('file_open').$path);
 		}
-		catch(PHPMailerException $e){
-			$this->setError($e->getMessage());
 
-			return '';
+		$file_buffer = \file_get_contents($path);
+
+		if($file_buffer === false){
+			throw new PHPMailerException($this->lang('file_open').$path);
 		}
+
+		$file_buffer = $this->encodeString($file_buffer, $encoding);
+
+		return $file_buffer;
 	}
 
 	/**
@@ -2905,7 +2888,7 @@ class PHPMailer extends MailerAbstract{
 				$encoded = $str;
 				break;
 			case $this::ENCODING_QUOTED_PRINTABLE:
-				$encoded = $this->encodeQP($str);
+				$encoded = $this->normalizeBreaks(\quoted_printable_encode($str));
 				break;
 			default:
 				$this->setError($this->lang('encoding').$encoding);
@@ -3067,20 +3050,6 @@ class PHPMailer extends MailerAbstract{
 	}
 
 	/**
-	 * @todo: make protected
-	 *
-	 * Encode a string in quoted-printable format.
-	 * According to RFC2045 section 6.7.
-	 *
-	 * @param string $string The text to encode
-	 *
-	 * @return string
-	 */
-	public function encodeQP(string $string):string{
-		return $this->normalizeBreaks(\quoted_printable_encode($string));
-	}
-
-	/**
 	 * Check if an embedded attachment is present with this cid.
 	 *
 	 * @param string $cid
@@ -3128,6 +3097,18 @@ class PHPMailer extends MailerAbstract{
 	}
 
 	/**
+	 * @param string $message
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailer
+	 */
+	public function messageFromPlaintext(string $message):PHPMailer{
+		$this->Body        = $message;
+		$this->ContentType = $this::CONTENT_TYPE_PLAINTEXT;
+
+		return $this;
+	}
+
+	/**
 	 * Create a message body from an HTML string.
 	 * Automatically inlines images and creates a plain-text version by converting the HTML,
 	 * overwriting any existing values in Body and AltBody.
@@ -3147,7 +3128,7 @@ class PHPMailer extends MailerAbstract{
 	 *
 	 * @see PHPMailer::html2text()
 	 */
-	public function messageFromHTML(string $message, string $basedir = '', $advanced = null):PHPMailer{
+	public function messageFromHTML(string $message, string $basedir = null, $advanced = null):PHPMailer{
 		\preg_match_all('/(src|background)=["\'](.*)["\']/Ui', $message, $images);
 
 		if(\array_key_exists(2, $images)){
@@ -3432,12 +3413,11 @@ class PHPMailer extends MailerAbstract{
 			? ' i='.$this->DKIM_identity.';'
 			: '';
 
-		$dkimhdrs = 'DKIM-Signature: v=1; a='.
-		            $DKIMsignatureType.'; q='.
-		            $DKIMquery.'; l='.
-		            $DKIMlen.'; s='.
-		            $this->DKIM_selector.
-		            ";\r\n".
+		$dkimhdrs = 'DKIM-Signature: v=1;'.
+		            ' a='.$DKIMsignatureType.';'.
+		            ' q='.$DKIMquery.';'.
+		            ' l='.$DKIMlen.';'.
+		            ' s='.$this->DKIM_selector.";\r\n".
 		            "\tt=".$DKIMtime.'; c='.$DKIMcanonicalization.";\r\n".
 		            "\th=From:To:Date:Subject".$extraHeaderKeys.";\r\n".
 		            "\td=".$this->DKIM_domain.';'.$ident."\r\n".
