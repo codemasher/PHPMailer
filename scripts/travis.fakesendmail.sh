@@ -3,7 +3,7 @@
 #https://github.com/mrded/MNPP/blob/ee64fb2a88efc70ba523b78e9ce61f9f1ed3b4a9/init/fake-sendmail.sh
 
 #Create a temp folder to put messages in
-numPath="$TRAVIS_BUILD_DIR/codemasher/PHPMailer/logs"
+numPath="/home/travis/build/codemasher/PHPMailer/logs"
 umask 037
 mkdir -p ${numPath}
 
