@@ -23,6 +23,7 @@
 		"php": ">=7.2.0",
 		"ext-ctype": "*",
 		"ext-filter": "*",
+		"ext-intl": "*",
 		"ext-mbstring": "*",
 		"ext-openssl": "*",
 		"psr/log": "^1.1"
