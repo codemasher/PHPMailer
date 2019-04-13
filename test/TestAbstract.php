@@ -74,7 +74,8 @@ abstract class TestAbstract extends TestCase{
 		$this->INCLUDE_DIR = dirname(__DIR__); //Default to the dir above the test dir, i.e. the project home dir
 
 		$this->reflection  = new ReflectionClass($this->FQCN);
-		$this->mailer      = new NullLogger;
+		$this->mailer      = $this->getInstance();
+		$this->logger      = new NullLogger;
 
 		if(!$this->IS_CI){
 			$this->logger = $this->getDebugLogger();
