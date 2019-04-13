@@ -16,6 +16,7 @@ use PHPMailer\PHPMailer\PHPMailer;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
 use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use ReflectionClass, ReflectionMethod, ReflectionProperty;
 
 abstract class TestAbstract extends TestCase{
@@ -73,10 +74,10 @@ abstract class TestAbstract extends TestCase{
 		$this->INCLUDE_DIR = dirname(__DIR__); //Default to the dir above the test dir, i.e. the project home dir
 
 		$this->reflection  = new ReflectionClass($this->FQCN);
-		$this->mailer      = $this->getInstance();
-		$this->logger      = $this->getDebugLogger();
+		$this->mailer      = new NullLogger;
 
 		if(!$this->IS_CI){
+			$this->logger = $this->getDebugLogger();
 			$this->mailer->setLogger($this->logger);
 		}
 	}
