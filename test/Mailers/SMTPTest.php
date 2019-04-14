@@ -1,20 +1,20 @@
 <?php
 /**
- * Class PHPMailerSMTPTest
+ * Class SMTPTest
  *
- * @filesource   PHPMailerSMTPTest.php
+ * @filesource   SMTPTest.php
  * @created      11.04.2019
- * @package      PHPMailer\Test
+ * @package      PHPMailer\Test\Mailers
  * @author       smiley <smiley@chillerlan.net>
  * @copyright    2019 smiley
  * @license      MIT
  */
 
-namespace PHPMailer\Test;
+namespace PHPMailer\Test\Mailers;
 
 use PHPMailer\PHPMailer\POP3;
 
-class PHPMailerSMTPTest extends MailerTestAbstract{
+class SMTPTest extends MailerTestAbstract{
 
 	/**
 	 * PIDs of any processes we need to kill.
@@ -40,29 +40,51 @@ class PHPMailerSMTPTest extends MailerTestAbstract{
 		parent::tearDown();
 	}
 
-
 	public function testBadCommand(){
 		$this->mailer->smtpConnect();
 		$smtp = $this->mailer->getSMTP();
 		$this->assertFalse($smtp->mail("somewhere\nbad"), 'Bad SMTP command containing breaks accepted');
 	}
 
+	/**
+	 * @group slow
+	 */
 	public function testConnect(){
 		$this->assertTrue($this->mailer->smtpConnect(), 'SMTP single connect failed');
 		$this->mailer->closeSMTP();
-		// $this->Mail->Host = 'localhost:12345;10.10.10.10:54321;' . TEST_MAIL_HOST;
-		// $this->assertTrue($this->Mail->smtpConnect(), 'SMTP multi-connect failed');
-		// $this->Mail->closeSMTP();
-		// $this->Mail->Host = '[::1]:' . $this->Mail->Port . ';' . TEST_MAIL_HOST;
-		// $this->assertTrue($this->Mail->smtpConnect(), 'SMTP IPv6 literal multi-connect failed');
-		// $this->Mail->closeSMTP();
-
-		// All these hosts are expected to fail
-		// $this->Mail->Host = 'xyz://bogus:25;tls://[bogus]:25;ssl://localhost:12345;tls://localhost:587;10.10.10.10:54321;localhost:12345;10.10.10.10'. TEST_MAIL_HOST.' ';
-		// $this->assertFalse($this->Mail->smtpConnect());
-		// $this->Mail->closeSMTP();
 	}
 
+	/**
+	 * @group slow
+	 */
+	public function testConnectInvalidHosts(){
+		// All these hosts are expected to fail
+		$this->mailer->host = 'xyz://bogus:25;tls://[bogus]:25;ssl://localhost:12345;tls://localhost:587;10.10.10.10:54321;localhost:12345;10.10.10.10'.TEST_MAIL_HOST.' ';
+		$this->assertFalse($this->mailer->smtpConnect());
+		$this->mailer->closeSMTP();
+	}
+
+	/**
+	 * @group slow
+	 */
+	public function testConnectIPv6(){
+		$this->mailer->host = '[::1]:'.$this->mailer->port.';'.TEST_MAIL_HOST;
+		$this->assertTrue($this->mailer->smtpConnect(), 'SMTP IPv6 literal multi-connect failed');
+		$this->mailer->closeSMTP();
+	}
+
+	/**
+	 * @group slow
+	 */
+	public function testMultiConnect(){
+		$this->mailer->host = 'localhost:12345;10.10.10.10:54321;'.TEST_MAIL_HOST;
+		$this->assertTrue($this->mailer->smtpConnect(), 'SMTP multi-connect failed');
+		$this->mailer->closeSMTP();
+	}
+
+	/**
+	 * @group slow
+	 */
 	public function testConnectHostWithSpaces(){
 		$this->mailer->host = ' localhost:12345 ; '.TEST_MAIL_HOST.' ';
 		$this->assertTrue($this->mailer->smtpConnect(), 'SMTP hosts with stray spaces failed');
@@ -86,22 +108,20 @@ class PHPMailerSMTPTest extends MailerTestAbstract{
 	public function testKeepAlive(){
 		$this->mailer->SMTPKeepAlive = true;
 		$this->setMessage('SMTP keep-alive test.', __FUNCTION__.': SMTP keep-alive 1');
-		$this->assertTrue($this->mailer->send(), $this->mailer->ErrorInfo);
+		$this->assertSentMail();
 		$this->setMessage('SMTP keep-alive test.', __FUNCTION__.': SMTP keep-alive 2');
-		$this->assertTrue($this->mailer->send(), $this->mailer->ErrorInfo);
+		$this->assertSentMail();
 		$this->mailer->closeSMTP();
 	}
 
 	/**
 	 * Test sending multiple messages with separate connections.
-	 *
-	 * @group network
 	 */
 	public function testNoKeepAlive(){
 		$this->setMessage('SMTP no-keep-alive test.', __FUNCTION__.': SMTP no-keep-alive 1');
-		$this->assertTrue($this->mailer->send(), $this->mailer->ErrorInfo);
+		$this->assertSentMail();
 		$this->setMessage('SMTP no-keep-alive test.', __FUNCTION__.': SMTP no-keep-alive 2');
-		$this->assertTrue($this->mailer->send(), $this->mailer->ErrorInfo);
+		$this->assertSentMail();
 		$this->mailer->closeSMTP();
 	}
 

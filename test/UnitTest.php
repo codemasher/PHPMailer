@@ -1,8 +1,8 @@
 <?php
 /**
- * Class PHPMailerUnitTest
+ * Class UnitTest
  *
- * @filesource   PHPMailerUnitTest.php
+ * @filesource   UnitTest.php
  * @created      11.04.2019
  * @package      PHPMailer\Test
  * @author       smiley <smiley@chillerlan.net>
@@ -14,7 +14,7 @@ namespace PHPMailer\Test;
 
 use PHPMailer\PHPMailer\PHPMailerException;
 
-class PHPMailerUnitTest extends TestAbstract{
+class UnitTest extends TestAbstract{
 
 	/**
 	 * Test injecting a custom validator.
@@ -276,6 +276,40 @@ class PHPMailerUnitTest extends TestAbstract{
 		$this->mailer->clearCCs();
 		$this->mailer->clearBCCs();
 		$this->mailer->clearReplyTos();
+	}
+
+	/**
+	 * Tests removal of duplicate recipients and reply-tos.
+	 *
+	 * @group network
+	 */
+	public function testDuplicateIDNAddressRemoved(){
+		$this->setupMailer();
+
+		$this->mailer->CharSet = 'utf-8';
+
+		$this->assertTrue($this->mailer->addTO('test@françois.ch'));
+		$this->assertFalse($this->mailer->addTO('test@françois.ch'));
+		$this->assertTrue($this->mailer->addTO('test@FRANÇOIS.CH'));
+		$this->assertFalse($this->mailer->addTO('test@FRANÇOIS.CH'));
+		$this->assertTrue($this->mailer->addTO('test@xn--franois-xxa.ch'));
+		$this->assertFalse($this->mailer->addTO('test@xn--franois-xxa.ch'));
+		$this->assertFalse($this->mailer->addTO('test@XN--FRANOIS-XXA.CH'));
+
+		$this->assertTrue($this->mailer->addReplyTo('test+replyto@françois.ch'));
+		$this->assertFalse($this->mailer->addReplyTo('test+replyto@françois.ch'));
+		$this->assertTrue($this->mailer->addReplyTo('test+replyto@FRANÇOIS.CH'));
+		$this->assertFalse($this->mailer->addReplyTo('test+replyto@FRANÇOIS.CH'));
+		$this->assertTrue($this->mailer->addReplyTo('test+replyto@xn--franois-xxa.ch'));
+		$this->assertFalse($this->mailer->addReplyTo('test+replyto@xn--franois-xxa.ch'));
+		$this->assertFalse($this->mailer->addReplyTo('test+replyto@XN--FRANOIS-XXA.CH'));
+
+		$this->mailer->Body = 'IDN duplicate remove';
+		$this->mailer->preSend();
+
+		// There should be only one "To" address and one "Reply-To" address.
+		$this->assertCount(1, $this->mailer->getTOs(), 'Bad count of "to" recipients');
+		$this->assertCount(1, $this->mailer->getReplyTos(), 'Bad count of "reply-to" addresses');
 	}
 
 	/**
@@ -585,40 +619,5 @@ class PHPMailerUnitTest extends TestAbstract{
 		$this->assertEmpty($this->mailer->getBCCs(), 'Bad "bcc" recipients');
 		$this->assertSame(['test+replyto'.$domain => ['test+replyto'.$domain, '']], $this->mailer->getReplyTos(), 'Bad "reply-to" addresses');
 	}
-
-	/**
-	 * Tests removal of duplicate recipients and reply-tos.
-	 *
-	 * @group network
-	 */
-	public function testDuplicateIDNAddressRemoved(){
-		$this->setupMailer();
-
-		$this->mailer->CharSet = 'utf-8';
-
-		$this->assertTrue($this->mailer->addTO('test@françois.ch'));
-		$this->assertFalse($this->mailer->addTO('test@françois.ch'));
-		$this->assertTrue($this->mailer->addTO('test@FRANÇOIS.CH'));
-		$this->assertFalse($this->mailer->addTO('test@FRANÇOIS.CH'));
-		$this->assertTrue($this->mailer->addTO('test@xn--franois-xxa.ch'));
-		$this->assertFalse($this->mailer->addTO('test@xn--franois-xxa.ch'));
-		$this->assertFalse($this->mailer->addTO('test@XN--FRANOIS-XXA.CH'));
-
-		$this->assertTrue($this->mailer->addReplyTo('test+replyto@françois.ch'));
-		$this->assertFalse($this->mailer->addReplyTo('test+replyto@françois.ch'));
-		$this->assertTrue($this->mailer->addReplyTo('test+replyto@FRANÇOIS.CH'));
-		$this->assertFalse($this->mailer->addReplyTo('test+replyto@FRANÇOIS.CH'));
-		$this->assertTrue($this->mailer->addReplyTo('test+replyto@xn--franois-xxa.ch'));
-		$this->assertFalse($this->mailer->addReplyTo('test+replyto@xn--franois-xxa.ch'));
-		$this->assertFalse($this->mailer->addReplyTo('test+replyto@XN--FRANOIS-XXA.CH'));
-
-		$this->mailer->Body = 'IDN duplicate remove';
-		$this->mailer->preSend();
-
-		// There should be only one "To" address and one "Reply-To" address.
-		$this->assertCount(1, $this->mailer->getTOs(), 'Bad count of "to" recipients');
-		$this->assertCount(1, $this->mailer->getReplyTos(), 'Bad count of "reply-to" addresses');
-	}
-
 
 }

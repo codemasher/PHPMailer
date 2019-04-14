@@ -24,6 +24,7 @@
 		<const name="TEST_MAIL_HOST" value="localhost"/>
 		<const name="TEST_MAIL_PORT" value="2500"/>
 		<const name="TEST_IS_CI" value="true"/>
+		<const name="TEST_CLEANUP_MAIL_LOG" value="true"/>
 	</php>
 	<groups>
 		<exclude>

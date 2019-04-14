@@ -1,18 +1,18 @@
 <?php
 /**
- * Class PHPMailerMailTest
+ * Class MailTest
  *
- * @filesource   PHPMailerMailTest.php
+ * @filesource   MailTest.php
  * @created      13.04.2019
- * @package      PHPMailer\Test
+ * @package      PHPMailer\Test\Mailers
  * @author       smiley <smiley@chillerlan.net>
  * @copyright    2019 smiley
  * @license      MIT
  */
 
-namespace PHPMailer\Test;
+namespace PHPMailer\Test\Mailers;
 
-class PHPMailerMailTest extends MailerTestAbstract{
+class MailTest extends MailerTestAbstract{
 
 	protected function setUp():void{
 		parent::setUp();

@@ -12,6 +12,7 @@
 
 namespace PHPMailer\Test;
 
+use Closure;
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
@@ -202,6 +203,41 @@ abstract class TestAbstract extends TestCase{
 		$this->mailer->addTO($to);
 
 		return $this;
+	}
+
+	/**
+	 * Sends an email to the test server and asserts the expected result
+	 *
+	 * @param \Closure|null $assertFunc
+	 */
+	protected function assertSentMail(Closure $assertFunc = null){
+		$this->assertTrue($this->mailer->send(), $this->mailer->ErrorInfo);
+
+		$id       = $this->mailer->getLastMessageID();
+		$sent     = $this->mailer->getSentMIMEMessage();
+		$received = [];
+
+		$this->logger->info($id);
+
+		foreach(new \DirectoryIterator($this->INCLUDE_DIR.'/logs') as $fileinfo){
+			if(!$fileinfo->isDot()){
+				$content = file_get_contents($fileinfo->getPathname());
+
+				if(strpos($content, $id) !== false){
+					$received[] = trim($content);
+
+					if(defined('TEST_CLEANUP_MAIL_LOG') && TEST_CLEANUP_MAIL_LOG === true){
+						unlink($fileinfo->getPathname());
+					}
+				}
+
+			}
+		}
+
+		if($assertFunc instanceof Closure){
+			$assertFunc->call($this, trim($sent), $received);
+		}
+
 	}
 
 	/**

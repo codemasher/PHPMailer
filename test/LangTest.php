@@ -19,7 +19,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * Check language files for missing or excess translations.
  */
-final class PHPMailerLangTest extends TestCase{
+final class LangTest extends TestCase{
 
 	/**
 	 * Holds a PHPMailer instance.

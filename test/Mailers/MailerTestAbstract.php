@@ -4,16 +4,16 @@
  *
  * @filesource   MailerTestAbstract.php
  * @created      11.04.2019
- * @package      PHPMailer\Test
+ * @package      PHPMailer\Test\Mailers
  * @author       smiley <smiley@chillerlan.net>
  * @copyright    2019 smiley
  * @license      MIT
  */
 
-namespace PHPMailer\Test;
+namespace PHPMailer\Test\Mailers;
 
-use Closure;
 use PHPMailer\PHPMailer\PHPMailerException;
+use PHPMailer\Test\TestAbstract;
 
 abstract class MailerTestAbstract extends TestAbstract{
 
@@ -27,40 +27,6 @@ abstract class MailerTestAbstract extends TestAbstract{
 		$this->logger->info(str_repeat('-', 40));
 
 		parent::tearDown();
-	}
-
-	/**
-	 * @todo
-	 *
-	 * Sends an email to the test server and asserts the expected result
-	 *
-	 * @param \Closure|null $assertFunc
-	 */
-	protected function assertSentMail(Closure $assertFunc = null){
-		$this->assertTrue($this->mailer->send(), $this->mailer->ErrorInfo);
-
-		$id       = $this->mailer->getLastMessageID();
-		$sent     = $this->mailer->getSentMIMEMessage();
-		$received = [];
-
-		$this->logger->info($id);
-
-		foreach(new \DirectoryIterator(__DIR__.'/../logs') as $fileinfo){
-			if(!$fileinfo->isDot()){
-				$content = file_get_contents($fileinfo->getPathname());
-
-				if(strpos($content, $id) !== false){
-					$received[] = trim($content);
-#					unlink($fileinfo->getPathname());
-				}
-
-			}
-		}
-
-		if($assertFunc instanceof Closure){
-			$assertFunc->call($this, trim($sent), $received);
-		}
-
 	}
 
 	/**
@@ -92,8 +58,7 @@ abstract class MailerTestAbstract extends TestAbstract{
 		$this->mailer->Subject = $this->mailer->getMailer().': '.__FUNCTION__;
 		$this->mailer->AllowEmpty = true;
 
-		$this->assertTrue($this->mailer->send(), $this->mailer->ErrorInfo);
-
+		$this->assertSentMail();
 	}
 
 	public function testEmptyBodynotAllowedException(){
@@ -765,7 +730,5 @@ EOT;
 		unlink($certfile);
 		unlink($keyfile);
 	}
-
-
 
 }

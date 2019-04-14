@@ -1,8 +1,8 @@
 <?php
 /**
- * Class PHPMailerAuthTest
+ * Class AuthTest
  *
- * @filesource   PHPMailerAuthTest.php
+ * @filesource   AuthTest.php
  * @created      11.04.2019
  * @package      PHPMailer\Test
  * @author       smiley <smiley@chillerlan.net>
@@ -15,7 +15,7 @@ namespace PHPMailer\Test;
 use PHPMailer\PHPMailer\OAuth;
 use PHPMailer\PHPMailer\PHPMailerOAuthInterface;
 
-class PHPMailerAuthTest extends TestAbstract{
+class AuthTest extends TestAbstract{
 
 	/**
 	 * Test OAuth method
@@ -55,7 +55,8 @@ class PHPMailerAuthTest extends TestAbstract{
 		$this->mailer->Sender     = 'from@example.com';
 		$this->mailer->clearAllRecipients();
 		$this->mailer->addTO('user@example.com');
-		$this->assertTrue($this->mailer->send(), $this->mailer->ErrorInfo);
+
+		$this->assertSentMail();
 	}
 
 
