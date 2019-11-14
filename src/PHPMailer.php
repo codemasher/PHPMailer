@@ -2478,6 +2478,7 @@ class PHPMailer extends MailerAbstract{
 		return $this->textLine('--'.$boundary[1])
 			.$this->headerLine('Content-Type', $this::CONTENT_TYPE_MULTIPART_RELATED.';')
 			.$this->textLine("\tboundary=\"".$boundary[2].'"')
+			.$this->textLine("\ttype=\"" . $this::CONTENT_TYPE_TEXT_HTML . '"')
 			.$this->LE
 			.$this->getBoundary($boundary[2], $bodyCharSet, '', $bodyEncoding)
 			.$this->encodeString($messageBody, $bodyEncoding)
@@ -2533,6 +2534,7 @@ class PHPMailer extends MailerAbstract{
 			.$this->textLine('--'.$boundary[1])
 			.$this->headerLine('Content-Type', $this::CONTENT_TYPE_MULTIPART_RELATED.';')
 			.$this->textLine("\tboundary=\"".$boundary[2].'"')
+			.$this->textLine("\ttype=\"" . $this::CONTENT_TYPE_TEXT_HTML . '"')
 			.$this->LE
 			.$this->getBoundary($boundary[2], $bodyCharSet, $this::CONTENT_TYPE_TEXT_HTML, $bodyEncoding)
 			.$this->encodeString($messageBody, $bodyEncoding)
@@ -2597,6 +2599,7 @@ class PHPMailer extends MailerAbstract{
 			.$this->textLine('--'.$boundary[2])
 			.$this->headerLine('Content-Type', $this::CONTENT_TYPE_MULTIPART_RELATED.';')
 			.$this->textLine("\tboundary=\"".$boundary[3].'"')
+			.$this->textLine("\ttype=\"" . $this::CONTENT_TYPE_TEXT_HTML . '"')
 			.$this->LE
 			.$this->getBoundary($boundary[3], $bodyCharSet, $this::CONTENT_TYPE_TEXT_HTML, $bodyEncoding)
 			.$this->encodeString($messageBody, $bodyEncoding)
