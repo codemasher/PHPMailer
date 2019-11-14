@@ -226,7 +226,7 @@ EOT;
 			file_get_contents(realpath($this->INCLUDE_DIR.'/examples/images/phpmailer_mini.png')),
 			hash('sha256', 'phpmailer_mini.png').'@phpmailer.0',
 			'', //Intentionally empty name
-			'base64',
+			$this->mailer::ENCODING_BASE64,
 			'', //Intentionally empty MIME type
 			'inline'
 		);
@@ -244,7 +244,7 @@ EOT;
 			realpath($this->INCLUDE_DIR.'/examples/images/phpmailer.png'),
 			'my-attach',
 			'phpmailer.png',
-			'base64',
+			$this->mailer::ENCODING_BASE64,
 			'image/png'
 		);
 
@@ -263,7 +263,7 @@ EOT;
 			realpath($this->INCLUDE_DIR.'/examples/images/phpmailer.png'),
 			'my-attach',
 			'phpmailer.png',
-			'base64',
+			$this->mailer::ENCODING_BASE64,
 			'image/png'
 		);
 
@@ -379,7 +379,7 @@ EOT;
 			realpath($this->INCLUDE_DIR.'/examples/images/phpmailer.png'),
 			'my-attach',
 			'phpmailer.png',
-			'base64',
+			$this->mailer::ENCODING_BASE64,
 			'image/png'
 		);
 
@@ -562,7 +562,7 @@ EOT;
 		$this->mailer->Body    = "This message\ncontains\nUNIX-format\nLF line breaks.";
 		$this->assertSentMail();
 
-		$this->mailer->Encoding = 'quoted-printable';
+		$this->mailer->Encoding = $this->mailer::ENCODING_QUOTED_PRINTABLE;
 		$this->mailer->Subject  = $subject.' DOS line breaks, QP';
 		$this->mailer->Body     = "This message\r\ncontains\r\nDOS-format\r\nCRLF line breaks.";
 		$this->assertSentMail();
@@ -589,11 +589,15 @@ EOT;
 		$this->mailer->ContentType = $this->mailer::CONTENT_TYPE_PLAINTEXT;
 		$this->mailer->Subject     .= ': Line length test';
 		$this->mailer->CharSet     = 'UTF-8';
-		$this->mailer->Encoding    = '8bit';
+		$this->mailer->Encoding    = $this->mailer::ENCODING_8BIT;
 
 		$this->setMessage($oklen.$badlen.$oklen.$badlen, __FUNCTION__)->assertSentMail();
 
-		$this->assertSame('quoted-printable', $this->mailer->Encoding, 'Long line did not override transfer encoding');
+		$this->assertSame(
+			$this->mailer::ENCODING_QUOTED_PRINTABLE,
+			$this->mailer->Encoding,
+			'Long line did not override transfer encoding'
+		);
 	}
 
 	/**

@@ -234,7 +234,7 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 
 	/**
 	 * What kind of encryption to use on the SMTP connection.
-	 * Options: '', 'ssl' or 'tls'.
+	 * Options: '', self::ENCRYPTION_STARTTLS, or self::ENCRYPTION_SMTPS.
 	 *
 	 * @var string
 	 */

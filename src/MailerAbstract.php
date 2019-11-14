@@ -74,6 +74,9 @@ abstract class MailerAbstract implements LoggerAwareInterface{
 	public const MAILER_SENDMAIL = 'sendmail';
 	public const MAILER_QMAIL    = 'qmail';
 
+	public const ENCRYPTION_STARTTLS = 'tls';
+	public const ENCRYPTION_SMTPS    = 'ssl';
+
 	/**
 	 * Debug level for no output.
 	 *

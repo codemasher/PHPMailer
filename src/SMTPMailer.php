@@ -232,23 +232,23 @@ class SMTPMailer extends PHPMailer{
 
 			$prefix = '';
 			$secure = $this->SMTPSecure;
-			$tls    = $this->SMTPSecure === 'tls';
+			$tls    = $this->SMTPSecure === $this::ENCRYPTION_STARTTLS;
 
-			if($hostinfo[2] === 'ssl' || ($hostinfo[2] === '' && $this->SMTPSecure === 'ssl')){
+			if($hostinfo[2] === $this::ENCRYPTION_SMTPS || ($hostinfo[2] === '' && $this->SMTPSecure === $this::ENCRYPTION_SMTPS)){
 				$prefix = 'ssl://';
 				$tls    = false; // Can't have SSL and TLS at the same time
-				$secure = 'ssl';
+				$secure = $this::ENCRYPTION_SMTPS;
 			}
-			elseif($hostinfo[2] === 'tls'){
+			elseif($hostinfo[2] === $this::ENCRYPTION_STARTTLS){
 				$tls = true;
 				// tls doesn't use a prefix
-				$secure = 'tls';
+				$secure = $this::ENCRYPTION_STARTTLS;
 			}
 
 			//Do we need the OpenSSL extension?
 			$sslext = defined('OPENSSL_ALGO_SHA256');
 
-			if($secure === 'tls' || $secure === 'ssl'){
+			if($secure === $this::ENCRYPTION_STARTTLS || $secure === $this::ENCRYPTION_SMTPS){
 				//Check for an OpenSSL constant rather than using extension_loaded, which is sometimes disabled
 				if(!$sslext){
 					throw new PHPMailerException($this->lang('extension_missing').'openssl', $this::STOP_CRITICAL);
@@ -275,7 +275,12 @@ class SMTPMailer extends PHPMailer{
 					// * we have openssl extension
 					// * we are not already using SSL
 					// * the server offers STARTTLS
-					if($this->SMTPAutoTLS && $sslext && $secure !== 'ssl' && $this->smtp->getServerExt('STARTTLS')){
+					if(
+						$this->SMTPAutoTLS
+						&& $sslext
+						&& $secure !== $this::ENCRYPTION_SMTPS
+						&& $this->smtp->getServerExt('STARTTLS')
+					){
 						$tls = true;
 					}
 

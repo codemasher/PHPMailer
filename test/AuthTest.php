@@ -45,7 +45,7 @@ class AuthTest extends TestAbstract{
 		$this->mailer->host       = 'hostname';
 		$this->mailer->port       = 587;
 		$this->mailer->SMTPAuth   = true;
-		$this->mailer->SMTPSecure = 'tls';
+		$this->mailer->SMTPSecure = $this->mailer::ENCRYPTION_STARTTLS;
 		$this->mailer->AuthType   = 'CRAM-MD5';
 		$this->mailer->username   = 'username';
 		$this->mailer->password   = 'password';

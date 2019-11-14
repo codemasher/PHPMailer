@@ -329,10 +329,10 @@ abstract class TestAbstract extends TestCase{
 		if($this->mailer->Priority !== 3){
 			$this->addChange('Priority', $this->mailer->Priority);
 		}
-		if($this->mailer->Encoding !== '8bit'){
+		if($this->mailer->Encoding !== $this->mailer::ENCODING_8BIT){
 			$this->addChange('Encoding', $this->mailer->Encoding);
 		}
-		if($this->mailer->CharSet !== 'iso-8859-1'){
+		if($this->mailer->CharSet !== $this->mailer::CHARSET_ISO88591){
 			$this->addChange('CharSet', $this->mailer->CharSet);
 		}
 		if($this->mailer->Sender !== ''){

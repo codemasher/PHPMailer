@@ -179,7 +179,7 @@ class UnitTest extends TestAbstract{
 		$this->setupMailer();
 
 		$this->mailer->ContentType = $this->mailer::CONTENT_TYPE_PLAINTEXT;
-		$this->mailer->Encoding    = '8bit';
+		$this->mailer->Encoding    = $this->mailer::ENCODING_8BIT;
 
 		$oklen  = str_repeat(str_repeat('0', $this->mailer::LINE_LENGTH_MAX).$this->mailer->getLE(), 2);
 		// Use +2 to ensure line length is over limit - LE may only be 1 char
@@ -223,7 +223,7 @@ class UnitTest extends TestAbstract{
 	 */
 	public function testShortBody(){
 		$this->setupMailer();
-		$this->mailer->Encoding = '8bit';
+		$this->mailer->Encoding = $this->mailer::ENCODING_8BIT;
 
 		$oklen = str_repeat(str_repeat('0', $this->mailer::LINE_LENGTH_MAX).$this->mailer->getLE(), 10);
 		$body  = 'This message does not contain lines that are too long.'.$this->mailer->getLE().$oklen;
@@ -307,7 +307,7 @@ class UnitTest extends TestAbstract{
 	public function testDuplicateIDNAddressRemoved(){
 		$this->setupMailer();
 
-		$this->mailer->CharSet = 'utf-8';
+		$this->mailer->CharSet = $this->mailer::CHARSET_UTF8;
 
 		$this->assertTrue($this->mailer->addTO('test@françois.ch'));
 		$this->assertFalse($this->mailer->addTO('test@françois.ch'));
