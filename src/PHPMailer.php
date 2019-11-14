@@ -2477,7 +2477,7 @@ class PHPMailer extends MailerAbstract{
 	protected function body_inline_attach(string $messageBody, array $boundary, string $bodyCharSet, string $bodyEncoding):string{
 		return $this->textLine('--'.$boundary[1])
 			.$this->headerLine('Content-Type', $this::CONTENT_TYPE_MULTIPART_RELATED.';')
-			.$this->textLine(' boundary="'.$boundary[2].'"')
+			.$this->textLine(' boundary="'.$boundary[2].'";')
 			.$this->textLine(' type="' . $this::CONTENT_TYPE_TEXT_HTML . '"')
 			.$this->LE
 			.$this->getBoundary($boundary[2], $bodyCharSet, '', $bodyEncoding)
@@ -2533,7 +2533,7 @@ class PHPMailer extends MailerAbstract{
 			.$this->LE
 			.$this->textLine('--'.$boundary[1])
 			.$this->headerLine('Content-Type', $this::CONTENT_TYPE_MULTIPART_RELATED.';')
-			.$this->textLine(' boundary="'.$boundary[2].'"')
+			.$this->textLine(' boundary="'.$boundary[2].'";')
 			.$this->textLine(' type="' . $this::CONTENT_TYPE_TEXT_HTML . '"')
 			.$this->LE
 			.$this->getBoundary($boundary[2], $bodyCharSet, $this::CONTENT_TYPE_TEXT_HTML, $bodyEncoding)
@@ -2598,7 +2598,7 @@ class PHPMailer extends MailerAbstract{
 			.$this->LE
 			.$this->textLine('--'.$boundary[2])
 			.$this->headerLine('Content-Type', $this::CONTENT_TYPE_MULTIPART_RELATED.';')
-			.$this->textLine(' boundary="'.$boundary[3].'"')
+			.$this->textLine(' boundary="'.$boundary[3].'";')
 			.$this->textLine(' type="' . $this::CONTENT_TYPE_TEXT_HTML . '"')
 			.$this->LE
 			.$this->getBoundary($boundary[3], $bodyCharSet, $this::CONTENT_TYPE_TEXT_HTML, $bodyEncoding)
