@@ -279,6 +279,15 @@ class UnitTest extends TestAbstract{
 	}
 
 	/**
+	 * Test addressing.
+	 */
+	public function testAddressingDoubleQuotesInFromName(){
+		$this->mailer->setFrom('bob@example.com', '"Bob\'s Burgers" (Bob\'s "Burgers")', true);
+		$this->assertSame($this->mailer->From, 'bob@example.com');
+		$this->assertSame($this->mailer->FromName, '"Bob\'s Burgers" (Bob\'s "Burgers")');
+	}
+
+	/**
 	 * Tests removal of duplicate recipients and reply-tos.
 	 *
 	 * @group network
