@@ -392,7 +392,7 @@ class UnitTest extends TestAbstract{
 		$subject = 'example';
 
 		$headerLines      = "From:$from\r\nTo:$to\r\nDate:$date\r\n";
-		$copyHeaderFields = "\tz=From:$from\r\n\t|To:$to\r\n\t|Date:$date\r\n\t|Subject:=20$subject;\r\n";
+		$copyHeaderFields = " z=From:$from\r\n |To:$to\r\n |Date:$date\r\n |Subject:=20$subject;\r\n";
 
 		$this->mailer->setDKIMCredentials('example.com', 'phpmailer', 'dkim_private.pem', null, null, null, true);
 
