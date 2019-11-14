@@ -20,14 +20,14 @@
 
 namespace PHPMailer\PHPMailer;
 
-use function addcslashes, array_filter, array_key_exists, array_merge, base64_decode, base64_encode, basename, call_user_func,
+use function addcslashes, array_filter, array_key_exists, array_merge, base64_decode, base64_encode, call_user_func,
 	call_user_func_array, chunk_split, count, dirname, explode, file_get_contents, file_put_contents, floor, function_exists,
 	gethostname, hash, html_entity_decode, implode, in_array, is_callable, is_file, mb_strlen, mb_substr, openssl_error_string,
 	openssl_pkcs7_sign, pack, php_uname, preg_match, preg_match_all, preg_quote, preg_replace, quoted_printable_encode,
 	rawurldecode, realpath, rtrim, serialize, sprintf, str_replace, strip_tags, strlen, strpos, strrpos, strtolower, substr,
 	sys_get_temp_dir, tempnam, time, trim, unlink;
 
-use const ENT_QUOTES, PKCS7_DETACHED;
+use const ENT_QUOTES, PKCS7_DETACHED, PATHINFO_BASENAME;
 
 /**
  * PHPMailer - PHP email creation and transport class.
@@ -1009,7 +1009,7 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 			$type = filenameToType($path);
 		}
 
-		$filename = basename($path);
+		$filename = mb_pathinfo($path, PATHINFO_BASENAME);
 		if(empty($name)){
 			$name = $filename;
 		}
@@ -1065,7 +1065,7 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 
 		$a->content            = $string;
 		$a->filename           = $filename;
-		$a->name               = basename($filename);
+		$a->name               = mb_pathinfo($filename, PATHINFO_BASENAME);
 		$a->encoding           = $encoding;
 		$a->type               = $type;
 		$a->isStringAttachment = true;
@@ -1123,7 +1123,7 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 			$type = filenameToType($path);
 		}
 
-		$filename = basename($path);
+		$filename = mb_pathinfo($path, PATHINFO_BASENAME);
 		if(empty($name)){
 			$name = $filename;
 		}
@@ -2671,7 +2671,7 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 					// Do not change absolute URLs, including anonymous protocol
 					&& !preg_match('#^[a-z][a-z0-9+.-]*:?//#i', $url)
 				){
-					$filename  = basename($url);
+					$filename  = mb_pathinfo($url, PATHINFO_BASENAME);
 					$directory = dirname($url);
 
 					if($directory === '.'){
