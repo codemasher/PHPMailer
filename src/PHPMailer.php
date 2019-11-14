@@ -2311,19 +2311,19 @@ class PHPMailer extends MailerAbstract{
 		switch($this->message_type){
 			case 'inline':
 				$mime .= $this->headerLine('Content-Type', $this::CONTENT_TYPE_MULTIPART_RELATED.';');
-				$mime .= $this->textLine("\tboundary=\"".$boundary[1].'"');
+				$mime .= $this->textLine(' boundary="'.$boundary[1].'"');
 				break;
 			case 'attach':
 			case 'inline_attach':
 			case 'alt_attach':
 			case 'alt_inline_attach':
 				$mime .= $this->headerLine('Content-Type', $this::CONTENT_TYPE_MULTIPART_MIXED.';');
-				$mime .= $this->textLine("\tboundary=\"".$boundary[1].'"');
+				$mime .= $this->textLine(' boundary="'.$boundary[1].'"');
 				break;
 			case 'alt':
 			case 'alt_inline':
 				$mime .= $this->headerLine('Content-Type', $this::CONTENT_TYPE_MULTIPART_ALTERNATIVE.';');
-				$mime .= $this->textLine("\tboundary=\"".$boundary[1].'"');
+				$mime .= $this->textLine(' boundary="'.$boundary[1].'"');
 				break;
 			default:
 				// Catches case 'plain': and case '':
@@ -2477,8 +2477,8 @@ class PHPMailer extends MailerAbstract{
 	protected function body_inline_attach(string $messageBody, array $boundary, string $bodyCharSet, string $bodyEncoding):string{
 		return $this->textLine('--'.$boundary[1])
 			.$this->headerLine('Content-Type', $this::CONTENT_TYPE_MULTIPART_RELATED.';')
-			.$this->textLine("\tboundary=\"".$boundary[2].'"')
-			.$this->textLine("\ttype=\"" . $this::CONTENT_TYPE_TEXT_HTML . '"')
+			.$this->textLine(' boundary="'.$boundary[2].'"')
+			.$this->textLine(' type="' . $this::CONTENT_TYPE_TEXT_HTML . '"')
 			.$this->LE
 			.$this->getBoundary($boundary[2], $bodyCharSet, '', $bodyEncoding)
 			.$this->encodeString($messageBody, $bodyEncoding)
@@ -2533,8 +2533,8 @@ class PHPMailer extends MailerAbstract{
 			.$this->LE
 			.$this->textLine('--'.$boundary[1])
 			.$this->headerLine('Content-Type', $this::CONTENT_TYPE_MULTIPART_RELATED.';')
-			.$this->textLine("\tboundary=\"".$boundary[2].'"')
-			.$this->textLine("\ttype=\"" . $this::CONTENT_TYPE_TEXT_HTML . '"')
+			.$this->textLine(' boundary="'.$boundary[2].'"')
+			.$this->textLine(' type="' . $this::CONTENT_TYPE_TEXT_HTML . '"')
 			.$this->LE
 			.$this->getBoundary($boundary[2], $bodyCharSet, $this::CONTENT_TYPE_TEXT_HTML, $bodyEncoding)
 			.$this->encodeString($messageBody, $bodyEncoding)
@@ -2557,7 +2557,7 @@ class PHPMailer extends MailerAbstract{
 	protected function body_alt_attach(string $messageBody, array $boundary, string $bodyCharSet, string $bodyEncoding, string $altBodyCharSet, string $altBodyEncoding):string{
 		$body = $this->textLine('--'.$boundary[1])
 			.$this->headerLine('Content-Type', $this::CONTENT_TYPE_MULTIPART_ALTERNATIVE.';')
-			.$this->textLine("\tboundary=\"".$boundary[2].'"')
+			.$this->textLine(' boundary="'.$boundary[2].'"')
 			.$this->LE
 			.$this->getBoundary($boundary[2], $altBodyCharSet, $this::CONTENT_TYPE_PLAINTEXT, $altBodyEncoding)
 			.$this->encodeString($this->AltBody, $altBodyEncoding)
@@ -2591,15 +2591,15 @@ class PHPMailer extends MailerAbstract{
 	protected function body_alt_inline_attach(string $messageBody, array $boundary, string $bodyCharSet, string $bodyEncoding, string $altBodyCharSet, string $altBodyEncoding):string{
 		return $this->textLine('--'.$boundary[1])
 			.$this->headerLine('Content-Type', $this::CONTENT_TYPE_MULTIPART_ALTERNATIVE.';')
-			.$this->textLine("\tboundary=\"".$boundary[2].'"')
+			.$this->textLine(' boundary="'.$boundary[2].'"')
 			.$this->LE
 			.$this->getBoundary($boundary[2], $altBodyCharSet, $this::CONTENT_TYPE_PLAINTEXT, $altBodyEncoding)
 			.$this->encodeString($this->AltBody, $altBodyEncoding)
 			.$this->LE
 			.$this->textLine('--'.$boundary[2])
 			.$this->headerLine('Content-Type', $this::CONTENT_TYPE_MULTIPART_RELATED.';')
-			.$this->textLine("\tboundary=\"".$boundary[3].'"')
-			.$this->textLine("\ttype=\"" . $this::CONTENT_TYPE_TEXT_HTML . '"')
+			.$this->textLine(' boundary="'.$boundary[3].'"')
+			.$this->textLine(' type="' . $this::CONTENT_TYPE_TEXT_HTML . '"')
 			.$this->LE
 			.$this->getBoundary($boundary[3], $bodyCharSet, $this::CONTENT_TYPE_TEXT_HTML, $bodyEncoding)
 			.$this->encodeString($messageBody, $bodyEncoding)
@@ -3392,7 +3392,7 @@ class PHPMailer extends MailerAbstract{
 			$extraHeaderValues .= $value."\r\n";
 
 			if($this->DKIM_copyHeaders){
-				$extraCopyHeaderFields .= "\t|".\str_replace('|', '=7C', DKIM_QP($value)).";\r\n";
+				$extraCopyHeaderFields .= ' |'.\str_replace('|', '=7C', DKIM_QP($value)).";\r\n";
 			}
 		}
 
@@ -3401,10 +3401,10 @@ class PHPMailer extends MailerAbstract{
 			$to                 = \str_replace('|', '=7C', DKIM_QP($to_header));
 			$date               = \str_replace('|', '=7C', DKIM_QP($date_header));
 			$subject            = \str_replace('|', '=7C', DKIM_QP($subject_header));
-			$copiedHeaderFields = "\tz=$from\r\n".
-			                      "\t|$to\r\n".
-			                      "\t|$date\r\n".
-			                      "\t|$subject;\r\n".
+			$copiedHeaderFields = " z=$from\r\n".
+			                      " |$to\r\n".
+			                      " |$date\r\n".
+			                      " |$subject;\r\n".
 			                      $extraCopyHeaderFields;
 		}
 
@@ -3421,12 +3421,12 @@ class PHPMailer extends MailerAbstract{
 		            ' q='.$DKIMquery.';'.
 		            ' l='.$DKIMlen.';'.
 		            ' s='.$this->DKIM_selector.";\r\n".
-		            "\tt=".$DKIMtime.'; c='.$DKIMcanonicalization.";\r\n".
-		            "\th=From:To:Date:Subject".$extraHeaderKeys.";\r\n".
-		            "\td=".$this->DKIM_domain.';'.$ident."\r\n".
+		            ' t='.$DKIMtime.'; c='.$DKIMcanonicalization.";\r\n".
+		            ' h=From:To:Date:Subject'.$extraHeaderKeys.";\r\n".
+		            ' d='.$this->DKIM_domain.';'.$ident."\r\n".
 		            $copiedHeaderFields.
-		            "\tbh=".$DKIMb64.";\r\n".
-		            "\tb=";
+		            ' bh='.$DKIMb64.";\r\n".
+		            ' b=';
 
 		$toSign = DKIM_HeaderC(
 			$from_header."\r\n".
