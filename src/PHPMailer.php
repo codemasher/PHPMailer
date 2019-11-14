@@ -2871,14 +2871,13 @@ class PHPMailer extends MailerAbstract{
 	 * @param string $encoding The encoding to use; one of 'base64', '7bit', '8bit', 'binary', 'quoted-printable'
 	 *
 	 * @return string
+	 * @throws \PHPMailer\PHPMailer\PHPMailerException
 	 */
 	public function encodeString(string $str, string $encoding = self::ENCODING_BASE64):string{
-		$encoded = '';
 
 		switch(\strtolower($encoding)){
 			case $this::ENCODING_BASE64:
-				$encoded = \chunk_split(\base64_encode($str), $this::LINE_LENGTH_STD, $this->LE);
-				break;
+				return \chunk_split(\base64_encode($str), $this::LINE_LENGTH_STD, $this->LE);
 			case $this::ENCODING_7BIT:
 			case $this::ENCODING_8BIT:
 				$encoded = $this->normalizeBreaks($str);
@@ -2886,18 +2885,15 @@ class PHPMailer extends MailerAbstract{
 				if(\substr($encoded, -\strlen($this->LE)) !== $this->LE){
 					$encoded .= $this->LE;
 				}
-				break;
+				return $encoded;
 			case $this::ENCODING_BINARY:
-				$encoded = $str;
-				break;
+				return $str;
 			case $this::ENCODING_QUOTED_PRINTABLE:
-				$encoded = $this->normalizeBreaks(\quoted_printable_encode($str));
-				break;
-			default:
-				$this->setError($this->lang('encoding').$encoding);
+				return $this->normalizeBreaks(\quoted_printable_encode($str));
 		}
 
-		return $encoded;
+		$this->setError($this->lang('encoding').$encoding);
+		throw new PHPMailerException($this->lang('encoding') . $encoding);
 	}
 
 	/**

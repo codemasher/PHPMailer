@@ -353,11 +353,14 @@ class UnitTest extends TestAbstract{
 	 * Encoding and charset tests.
 	 */
 	public function testEncodings(){
-		$this->assertSame($this->mailer->encodeString('hello', 'binary'), 'hello', 'Binary encoding changed input');
-		$this->mailer->ErrorInfo = '';
+		$this->assertSame($this->mailer->encodeString('hello', PHPMailer::ENCODING_BINARY), 'hello', 'Binary encoding changed input');
+	}
+
+	public function testEncodingException(){
+		$this->expectException(PHPMailerException::class);
+		$this->expectExceptionMessage('Unknown encoding: asdfghjkl');
+
 		$this->mailer->encodeString('hello', 'asdfghjkl');
-		$this->assertNotEmpty($this->mailer->ErrorInfo, 'Invalid encoding not detected');
-		$this->assertRegExp('/'.base64_encode('hello').'/', $this->mailer->encodeString('hello'));
 	}
 
 	/**
