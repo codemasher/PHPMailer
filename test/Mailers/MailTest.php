@@ -12,12 +12,13 @@
 
 namespace PHPMailer\Test\Mailers;
 
+use PHPMailer\PHPMailer\MailMailer;
+
+/**
+ * @property \PHPMailer\PHPMailer\MailMailer $mailer
+ */
 class MailTest extends MailerTestAbstract{
 
-	protected function setUp():void{
-		parent::setUp();
-
-		$this->mailer->setMailerMail();
-	}
+	protected $FQCN = MailMailer::class;
 
 }

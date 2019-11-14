@@ -114,7 +114,7 @@ class SMTPLowMemory extends SMTP{
  *
  * @package PHPMailer\PHPMailer
  */
-class PHPMailerLowMemory extends PHPMailer{
+class PHPMailerLowMemory extends SMTPMailer{
 
 	/**
 	 * Patch in the new SMTP class.

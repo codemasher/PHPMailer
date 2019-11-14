@@ -10,12 +10,12 @@
  */
 
 // Import the PHPMailer class into the global namespace
-use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\MailMailer;
 
 require '../vendor/autoload.php';
 
 // Usual setup
-$mail = new PHPMailer;
+$mail = new MailMailer;
 $mail->setFrom('from@example.com', 'First Last');
 $mail->addTO('whoto@example.com', 'John Doe');
 $mail->Subject = 'PHPMailer mail() test';

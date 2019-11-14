@@ -30,6 +30,13 @@ abstract class MailerTestAbstract extends TestAbstract{
 	}
 
 	/**
+	 * Simple instance test
+	 */
+	public function testInstance(){
+		$this->assertInstanceOf($this->FQCN, $this->getInstance());
+	}
+
+	/**
 	 * Test this denial of service attack.
 	 *
 	 * @see http://www.cybsec.com/vuln/PHPMailer-DOS.pdf

@@ -4,7 +4,7 @@
  */
 
 //Import PHPMailer classes into the global namespace
-use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\SMTPMailer;
 
 $msg = '';
 //Don't run this unless we're handling a form submission
@@ -14,10 +14,9 @@ if(array_key_exists('email', $_POST)){
 	require '../vendor/autoload.php';
 
 	//Create a new PHPMailer instance
-	$mail = new PHPMailer;
+	$mail = new SMTPMailer;
 	//Tell PHPMailer to use SMTP - requires a local mail server
 	//Faster and safer than using mail()
-	$mail->setMailerSMTP();
 	$mail->host = 'localhost';
 	$mail->port = 25;
 
@@ -32,8 +31,6 @@ if(array_key_exists('email', $_POST)){
 	//in which case we should ignore the whole request
 	if($mail->addReplyTo($_POST['email'], $_POST['name'])){
 		$mail->Subject = 'PHPMailer contact form';
-		//Keep it simple - don't use HTML
-		$mail->setMessageContentType(false);
 		//Build a simple message body
 		$mail->Body = <<<EOT
 Email: {$_POST['email']}

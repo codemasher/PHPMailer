@@ -25,7 +25,7 @@ abstract class TestAbstract extends TestCase{
 	/**
 	 * @var string
 	 */
-	protected $FQCN = PHPMailer::class;
+	protected $FQCN = null;
 
 	/**
 	 * @var \ReflectionClass
@@ -74,7 +74,12 @@ abstract class TestAbstract extends TestCase{
 		$this->IS_CI       = defined('TEST_IS_CI') && TEST_IS_CI === true;
 		$this->INCLUDE_DIR = dirname(__DIR__); //Default to the dir above the test dir, i.e. the project home dir
 
-		$this->reflection  = new ReflectionClass($this->FQCN);
+		$this->reflection  = $this->FQCN !== null
+			? new ReflectionClass($this->FQCN)
+			: new ReflectionClass(new class () extends PHPMailer{ // @todo
+				public function postSend():bool{return true;}
+			});
+
 		$this->mailer      = $this->getInstance();
 		$this->logger      = new NullLogger;
 
@@ -134,13 +139,6 @@ abstract class TestAbstract extends TestCase{
 		$property = $this->getProperty($property);
 		$property->setAccessible(true);
 		$property->setValue($object, $value);
-	}
-
-	/**
-	 * Simple instance test
-	 */
-	public function testInstance(){
-		$this->assertInstanceOf($this->FQCN, $this->getInstance());
 	}
 
 	/**

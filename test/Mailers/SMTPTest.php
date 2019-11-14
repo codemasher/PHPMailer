@@ -13,8 +13,14 @@
 namespace PHPMailer\Test\Mailers;
 
 use PHPMailer\PHPMailer\POP3;
+use PHPMailer\PHPMailer\SMTPMailer;
 
+/**
+ * @property \PHPMailer\PHPMailer\SMTPMailer $mailer
+ */
 class SMTPTest extends MailerTestAbstract{
+
+	protected $FQCN = SMTPMailer::class;
 
 	/**
 	 * PIDs of any processes we need to kill.
@@ -26,7 +32,6 @@ class SMTPTest extends MailerTestAbstract{
 	protected function setUp():void{
 		parent::setUp();
 
-		$this->mailer->setMailerSMTP();
 		$this->pids = [];
 	}
 

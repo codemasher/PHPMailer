@@ -48,12 +48,12 @@
  */
 
 //Import the PHPMailer class into the global namespace
-use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\MailMailer;
 
 require '../vendor/autoload.php';
 
 //Create a new PHPMailer instance
-$mail = new PHPMailer;
+$mail = new MailMailer;
 //Set who the message is to be sent from
 //IMPORTANT: This must match the email address of your certificate.
 //Although the certificate will be valid, an error will be thrown since it cannot be verified

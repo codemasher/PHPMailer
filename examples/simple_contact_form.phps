@@ -5,7 +5,7 @@
  */
 
 //Import the PHPMailer class into the global namespace
-use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\SMTPMailer;
 
 require '../vendor/autoload.php';
 
@@ -48,7 +48,7 @@ if(array_key_exists('to', $_POST)){
 		$to = 'support@example.com';
 	}
 	//Make sure the address they provided is valid before trying to use it
-	if(array_key_exists('email', $_POST) and PHPMailer::validateAddress($_POST['email'])){
+	if(array_key_exists('email', $_POST) and \PHPMailer\PHPMailer\validateAddress($_POST['email'])){
 		$email = $_POST['email'];
 	}
 	else{
@@ -56,8 +56,7 @@ if(array_key_exists('to', $_POST)){
 		$err = true;
 	}
 	if(!$err){
-		$mail = new PHPMailer;
-		$mail->setMailerSMTP();
+		$mail = new SMTPMailer;
 		$mail->host    = 'localhost';
 		$mail->port    = 2500;
 		$mail->CharSet = 'utf-8';

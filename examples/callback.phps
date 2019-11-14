@@ -5,7 +5,7 @@
 
 //Import PHPMailer classes into the global namespace
 use PHPMailer\PHPMailer\PHPMailerException;
-use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\MailMailer;
 
 require '../vendor/autoload.php';
 
@@ -42,10 +42,9 @@ function callbackAction($result, $to, $cc, $bcc, $subject, $body){
 
 require_once '../vendor/autoload.php';
 
-$mail = new PHPMailer;
+$mail = new MailMailer;
 
 try{
-	$mail->setMailerMail();
 	$mail->setFrom('you@example.com', 'Your Name');
 	$mail->addTO('jane@example.com', 'Jane Doe');
 	$mail->addCC('john@example.com', 'John Doe');

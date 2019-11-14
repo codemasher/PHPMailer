@@ -6,7 +6,7 @@
 //Import PHPMailer classes into the global namespace
 use League\OAuth2\Client\Provider\Google;
 use PHPMailer\PHPMailer\OAuth;
-use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\SMTPMailer;
 
 // Alias the League Google OAuth2 provider class
 
@@ -19,10 +19,7 @@ date_default_timezone_set('Etc/UTC');
 require '../vendor/autoload.php';
 
 //Create a new PHPMailer instance
-$mail = new PHPMailer;
-
-//Tell PHPMailer to use SMTP
-$mail->setMailerSMTP();
+$mail = new SMTPMailer;
 
 //Enable SMTP debugging
 // 0 = off (for production use)

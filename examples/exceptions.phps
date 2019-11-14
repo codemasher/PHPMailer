@@ -5,13 +5,12 @@
 
 //Import PHPMailer classes into the global namespace
 use PHPMailer\PHPMailer\PHPMailerException;
-use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\MailMailer;
 
 require '../vendor/autoload.php';
 
 //Create a new PHPMailer instance
-//Passing true to the constructor enables the use of exceptions for error handling
-$mail = new PHPMailer(true);
+$mail = new MailMailer;
 try{
 	//Set who the message is to be sent from
 	$mail->setFrom('from@example.com', 'First Last');

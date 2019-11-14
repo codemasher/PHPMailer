@@ -9,14 +9,14 @@
 
 //Import PHPMailer classes into the global namespace
 use PHPMailer\PHPMailer\PHPMailerException;
-use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\SMTPMailer;
 
 require '../vendor/autoload.php';
 
 /**
  * Use PHPMailer as a base class and extend it
  */
-class myPHPMailer extends PHPMailer{
+class myPHPMailer extends SMTPMailer{
 
 	/**
 	 * myPHPMailer constructor.
@@ -28,8 +28,6 @@ class myPHPMailer extends PHPMailer{
 		parent::__construct();
 		//Set a default 'From' address
 		$this->setFrom('joe@example.com', 'Joe User');
-		//Send via SMTP
-		$this->setMailerSMTP();
 		//Equivalent to setting `Host`, `Port` and `SMTPSecure` all at once
 		$this->host = 'tls://smtp.example.com:587';
 		//Set an HTML and plain-text body, import relative image references
@@ -39,7 +37,7 @@ class myPHPMailer extends PHPMailer{
 	}
 
 	//Extend the send function
-	public function send(){
+	public function send():bool{
 		$this->Subject = '[Yay for me!] '.$this->Subject;
 		$r             = parent::send();
 		echo "I sent a message with subject ".$this->Subject;

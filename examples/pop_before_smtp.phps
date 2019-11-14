@@ -6,7 +6,7 @@
 
 //Import PHPMailer classes into the global namespace
 use PHPMailer\PHPMailer\PHPMailerException;
-use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\SMTPMailer;
 use PHPMailer\PHPMailer\POP3;
 
 require '../vendor/autoload.php';
@@ -17,9 +17,8 @@ require '../vendor/autoload.php';
 $pop = (new POP3)->authorise('pop3.example.com', 110, 30, 'username', 'password', 1);
 
 //Create a new PHPMailer instance
-$mail = new PHPMailer;
+$mail = new SMTPMailer;
 try{
-	$mail->setMailerSMTP();
 	//Enable SMTP debugging
 	// 0 = off (for production use)
 	// 1 = client messages

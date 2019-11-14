@@ -4,7 +4,7 @@
  */
 
 //Import the PHPMailer class into the global namespace
-use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\SMTPMailer;
 
 error_reporting(E_STRICT | E_ALL);
 
@@ -12,11 +12,10 @@ date_default_timezone_set('Etc/UTC');
 
 require '../vendor/autoload.php';
 
-$mail = new PHPMailer;
+$mail = new SMTPMailer;
 
 $body = file_get_contents('contents.html');
 
-$mail->setMailerSMTP();
 $mail->host          = 'smtp.example.com';
 $mail->SMTPAuth      = true;
 $mail->SMTPKeepAlive = true; // SMTP connection will not close after each email sent, reduces SMTP overhead

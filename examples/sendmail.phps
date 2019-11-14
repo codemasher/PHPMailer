@@ -4,14 +4,12 @@
  */
 
 //Import the PHPMailer class into the global namespace
-use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\SendmailMailer;
 
 require '../vendor/autoload.php';
 
 //Create a new PHPMailer instance
-$mail = new PHPMailer;
-// Set PHPMailer to use the sendmail transport
-$mail->setMailerSendmail();
+$mail = new SendmailMailer;
 //Set who the message is to be sent from
 $mail->setFrom('from@example.com', 'First Last');
 //Set an alternative reply-to address

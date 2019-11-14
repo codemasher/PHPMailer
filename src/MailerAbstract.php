@@ -217,11 +217,13 @@ abstract class MailerAbstract implements LoggerAwareInterface{
 	protected $socket;
 
 	/**
-	 * SMTP RFC standard line ending.
+	 * line endings
+	 *
+	 * Maintain backward compatibility with legacy Linux command line mailers
 	 *
 	 * @var string
 	 */
-	protected $LE = "\r\n";
+	protected $LE = PHP_EOL;
 
 	/**
 	 * @var bool
@@ -278,15 +280,6 @@ abstract class MailerAbstract implements LoggerAwareInterface{
 	 */
 	public function getDebugLevel():int{
 		return $this->loglevel;
-	}
-
-	/**
-	 * Set the line break format string, e.g. "\r\n".
-	 *
-	 * @param string $le
-	 */
-	protected function setLE(string $le):void{
-		$this->LE = $le;
 	}
 
 	/**
