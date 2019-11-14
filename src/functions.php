@@ -1,14 +1,25 @@
 <?php
 /**
- *
  * @filesource   functions.php
  * @created      07.04.2019
  * @author       smiley <smiley@chillerlan.net>
  * @copyright    2019 smiley
  * @license      MIT
+ *
+ * @noinspection PhpComposerExtensionStubsInspection
  */
 
 namespace PHPMailer\PHPMailer;
+
+use function array_key_exists, array_search, array_unique, array_unshift, base64_encode, call_user_func, ctype_alnum,
+	date, date_default_timezone_get, date_default_timezone_set, escapeshellarg, escapeshellcmd, explode, file_exists,
+	file_get_contents, filter_var, function_exists, hash, hexdec, idn_to_ascii, imap_rfc822_parse_adrlist, implode,
+	in_array, is_callable, is_file, is_link, is_numeric, is_readable, is_string, mb_check_encoding, mb_convert_encoding,
+	openssl_pkey_free, openssl_pkey_get_private, openssl_sign, ord, preg_match, preg_match_all, preg_replace,
+	property_exists, random_bytes, readlink, sprintf, str_replace, strlen, strpos, strrpos, strtolower, substr, trim;
+
+use const FILTER_FLAG_IPV4, FILTER_FLAG_IPV6, FILTER_VALIDATE_EMAIL, FILTER_VALIDATE_IP, FILTER_VALIDATE_URL,
+	INTL_IDNA_VARIANT_UTS46, PATHINFO_BASENAME, PATHINFO_DIRNAME, PATHINFO_EXTENSION, PATHINFO_FILENAME;
 
 const INCLUDES_PHPMAILER_FUNCTIONS = true;
 
@@ -145,19 +156,19 @@ const MIMETYPES = [
  *
  * You can also set the PHPMailer::$validator to a callable, allowing built-in methods to use your validator.
  *
- * @param string          $address       The email address to check
+ * @param string          $address   The email address to check
  * @param string|callable $validator Which pattern to use
  *
  * @return bool
  */
 function validateAddress(string $address, $validator = 'php'):bool{
 
-	if(\is_callable($validator)){
-		return \call_user_func($validator, $address);
+	if(is_callable($validator)){
+		return call_user_func($validator, $address);
 	}
 
 	//Reject line breaks in addresses; it's valid RFC5322, but not RFC5321
-	if(\strpos($address, "\n") !== false || \strpos($address, "\r") !== false){
+	if(strpos($address, "\n") !== false || strpos($address, "\r") !== false){
 		return false;
 	}
 
@@ -188,7 +199,7 @@ function validateAddress(string $address, $validator = 'php'):bool{
 		           '|(?!(?:.*[a-f0-9]:){6,})(?8)?::(?>((?6)(?>:(?6)){0,4}):)?))?(25[0-5]|2[0-4][0-9]|1[0-9]{2}'.
 		           '|[1-9]?[0-9])(?>\.(?9)){3}))\])(?1)$/isD';
 
-		return (bool)\preg_match($pattern, $address);
+		return (bool)preg_match($pattern, $address);
 	}
 
 	if($validator === 'html5'){
@@ -200,10 +211,10 @@ function validateAddress(string $address, $validator = 'php'):bool{
 		$pattern = '/^[a-zA-Z0-9.!#$%&\'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}'.
 		           '[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/sD';
 
-		return (bool)\preg_match($pattern, $address);
+		return (bool)preg_match($pattern, $address);
 	}
 
-	return (bool)\filter_var($address, \FILTER_VALIDATE_EMAIL);
+	return (bool)filter_var($address, FILTER_VALIDATE_EMAIL);
 }
 
 /**
@@ -214,8 +225,8 @@ function validateAddress(string $address, $validator = 'php'):bool{
  *
  * @see    http://www.andrew.cmu.edu/user/agreen1/testing/mrbs/web/Mail/RFC822.php A more careful implementation
  *
- * @param string          $addrstr The address list string
- * @param bool            $useimap Whether to use the IMAP extension to parse the list
+ * @param string          $addrstr   The address list string
+ * @param bool            $useimap   Whether to use the IMAP extension to parse the list
  * @param string|callable $validator Which pattern to use
  *
  * @return array
@@ -223,16 +234,16 @@ function validateAddress(string $address, $validator = 'php'):bool{
 function parseAddresses(string $addrstr, bool $useimap = true, $validator = 'php'):array{
 	$addresses = [];
 
-	if($useimap && \function_exists('imap_rfc822_parse_adrlist')){
+	if($useimap && function_exists('imap_rfc822_parse_adrlist')){
 		// Use this built-in parser if it's available
-		$list = \imap_rfc822_parse_adrlist($addrstr, '');
+		$list = imap_rfc822_parse_adrlist($addrstr, '');
 		foreach($list as $address){
 
 			if($address->host !== '.SYNTAX-ERROR.'){
 
 				if(validateAddress($address->mailbox.'@'.$address->host, $validator)){
 					$addresses[] = [
-						'name'    => (\property_exists($address, 'personal') ? $address->personal : ''),
+						'name'    => (property_exists($address, 'personal') ? $address->personal : ''),
 						'address' => $address->mailbox.'@'.$address->host,
 					];
 				}
@@ -243,11 +254,11 @@ function parseAddresses(string $addrstr, bool $useimap = true, $validator = 'php
 	}
 	else{
 		// Use this simpler parser
-		$list = \explode(',', $addrstr);
+		$list = explode(',', $addrstr);
 		foreach($list as $address){
-			$address = \trim($address);
+			$address = trim($address);
 			// Is there a separate name part?
-			if(\strpos($address, '<') === false){
+			if(strpos($address, '<') === false){
 
 				// No separate name, just use the whole thing
 				if(validateAddress($address, $validator)){
@@ -259,12 +270,12 @@ function parseAddresses(string $addrstr, bool $useimap = true, $validator = 'php
 
 			}
 			else{
-				[$name, $email] = \explode('<', $address);
-				$email = \trim(\str_replace('>', '', $email));
+				[$name, $email] = explode('<', $address);
+				$email = trim(str_replace('>', '', $email));
 
 				if(validateAddress($email, $validator)){
 					$addresses[] = [
-						'name'    => \trim(\str_replace(['"', "'"], '', $name)),
+						'name'    => trim(str_replace(['"', "'"], '', $name)),
 						'address' => $email,
 					];
 				}
@@ -283,7 +294,7 @@ function parseAddresses(string $addrstr, bool $useimap = true, $validator = 'php
  * @return bool `true` if required functions for IDN support are present
  */
 function idnSupported():bool{
-	return \function_exists('idn_to_ascii') && \function_exists('mb_convert_encoding');
+	return function_exists('idn_to_ascii') && function_exists('mb_convert_encoding');
 }
 
 /**
@@ -294,9 +305,9 @@ function idnSupported():bool{
 function rfcDate():string{
 	// Set the time zone to whatever the default is to avoid 500 errors
 	// Will default to UTC if it's not set properly in php.ini
-	\date_default_timezone_set(@\date_default_timezone_get());
+	date_default_timezone_set(@date_default_timezone_get());
 
-	return \date('D, j M Y H:i:s O');
+	return date('D, j M Y H:i:s O');
 }
 
 /**
@@ -310,23 +321,23 @@ function rfcDate():string{
 function isValidHost(string $host):bool{
 
 	// Simple syntax limits
-	if(empty($host) || !\is_string($host) || \strlen($host) > 256){
+	if(empty($host) || !is_string($host) || strlen($host) > 256){
 		return false;
 	}
 
 	// Looks like a bracketed IPv6 address
-	if(\trim($host, '[]') !== $host){
-		return (bool)\filter_var(\trim($host, '[]'), \FILTER_VALIDATE_IP, \FILTER_FLAG_IPV6);
+	if(trim($host, '[]') !== $host){
+		return (bool)filter_var(trim($host, '[]'), FILTER_VALIDATE_IP, FILTER_FLAG_IPV6);
 	}
 
 	// If removing all the dots results in a numeric string, it must be an IPv4 address.
 	// Need to check this first because otherwise things like `999.0.0.0` are considered valid host names
-	if(\is_numeric(\str_replace('.', '', $host))){
+	if(is_numeric(str_replace('.', '', $host))){
 		//Is it a valid IPv4 address?
-		return (bool)\filter_var($host, \FILTER_VALIDATE_IP, \FILTER_FLAG_IPV4);
+		return (bool)filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4);
 	}
 
-	if(\filter_var('http://'.$host, \FILTER_VALIDATE_URL)){
+	if(filter_var('http://'.$host, FILTER_VALIDATE_URL)){
 		// Is it a syntactically valid hostname?
 		return true;
 	}
@@ -342,9 +353,9 @@ function isValidHost(string $host):bool{
  * @return string MIME type of file
  */
 function get_mime_type(string $ext = ''):string{
-	$ext = \strtolower($ext);
+	$ext = strtolower($ext);
 
-	if(\array_key_exists($ext, MIMETYPES)){
+	if(array_key_exists($ext, MIMETYPES)){
 		return MIMETYPES[$ext];
 	}
 
@@ -361,13 +372,13 @@ function get_mime_type(string $ext = ''):string{
  */
 function filenameToType(string $filename):string{
 	// In case the path is a URL, strip any query string before getting extension
-	$qpos = \strpos($filename, '?');
+	$qpos = strpos($filename, '?');
 
 	if($qpos !== false){
-		$filename = \substr($filename, 0, $qpos);
+		$filename = substr($filename, 0, $qpos);
 	}
 
-	return get_mime_type(mb_pathinfo($filename, \PATHINFO_EXTENSION));
+	return get_mime_type(mb_pathinfo($filename, PATHINFO_EXTENSION));
 }
 
 /**
@@ -386,42 +397,43 @@ function mb_pathinfo(string $path, $options = null){
 	$ret      = ['dirname' => '', 'basename' => '', 'extension' => '', 'filename' => ''];
 	$pathinfo = [];
 
-	if(\preg_match('#^(.*?)[\\\\/]*(([^/\\\\]*?)(\.([^\.\\\\/]+?)|))[\\\\/\.]*$#im', $path, $pathinfo)){
+	/** @noinspection RegExpRedundantEscape */
+	if(preg_match('#^(.*?)[\\\\/]*(([^/\\\\]*?)(\.([^\.\\\\/]+?)|))[\\\\/\.]*$#im', $path, $pathinfo)){
 
-		if(\array_key_exists(1, $pathinfo)){
+		if(array_key_exists(1, $pathinfo)){
 			$ret['dirname'] = $pathinfo[1];
 		}
 
-		if(\array_key_exists(2, $pathinfo)){
+		if(array_key_exists(2, $pathinfo)){
 			$ret['basename'] = $pathinfo[2];
 		}
 
-		if(\array_key_exists(5, $pathinfo)){
+		if(array_key_exists(5, $pathinfo)){
 			$ret['extension'] = $pathinfo[5];
 		}
 
-		if(\array_key_exists(3, $pathinfo)){
+		if(array_key_exists(3, $pathinfo)){
 			$ret['filename'] = $pathinfo[3];
 		}
 
 	}
 
 	switch($options){
-		case \PATHINFO_DIRNAME:
+		case PATHINFO_DIRNAME:
 		case 'dirname':
 			return $ret['dirname'];
-		case \PATHINFO_BASENAME:
+		case PATHINFO_BASENAME:
 		case 'basename':
 			return $ret['basename'];
-		case \PATHINFO_EXTENSION:
+		case PATHINFO_EXTENSION:
 		case 'extension':
 			return $ret['extension'];
-		case \PATHINFO_FILENAME:
+		case PATHINFO_FILENAME:
 		case 'filename':
 			return $ret['filename'];
-		default:
-			return $ret;
 	}
+
+	return $ret;
 }
 
 /**
@@ -436,11 +448,11 @@ function mb_pathinfo(string $path, $options = null){
  */
 function isShellSafe(string $string):bool{
 	// Future-proof
-	if(\escapeshellcmd($string) !== $string || !\in_array(\escapeshellarg($string), ["'$string'", "\"$string\""])){
+	if(escapeshellcmd($string) !== $string || !in_array(escapeshellarg($string), ["'$string'", "\"$string\""])){
 		return false;
 	}
 
-	$length = \strlen($string);
+	$length = strlen($string);
 
 	for($i = 0; $i < $length; ++$i){
 		$c = $string[$i];
@@ -448,7 +460,7 @@ function isShellSafe(string $string):bool{
 		// All other characters have a special meaning in at least one common shell, including = and +.
 		// Full stop (.) has a special meaning in cmd.exe, but its impact should be negligible here.
 		// Note that this does permit non-Latin alphanumeric characters based on the current locale.
-		if(!\ctype_alnum($c) && \strpos('@_-.', $c) === false){
+		if(!ctype_alnum($c) && strpos('@_-.', $c) === false){
 			return false;
 		}
 	}
@@ -466,7 +478,7 @@ function isShellSafe(string $string):bool{
  * @return bool
  */
 function isPermittedPath(string $path):bool{
-	return !\preg_match('#^[a-z]+://#i', $path);
+	return !preg_match('#^[a-z]+://#i', $path);
 }
 
 /**
@@ -477,7 +489,7 @@ function isPermittedPath(string $path):bool{
  * @return bool
  */
 function fileCheck(string $file):bool{
-	return \file_exists($file) && \is_readable($file) && (\is_file($file) || (\is_link($file) && \is_file(\readlink($file))));
+	return file_exists($file) && is_readable($file) && (is_file($file) || (is_link($file) && is_file(readlink($file))));
 }
 
 /**
@@ -486,10 +498,10 @@ function fileCheck(string $file):bool{
  * @return string
  */
 function generateId():string{
-	$bytes = \random_bytes(32); //32 bytes = 256 bits
+	$bytes = random_bytes(32); //32 bytes = 256 bits
 
 	//We don't care about messing up base64 format here, just want a random string
-	return \str_replace(['=', '+', '/'], '', \base64_encode(\hash('sha256', $bytes, true)));
+	return str_replace(['=', '+', '/'], '', base64_encode(hash('sha256', $bytes, true)));
 }
 
 /**
@@ -515,7 +527,7 @@ function generateBoundary(string $uniqueid = null):array{
  * @return bool
  */
 function has8bitChars(string $text):bool{
-	return (bool)\preg_match('/[\x80-\xFF]/', $text);
+	return (bool)preg_match('/[\x80-\xFF]/', $text);
 }
 
 /**
@@ -526,7 +538,7 @@ function has8bitChars(string $text):bool{
  * @return string
  */
 function secureHeader(string $str):string{
-	return \trim(\str_replace(["\r", "\n"], '', $str));
+	return trim(str_replace(["\r", "\n"], '', $str));
 }
 
 /**
@@ -544,14 +556,14 @@ function utf8CharBoundary(string $encodedText, int $maxLength):int{
 	$lookBack      = 3;
 
 	while(!$foundSplitPos){
-		$lastChunk      = \substr($encodedText, $maxLength - $lookBack, $lookBack);
-		$encodedCharPos = \strpos($lastChunk, '=');
+		$lastChunk      = substr($encodedText, $maxLength - $lookBack, $lookBack);
+		$encodedCharPos = strpos($lastChunk, '=');
 
 		if($encodedCharPos !== false){
 			// Found start of encoded character byte within $lookBack block.
 			// Check the encoded byte value (the 2 chars after the '=')
-			$hex = \substr($encodedText, $maxLength - $lookBack + $encodedCharPos + 1, 2);
-			$dec = \hexdec($hex);
+			$hex = substr($encodedText, $maxLength - $lookBack + $encodedCharPos + 1, 2);
+			$dec = hexdec($hex);
 
 			if($dec < 128){
 				// Single byte character.
@@ -596,9 +608,9 @@ function utf8CharBoundary(string $encodedText, int $maxLength):int{
 function encodeQ(string $str, string $position = 'text'):string{
 	// There should not be any EOL in the string
 	$pattern = '';
-	$encoded = \str_replace(["\r", "\n"], '', $str);
+	$encoded = str_replace(["\r", "\n"], '', $str);
 
-	switch(\strtolower($position)){
+	switch(strtolower($position)){
 		case 'phrase':
 			// RFC 2047 section 5.3
 			$pattern = '^A-Za-z0-9!*+\/ -';
@@ -621,24 +633,24 @@ function encodeQ(string $str, string $position = 'text'):string{
 
 	$matches = [];
 
-	if(\preg_match_all("/[{$pattern}]/", $encoded, $matches)){
+	if(preg_match_all("/[{$pattern}]/", $encoded, $matches)){
 		// If the string contains an '=', make sure it's the first thing we replace
 		// so as to avoid double-encoding
-		$eqkey = \array_search('=', $matches[0]);
+		$eqkey = array_search('=', $matches[0]);
 
 		if($eqkey !== false){
 			unset($matches[0][$eqkey]);
-			\array_unshift($matches[0], '=');
+			array_unshift($matches[0], '=');
 		}
 
-		foreach(\array_unique($matches[0]) as $char){
-			$encoded = \str_replace($char, '='.\sprintf('%02X', \ord($char)), $encoded);
+		foreach(array_unique($matches[0]) as $char){
+			$encoded = str_replace($char, '='.sprintf('%02X', ord($char)), $encoded);
 		}
 	}
 
 	// Replace spaces with _ (more readable than =20)
 	// RFC 2047 section 4.2(2)
-	return \str_replace(' ', '_', $encoded);
+	return str_replace(' ', '_', $encoded);
 }
 
 /**
@@ -650,14 +662,14 @@ function encodeQ(string $str, string $position = 'text'):string{
  */
 function DKIM_QP(string $str):string{
 	$line = '';
-	$len  = \strlen($str);
+	$len  = strlen($str);
 
 	for($i = 0; $i < $len; ++$i){
-		$ord = \ord($str[$i]);
+		$ord = ord($str[$i]);
 
 		$line .= ($ord > 0x21 && $ord <= 0x3A) || $ord === 0x3C || ($ord > 0x3E && $ord <= 0x7E)
 			? $str[$i]
-			: '='.\sprintf('%02X', $ord);
+			: '='.sprintf('%02X', $ord);
 	}
 
 	return $line;
@@ -680,30 +692,30 @@ function DKIM_HeaderC(string $signHeader):string{
 	// Note PCRE \s is too broad a definition of whitespace; RFC5322 defines it as `[ \t]`
 	// @see https://tools.ietf.org/html/rfc5322#section-2.2
 	// That means this may break if you do something daft like put vertical tabs in your headers.
-	$signHeader = \preg_replace('/\r\n[ \t]+/', ' ', $signHeader);
-	$lines      = \explode("\r\n", $signHeader);
+	$signHeader = preg_replace('/\r\n[ \t]+/', ' ', $signHeader);
+	$lines      = explode("\r\n", $signHeader);
 
 	foreach($lines as $key => $line){
 		// If the header is missing a :, skip it as it's invalid
 		// This is likely to happen because the explode() above will also split
 		// on the trailing LE, leaving an empty line
-		if(\strpos($line, ':') === false){
+		if(strpos($line, ':') === false){
 			continue;
 		}
 
-		[$heading, $value] = \explode(':', $line, 2);
+		[$heading, $value] = explode(':', $line, 2);
 		// Lower-case header name
-		$heading = \strtolower($heading);
+		$heading = strtolower($heading);
 		// Collapse white space within the value
-		$value = \preg_replace('/[ \t]{2,}/', ' ', $value);
+		$value = preg_replace('/[ \t]{2,}/', ' ', $value);
 		// RFC6376 is slightly unclear here - it says to delete space at the *end* of each value
 		// But then says to delete space before and after the colon.
 		// Net result is the same as trimming both ends of the value.
 		// by elimination, the same applies to the field name
-		$lines[$key] = \trim($heading, " \t").':'.\trim($value, " \t");
+		$lines[$key] = trim($heading, " \t").':'.trim($value, " \t");
 	}
 
-	return \implode("\r\n", $lines);
+	return implode("\r\n", $lines);
 }
 
 /**
@@ -728,20 +740,20 @@ function DKIM_Sign(string $signHeader, string $key, string $passphrase = null):s
 			throw new PHPMailerException('path to DKIM private key is not permitted');
 		}
 
-		$key = \file_get_contents($key);
+		$key = file_get_contents($key);
 	}
 
 	$privKey = !empty($passphrase)
-		? \openssl_pkey_get_private($key, $passphrase)
-		: \openssl_pkey_get_private($key);
+		? openssl_pkey_get_private($key, $passphrase)
+		: openssl_pkey_get_private($key);
 
-	if(\openssl_sign($signHeader, $signature, $privKey, 'sha256WithRSAEncryption')){
-		\openssl_pkey_free($privKey);
+	if(openssl_sign($signHeader, $signature, $privKey, 'sha256WithRSAEncryption')){
+		openssl_pkey_free($privKey);
 
-		return \base64_encode($signature);
+		return base64_encode($signature);
 	}
 
-	\openssl_pkey_free($privKey);
+	openssl_pkey_free($privKey);
 
 	return '';
 }
@@ -762,19 +774,19 @@ function DKIM_Sign(string $signHeader, string $key, string $passphrase = null):s
  */
 function punyencodeAddress(string $address, string $charset = PHPMailer::CHARSET_ISO88591):string{
 	// Verify we have required functions, CharSet, and at-sign.
-	$pos = \strrpos($address, '@');
+	$pos = strrpos($address, '@');
 	if(idnSupported() && !empty($charset) && $pos !== false){
-		$domain = \substr($address, ++$pos);
+		$domain = substr($address, ++$pos);
 		// Verify CharSet string is a valid one, and domain properly encoded in this CharSet.
-		if(has8bitChars($domain) && @\mb_check_encoding($domain, $charset)){
-			$domain = \mb_convert_encoding($domain, 'UTF-8', $charset);
+		if(has8bitChars($domain) && @mb_check_encoding($domain, $charset)){
+			$domain = mb_convert_encoding($domain, 'UTF-8', $charset);
 			//Ignore IDE complaints about this line - method signature changed in PHP 5.4
 			$errorcode = 0;
 			/** @noinspection PhpComposerExtensionStubsInspection */
-			$punycode = \idn_to_ascii($domain, $errorcode, \INTL_IDNA_VARIANT_UTS46);
+			$punycode = idn_to_ascii($domain, $errorcode, INTL_IDNA_VARIANT_UTS46);
 
 			if($punycode !== false){
-				return \substr($address, 0, $pos).$punycode;
+				return substr($address, 0, $pos).$punycode;
 			}
 		}
 	}

@@ -14,6 +14,10 @@ namespace PHPMailer\PHPMailer;
 
 use Psr\Log\{LoggerAwareInterface, LoggerAwareTrait, NullLogger};
 
+use function array_key_exists, count, dirname, extension_loaded, file_exists, function_exists, preg_match;
+
+use const DIRECTORY_SEPARATOR;
+
 abstract class MailerAbstract implements LoggerAwareInterface{
 	use LoggerAwareTrait;
 
@@ -255,7 +259,7 @@ abstract class MailerAbstract implements LoggerAwareInterface{
 
 		// check for missing extensions first (may ocur if not installed via composer)
 		foreach(['ctype', 'filter', 'mbstring', 'openssl'] as $ext){
-			if(!\extension_loaded($ext)){
+			if(!extension_loaded($ext)){
 				throw new PHPMailerException($this->lang('extension_missing').$ext);
 			}
 		}
@@ -369,10 +373,10 @@ abstract class MailerAbstract implements LoggerAwareInterface{
 
 		if(empty($lang_path)){
 			// Calculate an absolute path so it can work if CWD is not here
-			$lang_path = \dirname(__DIR__).\DIRECTORY_SEPARATOR.'language'.\DIRECTORY_SEPARATOR;
+			$lang_path = dirname(__DIR__).DIRECTORY_SEPARATOR.'language'.DIRECTORY_SEPARATOR;
 		}
 		//Validate $langcode
-		if(!\preg_match('/^[a-z]{2}(?:_[a-zA-Z]{2})?$/', $langcode)){
+		if(!preg_match('/^[a-z]{2}(?:_[a-zA-Z]{2})?$/', $langcode)){
 			$langcode = 'en';
 		}
 
@@ -382,7 +386,7 @@ abstract class MailerAbstract implements LoggerAwareInterface{
 		// There is no English translation file
 		if($langcode !== 'en'){
 			// Make sure language file path is readable
-			if(!isPermittedPath($lang_file) || !\file_exists($lang_file)){
+			if(!isPermittedPath($lang_file) || !file_exists($lang_file)){
 				$foundlang = false;
 			}
 			else{
@@ -415,11 +419,11 @@ abstract class MailerAbstract implements LoggerAwareInterface{
 	 */
 	protected function lang(string $key):string{
 
-		if(\count($this->language) < 1){
+		if(count($this->language) < 1){
 			$this->setLanguage('en'); // set the default language
 		}
 
-		if(\array_key_exists($key, $this->language)){
+		if(array_key_exists($key, $this->language)){
 			if($key === 'smtp_connect_failed'){
 				//Include a link to troubleshooting docs on SMTP connection failure
 				//this is by far the biggest cause of support questions

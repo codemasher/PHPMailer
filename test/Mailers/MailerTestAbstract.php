@@ -15,6 +15,12 @@ namespace PHPMailer\Test\Mailers;
 use PHPMailer\PHPMailer\PHPMailerException;
 use PHPMailer\Test\TestAbstract;
 
+use function base64_decode, file_get_contents, file_put_contents, hash, mb_convert_encoding, mb_detect_encoding,
+	openssl_csr_new, openssl_csr_sign, openssl_pkey_export, openssl_pkey_export_to_file, openssl_pkey_new,
+	openssl_x509_export, realpath, str_repeat, strip_tags, strtoupper, substr, unlink;
+
+use const OPENSSL_KEYTYPE_RSA;
+
 abstract class MailerTestAbstract extends TestAbstract{
 
 	protected function setUp():void{
@@ -47,7 +53,8 @@ abstract class MailerTestAbstract extends TestAbstract{
 				'This should no longer cause a denial of service.',
 				__FUNCTION__.' '.substr(str_repeat('0123456789', 100), 0, 998)
 			)
-			->assertSentMail();
+			->assertSentMail()
+		;
 	}
 
 	/**
@@ -61,8 +68,8 @@ abstract class MailerTestAbstract extends TestAbstract{
 	 */
 	public function testEmptyBody(){
 		$this->mailer->addTO('user@example.com');
-		$this->mailer->Body    = '';
-		$this->mailer->Subject = $this->mailer->getMailer().': '.__FUNCTION__;
+		$this->mailer->Body       = '';
+		$this->mailer->Subject    = $this->mailer->getMailer().': '.__FUNCTION__;
 		$this->mailer->AllowEmpty = true;
 
 		$this->assertSentMail();
@@ -73,7 +80,7 @@ abstract class MailerTestAbstract extends TestAbstract{
 		$this->expectExceptionMessage('Message body empty');
 
 		$this->mailer->addTO('user@example.com');
-		$this->mailer->Body = '';
+		$this->mailer->Body       = '';
 		$this->mailer->AllowEmpty = false;
 		$this->mailer->send();
 	}
@@ -90,9 +97,11 @@ abstract class MailerTestAbstract extends TestAbstract{
 		$this
 			->setMessage($body, __FUNCTION__)
 			// $assertFunc example
-			->assertSentMail(function(string $sent, array $received){
-				$this->assertStringContainsString('X-Priority: 5', $received[0]);
-			})
+			->assertSentMail(
+				function(string $sent, array $received){
+					$this->assertStringContainsString('X-Priority: 5', $received[0]);
+				}
+			)
 		;
 	}
 
@@ -111,7 +120,6 @@ abstract class MailerTestAbstract extends TestAbstract{
 
 		$this->setMessage($body, __FUNCTION__)->assertSentMail();
 	}
-
 
 	/**
 	 * Word-wrap a multibyte message.
@@ -201,7 +209,7 @@ EOT;
 		$this->mailer->ContentType = $this->mailer::CONTENT_TYPE_TEXT_HTML;
 		$this->mailer->AltBody     = 'This is the text part of the email.';
 
-		$this->mailer->addAttachment($this->INCLUDE_DIR.'/README.md','test.txt');
+		$this->mailer->addAttachment($this->INCLUDE_DIR.'/README.md', 'test.txt');
 
 		$this->setMessage('This is the <strong>HTML</strong> part of the email.', __FUNCTION__)->assertSentMail();
 	}
@@ -259,7 +267,7 @@ EOT;
 			'image/png'
 		);
 
-		$this->mailer->addAttachment($this->INCLUDE_DIR.'/README.md','test.txt');
+		$this->mailer->addAttachment($this->INCLUDE_DIR.'/README.md', 'test.txt');
 
 		$body = 'Embedded Image: <img alt="phpmailer" src="cid:my-attach"> Here is an image!';
 
@@ -297,7 +305,7 @@ EOT;
 	 */
 	public function testHtmlIso8859(){
 		$this->mailer->ContentType = $this->mailer::CONTENT_TYPE_TEXT_HTML;
-		$this->mailer->CharSet = $this->mailer::CHARSET_ISO88591;
+		$this->mailer->CharSet     = $this->mailer::CHARSET_ISO88591;
 
 		//This file is in ISO-8859-1 charset
 		//Needs to be external because this file is in UTF-8
@@ -324,7 +332,7 @@ EOT;
 	 */
 	public function testHtmlUtf8(){
 		$this->mailer->ContentType = $this->mailer::CONTENT_TYPE_TEXT_HTML;
-		$this->mailer->CharSet = $this->mailer::CHARSET_UTF8;
+		$this->mailer->CharSet     = $this->mailer::CHARSET_UTF8;
 
 		$body = <<<'EOT'
 <html>
@@ -350,7 +358,7 @@ EOT;
 	 */
 	public function testHtmlUtf8WithEmbeddedImage(){
 		$this->mailer->ContentType = $this->mailer::CONTENT_TYPE_TEXT_HTML;
-		$this->mailer->CharSet = $this->mailer::CHARSET_UTF8;
+		$this->mailer->CharSet     = $this->mailer::CHARSET_UTF8;
 
 		$body = <<<'EOT'
 <html>
@@ -422,8 +430,8 @@ EOT;
 	 */
 	public function testAltBody(){
 		$this->mailer->AltBody  = 'Here is the plain text body of this message. '.
-		                        'It should be quite a few lines. It should be wrapped at '.
-		                        '40 characters.  Make sure that it is.';
+		                          'It should be quite a few lines. It should be wrapped at '.
+		                          '40 characters.  Make sure that it is.';
 		$this->mailer->WordWrap = 40;
 		$this->addNote('This is a multipart/alternative email');
 		$this->mailer->Subject .= ': AltBody + Word Wrap';
@@ -504,19 +512,23 @@ EOT;
 
 		$this->mailer->ConfirmReadingTo = ' test@example.com';
 
-		$this->assertSentMail(function(string $sent, array $received){
-			$this->assertSame('test@example.com', $this->mailer->ConfirmReadingTo, 'Unexpected read receipt address');
-			$this->assertStringContainsString('Disposition-Notification-To: <test@example.com>', $received[0]);
-		});
+		$this->assertSentMail(
+			function(string $sent, array $received){
+				$this->assertSame('test@example.com', $this->mailer->ConfirmReadingTo, 'Unexpected read receipt address');
+				$this->assertStringContainsString('Disposition-Notification-To: <test@example.com>', $received[0]);
+			}
+		);
 
 		$this->setMessage('test confirm reading', __FUNCTION__.': Address with IDN');
 
 		$this->mailer->ConfirmReadingTo = 'test@françois.ch';
 
-		$this->assertSentMail(function(string $sent, array $received){
-			$this->assertSame('test@xn--franois-xxa.ch', $this->mailer->ConfirmReadingTo, 'IDN address not converted to punycode');
-			$this->assertStringContainsString('Disposition-Notification-To: <test@xn--franois-xxa.ch>', $received[0]);
-		});
+		$this->assertSentMail(
+			function(string $sent, array $received){
+				$this->assertSame('test@xn--franois-xxa.ch', $this->mailer->ConfirmReadingTo, 'IDN address not converted to punycode');
+				$this->assertStringContainsString('Disposition-Notification-To: <test@xn--franois-xxa.ch>', $received[0]);
+			}
+		);
 
 	}
 
@@ -575,9 +587,9 @@ EOT;
 		);
 		$this->assertFalse($this->mailer->hasLineLongerThanMax($oklen), 'Long line false positive');
 		$this->mailer->ContentType = $this->mailer::CONTENT_TYPE_PLAINTEXT;
-		$this->mailer->Subject  .= ': Line length test';
-		$this->mailer->CharSet  = 'UTF-8';
-		$this->mailer->Encoding = '8bit';
+		$this->mailer->Subject     .= ': Line length test';
+		$this->mailer->CharSet     = 'UTF-8';
+		$this->mailer->Encoding    = '8bit';
 
 		$this->setMessage($oklen.$badlen.$oklen.$badlen, __FUNCTION__)->assertSentMail();
 
@@ -592,10 +604,12 @@ EOT;
 		$privatekeyfile = 'dkim_private.pem';
 		// Make a new key pair
 		// 2048 bits is the recommended minimum key length - gmail won't accept less than 1024 bits
-		$pk = openssl_pkey_new([
-			'private_key_bits' => 2048,
-			'private_key_type' => OPENSSL_KEYTYPE_RSA,
-		]);
+		$pk = openssl_pkey_new(
+			[
+				'private_key_bits' => 2048,
+				'private_key_type' => OPENSSL_KEYTYPE_RSA,
+			]
+		);
 
 		openssl_pkey_export_to_file($pk, $privatekeyfile);
 
@@ -626,9 +640,9 @@ EOT;
 			'private_key_type' => OPENSSL_KEYTYPE_RSA,
 		];
 
-		$password  = 'password';
-		$certfile  = 'certfile.pem';
-		$keyfile   = 'keyfile.pem';
+		$password = 'password';
+		$certfile = 'certfile.pem';
+		$keyfile  = 'keyfile.pem';
 
 		//Make a new key pair
 		$pk = openssl_pkey_new($keyconfig);
@@ -663,7 +677,7 @@ EOT;
 	 */
 	public function testSMIMESignWithCA(){
 
-		$certprops   = [
+		$certprops = [
 			'countryName'            => 'UK',
 			'stateOrProvinceName'    => 'Here',
 			'localityName'           => 'There',
@@ -683,17 +697,17 @@ EOT;
 			'emailAddress'           => 'phpmailer@example.com',
 		];
 
-		$keyconfig   = [
+		$keyconfig = [
 			'digest_alg'       => 'sha256',
 			'private_key_bits' => 2048,
 			'private_key_type' => OPENSSL_KEYTYPE_RSA,
 		];
 
-		$password    = 'password';
-		$cacertfile  = 'cacertfile.pem';
-		$cakeyfile   = 'cakeyfile.pem';
-		$certfile    = 'certfile.pem';
-		$keyfile     = 'keyfile.pem';
+		$password   = 'password';
+		$cacertfile = 'cacertfile.pem';
+		$cakeyfile  = 'cakeyfile.pem';
+		$certfile   = 'certfile.pem';
+		$keyfile    = 'keyfile.pem';
 
 		//Create a CA cert
 		//Make a new key pair

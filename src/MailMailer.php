@@ -12,6 +12,10 @@
 
 namespace PHPMailer\PHPMailer;
 
+use function count, implode, ini_get, ini_set, mail, sprintf;
+
+use const PHP_OS_FAMILY;
+
 class MailMailer extends PHPMailer{
 
 	protected $Mailer = self::MAILER_MAIL;
@@ -49,7 +53,7 @@ class MailMailer extends PHPMailer{
 			$toArr[] = $this->addrFormat($toaddr);
 		}
 
-		$to = \implode(', ', $toArr);
+		$to = implode(', ', $toArr);
 
 		$params = null;
 		//This sets the SMTP envelope sender which gets turned into a return-path header by the receiver
@@ -62,18 +66,18 @@ class MailMailer extends PHPMailer{
 			//Example problem: https://www.drupal.org/node/1057954
 			// CVE-2016-10033, CVE-2016-10045: Don't pass -f if characters will be escaped.
 			if(isShellSafe($this->Sender)){
-				$params = \sprintf('-f%s', $this->Sender);
+				$params = sprintf('-f%s', $this->Sender);
 			}
 		}
 
 		if(!empty($this->Sender) && validateAddress($this->Sender, $this->validator)){
-			$old_from = \ini_get('sendmail_from');
-			\ini_set('sendmail_from', $this->Sender);
+			$old_from = ini_get('sendmail_from');
+			ini_set('sendmail_from', $this->Sender);
 		}
 
 		$result = false;
 
-		if($this->SingleTo && \count($toArr) > 1){
+		if($this->SingleTo && count($toArr) > 1){
 			foreach($toArr as $toAddr){
 				$result = $this->mailPassthru($toAddr, $this->Subject, $body, $header, $params);
 				$this->doCallback($result, [$toAddr], $this->cc, $this->bcc, $this->Subject, $body, $this->From, []);
@@ -85,7 +89,7 @@ class MailMailer extends PHPMailer{
 		}
 
 		if(isset($old_from)){
-			\ini_set('sendmail_from', $old_from);
+			ini_set('sendmail_from', $old_from);
 		}
 
 		if(!$result){
@@ -111,15 +115,14 @@ class MailMailer extends PHPMailer{
 	 */
 	protected function mailPassthru(string $to, string $subject, string $body, string $header, string $params = null):bool{
 		//Check overloading of mail function to avoid double-encoding
-		$subject = \ini_get('mbstring.func_overload') & 1
+		$subject = ini_get('mbstring.func_overload') & 1
 			? secureHeader($subject)
 			: $this->encodeHeader(secureHeader($subject));
 
 		//Calling mail() with null params breaks
 		return !$this->UseSendmailOptions || $params === null
-			? \mail($to, $subject, $body, $header)
-			: \mail($to, $subject, $body, $header, $params);
+			? mail($to, $subject, $body, $header)
+			: mail($to, $subject, $body, $header, $params);
 	}
-
 
 }

@@ -11,6 +11,8 @@
 
 namespace PHPMailer\PHPMailer;
 
+use function count, defined, explode, implode, preg_match, trim;
+
 /**
  * Class SMTPMailer
  */
@@ -23,7 +25,7 @@ class SMTPMailer extends PHPMailer{
 	/**
 	 * An instance of the SMTP sender class.
 	 *
-	 * @var SMTP
+	 * @var \PHPMailer\PHPMailer\SMTP
 	 */
 	protected $smtp;
 
@@ -109,7 +111,7 @@ class SMTPMailer extends PHPMailer{
 		$smtp_from = empty($this->Sender) ? $this->From : $this->Sender;
 
 		if(!$this->smtp->mail($smtp_from)){
-			$this->setError($this->lang('from_failed').$smtp_from.' : '.\implode(',', $this->smtp->getError()));
+			$this->setError($this->lang('from_failed').$smtp_from.' : '.implode(',', $this->smtp->getError()));
 
 			throw new PHPMailerException($this->ErrorInfo, $this::STOP_CRITICAL);
 		}
@@ -133,7 +135,7 @@ class SMTPMailer extends PHPMailer{
 		}
 
 		// Only send the DATA command if we have viable recipients
-		if((\count($this->all_recipients) > \count($bad_rcpt)) && !$this->smtp->data($header.$body)){
+		if((count($this->all_recipients) > count($bad_rcpt)) && !$this->smtp->data($header.$body)){
 			throw new PHPMailerException($this->lang('data_not_accepted'), $this::STOP_CRITICAL);
 		}
 
@@ -161,7 +163,7 @@ class SMTPMailer extends PHPMailer{
 		}
 
 		//Create error message for any bad addresses
-		if(\count($bad_rcpt) > 0){
+		if(count($bad_rcpt) > 0){
 			$errstr = '';
 
 			foreach($bad_rcpt as $bad){
@@ -202,13 +204,14 @@ class SMTPMailer extends PHPMailer{
 		$this->smtp->loglevel = $this->loglevel;
 		$this->smtp->do_verp  = $this->do_verp;
 
-		$hosts         = \explode(';', $this->host);
+		$hosts         = explode(';', $this->host);
 		$lastexception = null;
 
 		foreach($hosts as $hostentry){
 			$hostinfo = [];
 
-			if(!\preg_match('/^((ssl|tls):\/\/)*([a-zA-Z0-9\.-]*|\[[a-fA-F0-9:]+\]):?([0-9]*)$/', \trim($hostentry), $hostinfo)){
+			/** @noinspection RegExpRedundantEscape */
+			if(!preg_match('/^((ssl|tls):\/\/)*([a-zA-Z0-9\.-]*|\[[a-fA-F0-9:]+\]):?([0-9]*)$/', trim($hostentry), $hostinfo)){
 				$this->edebug($this->lang('connect_host').' '.$hostentry);
 				// Not a valid host entry
 				continue;
@@ -243,7 +246,7 @@ class SMTPMailer extends PHPMailer{
 			}
 
 			//Do we need the OpenSSL extension?
-			$sslext = \defined('OPENSSL_ALGO_SHA256');
+			$sslext = defined('OPENSSL_ALGO_SHA256');
 
 			if($secure === 'tls' || $secure === 'ssl'){
 				//Check for an OpenSSL constant rather than using extension_loaded, which is sometimes disabled
@@ -310,6 +313,5 @@ class SMTPMailer extends PHPMailer{
 
 		return false;
 	}
-
 
 }

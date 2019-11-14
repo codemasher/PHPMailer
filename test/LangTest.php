@@ -13,7 +13,7 @@
 
 namespace PHPMailer\Test;
 
-use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\SMTPMailer;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -24,7 +24,7 @@ final class LangTest extends TestCase{
 	/**
 	 * Holds a PHPMailer instance.
 	 *
-	 * @var PHPMailer
+	 * @var \PHPMailer\PHPMailer\PHPMailerInterface
 	 */
 	private $Mail;
 
@@ -32,7 +32,7 @@ final class LangTest extends TestCase{
 	 * Run before each test is started.
 	 */
 	protected function setUp():void{
-		$this->Mail = new PHPMailer();
+		$this->Mail = new SMTPMailer();
 	}
 
 	/**

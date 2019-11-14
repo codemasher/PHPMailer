@@ -15,6 +15,14 @@ namespace PHPMailer\Test;
 use PHPMailer\PHPMailer;
 use PHPUnit\Framework\TestCase;
 
+use function PHPMailer\PHPMailer\{
+	DKIM_HeaderC, encodeQ, filenameToType, get_mime_type, isValidHost,
+	mb_pathinfo, parseAddresses, punyencodeAddress, validateAddress
+};
+use function chr, mb_convert_encoding, str_repeat, trim;
+
+use const PATHINFO_BASENAME, PATHINFO_DIRNAME;
+
 class FunctionTest extends TestCase{
 
 	public function validAddressProvider1():array{
@@ -74,7 +82,7 @@ class FunctionTest extends TestCase{
 	 */
 	public function testValidAddresses1(string $address){
 		foreach(['pcre', 'html5', 'php'] as $validator){
-			$this->assertTrue(PHPMailer\validateAddress($address, $validator));
+			$this->assertTrue(validateAddress($address, $validator));
 		}
 	}
 
@@ -144,7 +152,7 @@ class FunctionTest extends TestCase{
 	 */
 	public function testValidAddresses2(string $address){
 		foreach(['php'] as $validator){
-			$this->assertTrue(PHPMailer\validateAddress($address, $validator));
+			$this->assertTrue(validateAddress($address, $validator));
 		}
 	}
 
@@ -200,7 +208,7 @@ class FunctionTest extends TestCase{
 	 * @param string $address
 	 */
 	public function testValidAddresses3(string $address){
-		$this->assertTrue(PHPMailer\validateAddress($address, 'pcre'));
+		$this->assertTrue(validateAddress($address, 'pcre'));
 	}
 
 	public function invalidAddressProvider1():array{
@@ -241,7 +249,7 @@ class FunctionTest extends TestCase{
 			['ote"@iana.org'],
 			['"Doug "Ace" L."@iana.org'],
 			['Doug\ \"Ace\"\ L\.@iana.org'],
-		    ['hello world@iana.org'],
+			['hello world@iana.org'],
 			['gatsby@f.sc.ot.t.f.i.tzg.era.l.d.'],
 			['test.iana.org'],
 			['test@test@iana.org'],
@@ -336,7 +344,7 @@ class FunctionTest extends TestCase{
 	 */
 	public function testInvalidAddresses1(string $address){
 		foreach(['pcre', 'html5', 'php'] as $validator){
-			$this->assertFalse(PHPMailer\validateAddress($address, $validator));
+			$this->assertFalse(validateAddress($address, $validator));
 		}
 	}
 
@@ -370,7 +378,7 @@ class FunctionTest extends TestCase{
 	 */
 	public function testInvalidAddresses2(string $address){
 		foreach(['pcre', 'php'] as $validator){
-			$this->assertFalse(PHPMailer\validateAddress($address, $validator));
+			$this->assertFalse(validateAddress($address, $validator));
 		}
 	}
 
@@ -381,7 +389,7 @@ class FunctionTest extends TestCase{
 		//Test built-in address parser
 		$this->assertCount(
 			2,
-			PHPMailer\parseAddresses('Joe User <joe@example.com>, Jill User <jill@example.net>'),
+			parseAddresses('Joe User <joe@example.com>, Jill User <jill@example.net>'),
 			'Failed to recognise address list (IMAP parser)'
 		);
 		$this->assertSame(
@@ -390,7 +398,7 @@ class FunctionTest extends TestCase{
 				['name' => 'Jill User', 'address' => 'jill@example.net'],
 				['name' => '', 'address' => 'frank@example.com'],
 			],
-			PHPMailer\parseAddresses(
+			parseAddresses(
 				'Joe User <joe@example.com>,'
 				.'Jill User <jill@example.net>,'
 				.'frank@example.com,'
@@ -400,47 +408,47 @@ class FunctionTest extends TestCase{
 		//Test simple address parser
 		$this->assertCount(
 			2,
-			PHPMailer\parseAddresses('Joe User <joe@example.com>, Jill User <jill@example.net>', false),
+			parseAddresses('Joe User <joe@example.com>, Jill User <jill@example.net>', false),
 			'Failed to recognise address list'
 		);
 		//Test single address
 		$this->assertNotEmpty(
-			PHPMailer\parseAddresses('Joe User <joe@example.com>', false),
+			parseAddresses('Joe User <joe@example.com>', false),
 			'Failed to recognise single address'
 		);
 		//Test quoted name IMAP
 		$this->assertNotEmpty(
-			PHPMailer\parseAddresses('Tim "The Book" O\'Reilly <foo@example.com>'),
+			parseAddresses('Tim "The Book" O\'Reilly <foo@example.com>'),
 			'Failed to recognise quoted name (IMAP)'
 		);
 		//Test quoted name
 		$this->assertNotEmpty(
-			PHPMailer\parseAddresses('Tim "The Book" O\'Reilly <foo@example.com>', false),
+			parseAddresses('Tim "The Book" O\'Reilly <foo@example.com>', false),
 			'Failed to recognise quoted name'
 		);
 		//Test single address IMAP
 		$this->assertNotEmpty(
-			PHPMailer\parseAddresses('Joe User <joe@example.com>'),
+			parseAddresses('Joe User <joe@example.com>'),
 			'Failed to recognise single address (IMAP)'
 		);
 		//Test unnamed address
 		$this->assertNotEmpty(
-			PHPMailer\parseAddresses('joe@example.com', false),
+			parseAddresses('joe@example.com', false),
 			'Failed to recognise unnamed address'
 		);
 		//Test unnamed address IMAP
 		$this->assertNotEmpty(
-			PHPMailer\parseAddresses('joe@example.com'),
+			parseAddresses('joe@example.com'),
 			'Failed to recognise unnamed address (IMAP)'
 		);
 		//Test invalid addresses
 		$this->assertEmpty(
-			PHPMailer\parseAddresses('Joe User <joe@example.com.>, Jill User <jill.@example.net>'),
+			parseAddresses('Joe User <joe@example.com.>, Jill User <jill.@example.net>'),
 			'Failed to recognise invalid addresses (IMAP)'
 		);
 		//Test invalid addresses
 		$this->assertEmpty(
-			PHPMailer\parseAddresses('Joe User <joe@example.com.>, Jill User <jill.@example.net>', false),
+			parseAddresses('Joe User <joe@example.com.>, Jill User <jill.@example.net>', false),
 			'Failed to recognise invalid addresses'
 		);
 	}
@@ -463,7 +471,7 @@ class FunctionTest extends TestCase{
 	 * @param $host
 	 */
 	public function testHostValidationValid($host){
-		$this->assertTrue(PHPMailer\isValidHost($host), 'Good hostname denied: '.$host);
+		$this->assertTrue(isValidHost($host), 'Good hostname denied: '.$host);
 	}
 
 	public function invalidHostProvider():array{
@@ -486,29 +494,29 @@ class FunctionTest extends TestCase{
 	 * @param $host
 	 */
 	public function testHostValidationInvalid($host){
-		$this->assertFalse(PHPMailer\isValidHost($host), 'Bad hostname accepted: '.$host);
+		$this->assertFalse(isValidHost($host), 'Bad hostname accepted: '.$host);
 	}
 
 	public function testMBPathinfo(){
 		$a = '/mnt/files/飛兒樂 團光茫.mp3';
-		$q = PHPMailer\mb_pathinfo($a);
+		$q = mb_pathinfo($a);
 		$this->assertSame($q['dirname'], '/mnt/files', 'UNIX dirname not matched');
 		$this->assertSame($q['basename'], '飛兒樂 團光茫.mp3', 'UNIX basename not matched');
 		$this->assertSame($q['extension'], 'mp3', 'UNIX extension not matched');
 		$this->assertSame($q['filename'], '飛兒樂 團光茫', 'UNIX filename not matched');
 		$this->assertSame(
-			PHPMailer\mb_pathinfo($a, PATHINFO_DIRNAME),
+			mb_pathinfo($a, PATHINFO_DIRNAME),
 			'/mnt/files',
 			'Dirname path element not matched'
 		);
 		$this->assertSame(
-			PHPMailer\mb_pathinfo($a, PATHINFO_BASENAME),
+			mb_pathinfo($a, PATHINFO_BASENAME),
 			'飛兒樂 團光茫.mp3',
 			'Basename path element not matched'
 		);
-		$this->assertSame(PHPMailer\mb_pathinfo($a, 'filename'), '飛兒樂 團光茫', 'Filename path element not matched');
+		$this->assertSame(mb_pathinfo($a, 'filename'), '飛兒樂 團光茫', 'Filename path element not matched');
 		$a = 'c:\mnt\files\飛兒樂 團光茫.mp3';
-		$q = PHPMailer\mb_pathinfo($a);
+		$q = mb_pathinfo($a);
 		$this->assertSame($q['dirname'], 'c:\mnt\files', 'Windows dirname not matched');
 		$this->assertSame($q['basename'], '飛兒樂 團光茫.mp3', 'Windows basename not matched');
 		$this->assertSame($q['extension'], 'mp3', 'Windows extension not matched');
@@ -517,20 +525,20 @@ class FunctionTest extends TestCase{
 
 	public function testFilenameToType(){
 		$this->assertSame(
-			PHPMailer\filenameToType('abc.jpg?xyz=1'),
+			filenameToType('abc.jpg?xyz=1'),
 			'image/jpeg',
 			'Query string not ignored in filename'
 		);
 
 		$this->assertSame(
-			PHPMailer\filenameToType('abc.xyzpdq'),
+			filenameToType('abc.xyzpdq'),
 			'application/octet-stream',
 			'Default MIME type not applied to unknown extension'
 		);
 	}
 
 	public function testGetMimeType(){
-		$this->assertSame('application/pdf', PHPMailer\get_mime_type('pdf'), 'MIME TYPE lookup failed');
+		$this->assertSame('application/pdf', get_mime_type('pdf'), 'MIME TYPE lookup failed');
 	}
 
 	public function qencodeDataProvider():array{
@@ -547,7 +555,7 @@ class FunctionTest extends TestCase{
 	 * @dataProvider qencodeDataProvider
 	 */
 	public function testEncodeQ($pos, $str, $expected){
-		$this->assertSame($expected, PHPMailer\encodeQ($str, $pos), 'Q Encoding ('.$pos.') failed');
+		$this->assertSame($expected, encodeQ($str, $pos), 'Q Encoding ('.$pos.') failed');
 	}
 
 	/**
@@ -559,7 +567,7 @@ class FunctionTest extends TestCase{
 		//Example from https://tools.ietf.org/html/rfc6376#section-3.4.5
 		$this->assertSame(
 			"a:X\r\nb:Y Z\r\n",
-			PHPMailer\DKIM_HeaderC("A: X\r\nB : Y\t\r\n\tZ  \r\n"),
+			DKIM_HeaderC("A: X\r\nB : Y\t\r\n\tZ  \r\n"),
 			'DKIM header canonicalization incorrect'
 		);
 	}
@@ -579,7 +587,7 @@ class FunctionTest extends TestCase{
 	 */
 	public function testPunyencodeAddress(string $addr, string $expected){
 		$addr   = mb_convert_encoding($addr, 'ISO-8859-1', 'UTF-8');
-		$result = PHPMailer\punyencodeAddress($addr);
+		$result = punyencodeAddress($addr);
 
 		$this->assertSame($expected, $result);
 	}

@@ -12,8 +12,11 @@
 
 namespace PHPMailer\Test\Mailers;
 
-use PHPMailer\PHPMailer\POP3;
-use PHPMailer\PHPMailer\SMTPMailer;
+use PHPMailer\PHPMailer\{POP3, SMTPMailer};
+
+use function escapeshellarg, shell_exec, sleep;
+
+use const PHP_OS_FAMILY;
 
 /**
  * @property \PHPMailer\PHPMailer\SMTPMailer $mailer
@@ -136,6 +139,13 @@ class SMTPTest extends MailerTestAbstract{
 	 * @group pop3
 	 */
 	public function testPopBeforeSmtpGood(){
+
+		if(PHP_OS_FAMILY !== 'Linux'){
+			$this->markTestSkipped('Linux only');
+
+			return;
+		}
+
 		//Start a fake POP server
 		$pid = shell_exec(
 			'/usr/bin/nohup '.
@@ -164,6 +174,13 @@ class SMTPTest extends MailerTestAbstract{
 	 * @group pop3
 	 */
 	public function testPopBeforeSmtpBad(){
+
+		if(PHP_OS_FAMILY !== 'Linux'){
+			$this->markTestSkipped('Linux only');
+
+			return;
+		}
+
 		//Start a fake POP server on a different port
 		//so we don't inadvertently connect to the previous instance
 		$pid = shell_exec(
@@ -186,6 +203,5 @@ class SMTPTest extends MailerTestAbstract{
 		@shell_exec('kill -TERM '.escapeshellarg($pid));
 		sleep(2);
 	}
-
 
 }

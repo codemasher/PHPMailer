@@ -22,8 +22,9 @@ namespace PHPMailer\PHPMailer;
 
 use League\OAuth2\Client\Grant\RefreshToken;
 use League\OAuth2\Client\Provider\AbstractProvider;
-use League\OAuth2\Client\Token\AccessToken;
-use League\OAuth2\Client\Token\AccessTokenInterface;
+use League\OAuth2\Client\Token\{AccessToken, AccessTokenInterface};
+
+use function base64_encode, sprintf;
 
 /**
  * OAuth - OAuth2 authentication wrapper class.

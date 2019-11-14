@@ -10,6 +10,8 @@
 
 namespace PHPMailer\PHPMailer;
 
-if(!\defined('INCLUDES_PHPMAILER_FUNCTIONS')){
+use function defined;
+
+if(!defined('INCLUDES_PHPMAILER_FUNCTIONS')){
 	require_once __DIR__.'/functions.php';
 }

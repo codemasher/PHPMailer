@@ -20,6 +20,15 @@
 
 namespace PHPMailer\PHPMailer;
 
+use function array_key_exists, array_shift, base64_decode, base64_encode, count, defined, explode, fclose, feof,
+	fgets, fsockopen, function_exists, fwrite, hash_hmac, implode, in_array, ini_get, is_array, is_resource, md5,
+	pack, preg_match, preg_replace, restore_error_handler, set_error_handler, set_time_limit, sprintf, str_pad,
+	str_replace, stream_context_create, stream_get_meta_data, stream_select, stream_set_timeout, stream_socket_client,
+	stream_socket_enable_crypto, strlen, strpos, strrpos, strtoupper, substr, time, trim, var_export;
+
+use const PHP_OS_FAMILY, STREAM_CLIENT_CONNECT, STREAM_CRYPTO_METHOD_TLS_CLIENT,
+	STREAM_CRYPTO_METHOD_TLSv1_1_CLIENT, STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT;
+
 /**
  * PHPMailer RFC821 SMTP email transport class.
  * Implements RFC 821 SMTP commands and provides some utility methods for sending mail to an SMTP server.
@@ -119,12 +128,12 @@ class SMTP extends MailerAbstract{
 
 		// Connect to the SMTP server
 		$this->edebug(
-			\sprintf(
+			sprintf(
 				'Connection: opening to %s:%s, timeout=%s, options=%s',
 				$host,
 				$port,
 				$timeout,
-				!empty($stream_options) ? \var_export($stream_options, true) : '[]'
+				!empty($stream_options) ? var_export($stream_options, true) : '[]'
 			),
 			$this::DEBUG_CONNECTION
 		);
@@ -132,17 +141,17 @@ class SMTP extends MailerAbstract{
 		$errno  = 0;
 		$errstr = '';
 
-		\set_error_handler([$this, 'errorHandler']);
+		set_error_handler([$this, 'errorHandler']);
 
 		if($this->streamOK){
-			$socket_context = \stream_context_create($stream_options);
+			$socket_context = stream_context_create($stream_options);
 
-			$this->socket = \stream_socket_client(
+			$this->socket = stream_socket_client(
 				$host.':'.$port,
 				$errno,
 				$errstr,
 				$timeout,
-				\STREAM_CLIENT_CONNECT,
+				STREAM_CLIENT_CONNECT,
 				$socket_context
 			);
 
@@ -151,15 +160,15 @@ class SMTP extends MailerAbstract{
 			//Fall back to fsockopen which should work in more places, but is missing some features
 			$this->edebug('Connection: stream_socket_client not available, falling back to fsockopen', $this::DEBUG_CONNECTION);
 
-			$this->socket = \fsockopen($host, $port, $errno, $errstr, $timeout);
+			$this->socket = fsockopen($host, $port, $errno, $errstr, $timeout);
 		}
 
-		\restore_error_handler();
+		restore_error_handler();
 
 		// Verify we connected properly
-		if(!\is_resource($this->socket)){
+		if(!is_resource($this->socket)){
 			$this->setError('Failed to connect to server', '', $errno, $errstr);
-			$this->edebug(\sprintf('SMTP ERROR: %s: %s (%s)', $this->error['error'], $errstr, $errno), $this::DEBUG_CLIENT);
+			$this->edebug(sprintf('SMTP ERROR: %s: %s (%s)', $this->error['error'], $errstr, $errno), $this::DEBUG_CLIENT);
 
 			return false;
 		}
@@ -169,14 +178,14 @@ class SMTP extends MailerAbstract{
 		// SMTP server can take longer to respond, give longer timeout for first read
 		// Windows does not have support for this timeout function
 		if(PHP_OS_FAMILY !== 'Windows'){
-			$max = (int)\ini_get('max_execution_time');
+			$max = (int)ini_get('max_execution_time');
 
 			// Don't bother if unlimited
 			if($max !== 0 && $timeout > $max){
-				\set_time_limit($timeout);
+				set_time_limit($timeout);
 			}
 
-			\stream_set_timeout($this->socket, $timeout, 0);
+			stream_set_timeout($this->socket, $timeout, 0);
 		}
 
 		// Get any announcement
@@ -198,19 +207,19 @@ class SMTP extends MailerAbstract{
 		}
 
 		//Allow the best TLS version(s) we can
-		$crypto_method = \STREAM_CRYPTO_METHOD_TLS_CLIENT;
+		$crypto_method = STREAM_CRYPTO_METHOD_TLS_CLIENT;
 
 		//PHP 5.6.7 dropped inclusion of TLS 1.1 and 1.2 in STREAM_CRYPTO_METHOD_TLS_CLIENT
 		//so add them back in manually if we can
 		if(defined('STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT')){
-			$crypto_method |= \STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT;
-			$crypto_method |= \STREAM_CRYPTO_METHOD_TLSv1_1_CLIENT;
+			$crypto_method |= STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT;
+			$crypto_method |= STREAM_CRYPTO_METHOD_TLSv1_1_CLIENT;
 		}
 
 		// Begin encrypted connection
-		\set_error_handler([$this, 'errorHandler']);
-		$crypto_ok = \stream_socket_enable_crypto($this->socket, true, $crypto_method);
-		\restore_error_handler();
+		set_error_handler([$this, 'errorHandler']);
+		$crypto_ok = stream_socket_enable_crypto($this->socket, true, $crypto_method);
+		restore_error_handler();
 
 		return (bool)$crypto_ok;
 	}
@@ -219,10 +228,10 @@ class SMTP extends MailerAbstract{
 	 * Perform SMTP authentication.
 	 * Must be run after hello().
 	 *
-	 * @param string                          $username The user name
-	 * @param string                          $password The password
-	 * @param string                          $authtype The auth type (CRAM-MD5, PLAIN, LOGIN, XOAUTH2)
-	 * @param PHPMailerOAuthInterface $OAuth  $OAuth    An optional OAuth instance for XOAUTH2 authentication
+	 * @param string                  $username The user name
+	 * @param string                  $password The password
+	 * @param string                  $authtype The auth type (CRAM-MD5, PLAIN, LOGIN, XOAUTH2)
+	 * @param PHPMailerOAuthInterface $OAuth    $OAuth    An optional OAuth instance for XOAUTH2 authentication
 	 *
 	 * @return bool True if successfully authenticated
 	 * @see    hello()
@@ -240,9 +249,9 @@ class SMTP extends MailerAbstract{
 			return false;
 		}
 
-		if(\array_key_exists('EHLO', $this->server_caps)){
+		if(array_key_exists('EHLO', $this->server_caps)){
 			// SMTP extensions are available; try to find a proper authentication method
-			if(!\array_key_exists('AUTH', $this->server_caps)){
+			if(!array_key_exists('AUTH', $this->server_caps)){
 				// 'at this stage' means that auth may be allowed after the stage changes
 				// e.g. after STARTTLS
 				$this->setError('Authentication is not allowed at this stage');
@@ -252,12 +261,12 @@ class SMTP extends MailerAbstract{
 
 			$this->edebug('Auth method requested: '.($authtype ? $authtype : 'UNSPECIFIED'), $this::DEBUG_LOWLEVEL);
 			$this->edebug(
-				'Auth methods available on the server: '.\implode(',', $this->server_caps['AUTH']),
+				'Auth methods available on the server: '.implode(',', $this->server_caps['AUTH']),
 				$this::DEBUG_LOWLEVEL
 			);
 
 			// If we have requested a specific auth type, check the server supports it before trying others
-			if($authtype !== null && !\in_array($authtype, $this->server_caps['AUTH'])){
+			if($authtype !== null && !in_array($authtype, $this->server_caps['AUTH'])){
 				$this->edebug('Requested auth method not available: '.$authtype, $this::DEBUG_LOWLEVEL);
 				$authtype = null;
 			}
@@ -266,7 +275,7 @@ class SMTP extends MailerAbstract{
 				// If no auth mechanism is specified, attempt to use these, in this order
 				// Try CRAM-MD5 first as it's more secure than the others
 				foreach(['CRAM-MD5', 'LOGIN', 'PLAIN', 'XOAUTH2'] as $method){
-					if(\in_array($method, $this->server_caps['AUTH'])){
+					if(in_array($method, $this->server_caps['AUTH'])){
 						$authtype = $method;
 						break;
 					}
@@ -281,7 +290,7 @@ class SMTP extends MailerAbstract{
 				$this->edebug('Auth method selected: '.$authtype, $this::DEBUG_LOWLEVEL);
 			}
 
-			if(!\in_array($authtype, $this->server_caps['AUTH'])){
+			if(!in_array($authtype, $this->server_caps['AUTH'])){
 				$this->setError('The requested authentication method "'.$authtype.'" is not supported by the server');
 
 				return false;
@@ -299,7 +308,7 @@ class SMTP extends MailerAbstract{
 					return false;
 				}
 				// Send encoded username and password
-				if(!$this->sendCommand('User & Password', \base64_encode("\0".$username."\0".$password), [235])){
+				if(!$this->sendCommand('User & Password', base64_encode("\0".$username."\0".$password), [235])){
 					return false;
 				}
 
@@ -311,11 +320,11 @@ class SMTP extends MailerAbstract{
 					return false;
 				}
 
-				if(!$this->sendCommand('Username', \base64_encode($username), [334])){
+				if(!$this->sendCommand('Username', base64_encode($username), [334])){
 					return false;
 				}
 
-				if(!$this->sendCommand('Password', \base64_encode($password), [235])){
+				if(!$this->sendCommand('Password', base64_encode($password), [235])){
 					return false;
 				}
 
@@ -327,13 +336,13 @@ class SMTP extends MailerAbstract{
 					return false;
 				}
 				// Get the challenge
-				$challenge = \base64_decode(\substr($this->last_reply, 4));
+				$challenge = base64_decode(substr($this->last_reply, 4));
 
 				// Build the response
 				$response = $username.' '.$this->hmac($challenge, $password);
 
 				// send encoded credentials
-				return $this->sendCommand('Username', \base64_encode($response), [235]);
+				return $this->sendCommand('Username', base64_encode($response), [235]);
 
 			case 'XOAUTH2':
 				//The OAuth instance must be set up prior to requesting auth.
@@ -369,8 +378,8 @@ class SMTP extends MailerAbstract{
 	 */
 	protected function hmac(string $data, string $key):string{
 
-		if(\function_exists('hash_hmac')){
-			return \hash_hmac('md5', $data, $key);
+		if(function_exists('hash_hmac')){
+			return hash_hmac('md5', $data, $key);
 		}
 
 		// The following borrowed from
@@ -383,17 +392,17 @@ class SMTP extends MailerAbstract{
 
 		$bytelen = 64; // byte length for md5
 
-		if(\strlen($key) > $bytelen){
-			$key = \pack('H*', \md5($key));
+		if(strlen($key) > $bytelen){
+			$key = pack('H*', md5($key));
 		}
 
-		$key    = \str_pad($key, $bytelen, "\x00");
-		$ipad   = \str_pad('', $bytelen, "\x36");
-		$opad   = \str_pad('', $bytelen, "\x5c");
+		$key    = str_pad($key, $bytelen, "\x00");
+		$ipad   = str_pad('', $bytelen, "\x36");
+		$opad   = str_pad('', $bytelen, "\x5c");
 		$k_ipad = $key ^ $ipad;
 		$k_opad = $key ^ $opad;
 
-		return \md5($k_opad.\pack('H*', \md5($k_ipad.$data)));
+		return md5($k_opad.pack('H*', md5($k_ipad.$data)));
 	}
 
 	/**
@@ -403,11 +412,11 @@ class SMTP extends MailerAbstract{
 	 */
 	public function connected():bool{
 
-		if(!\is_resource($this->socket)){
+		if(!is_resource($this->socket)){
 			return false;
 		}
 
-		$sock_status = \stream_get_meta_data($this->socket);
+		$sock_status = stream_get_meta_data($this->socket);
 
 		if($sock_status['eof']){
 			// The socket is valid but we are not connected
@@ -424,17 +433,17 @@ class SMTP extends MailerAbstract{
 	 * Close the socket and clean up the state of the class.
 	 * Don't use this function without first trying to use QUIT.
 	 *
+	 * @return \PHPMailer\PHPMailer\SMTP
 	 * @see quit()
 	 *
-	 * @return \PHPMailer\PHPMailer\SMTP
 	 */
 	public function close():SMTP{
 		$this->setError('');
 		$this->server_caps = null;
 
-		if(\is_resource($this->socket)){
+		if(is_resource($this->socket)){
 			// close the connection and cleanup
-			\fclose($this->socket);
+			fclose($this->socket);
 			$this->socket = null; //Makes for cleaner serialization
 			$this->edebug('Connection: closed', $this::DEBUG_CONNECTION);
 		}
@@ -471,17 +480,17 @@ class SMTP extends MailerAbstract{
 		 */
 
 		// Normalize line breaks before exploding
-		$lines = \explode("\n", \str_replace(["\r\n", "\r"], "\n", $msg_data));
+		$lines = explode("\n", str_replace(["\r\n", "\r"], "\n", $msg_data));
 
 		/* To distinguish between a complete RFC822 message and a plain message body, we check if the first field
 		 * of the first line (':' separated) does not contain a space then it _should_ be a header and we will
 		 * process all lines before a blank line as headers.
 		 */
 
-		$field      = \substr($lines[0], 0, \strpos($lines[0], ':'));
+		$field      = substr($lines[0], 0, strpos($lines[0], ':'));
 		$in_headers = false;
 
-		if(!empty($field) && \strpos($field, ' ') === false){
+		if(!empty($field) && strpos($field, ' ') === false){
 			$in_headers = true;
 		}
 
@@ -497,19 +506,19 @@ class SMTP extends MailerAbstract{
 			while(isset($line[$this::LINE_LENGTH_MAX])){
 				//Working backwards, try to find a space within the last MAX_LINE_LENGTH chars of the line to break on
 				//so as to avoid breaking in the middle of a word
-				$pos = \strrpos(\substr($line, 0, $this::LINE_LENGTH_MAX), ' ');
+				$pos = strrpos(substr($line, 0, $this::LINE_LENGTH_MAX), ' ');
 				//Deliberately matches both false and 0
 				if(!$pos){
 					//No nice break found, add a hard break
 					$pos         = $this::LINE_LENGTH_MAX - 1;
-					$lines_out[] = \substr($line, 0, $pos);
-					$line        = \substr($line, $pos);
+					$lines_out[] = substr($line, 0, $pos);
+					$line        = substr($line, $pos);
 				}
 				else{
 					//Break at the found point
-					$lines_out[] = \substr($line, 0, $pos);
+					$lines_out[] = substr($line, 0, $pos);
 					//Move along by the amount we dealt with
-					$line = \substr($line, $pos + 1);
+					$line = substr($line, $pos + 1);
 				}
 				//If processing headers add a LWSP-char to the front of new line RFC822 section 3.1.1
 				if($in_headers){
@@ -587,17 +596,17 @@ class SMTP extends MailerAbstract{
 	 */
 	protected function parseHelloFields(string $type, string $response):array{
 		$ret   = [];
-		$lines = \explode("\n", $response);
+		$lines = explode("\n", $response);
 
 		foreach($lines as $n => $s){
 			// First 4 chars contain response code followed by - or space
-			$s = \trim(\substr($s, 4));
+			$s = trim(substr($s, 4));
 
 			if(empty($s)){
 				continue;
 			}
 
-			$fields = \explode(' ', $s);
+			$fields = explode(' ', $s);
 
 			if(!empty($fields)){
 
@@ -606,14 +615,14 @@ class SMTP extends MailerAbstract{
 					$fields = $fields[0];
 				}
 				else{
-					$name = \array_shift($fields);
+					$name = array_shift($fields);
 
 					switch($name){
 						case 'SIZE':
 							$fields = $fields ? $fields[0] : 0;
 							break;
 						case 'AUTH':
-							if(!\is_array($fields)){
+							if(!is_array($fields)){
 								$fields = [];
 							}
 							break;
@@ -686,21 +695,21 @@ class SMTP extends MailerAbstract{
 			$rcpt = 'RCPT TO:<'.$address.'>';
 		}
 		else{
-			$dsn    = \strtoupper($dsn);
+			$dsn    = strtoupper($dsn);
 			$notify = [];
 
-			if(\strpos($dsn, 'NEVER') !== false){
+			if(strpos($dsn, 'NEVER') !== false){
 				$notify[] = 'NEVER';
 			}
 			else{
 				foreach(['SUCCESS', 'FAILURE', 'DELAY'] as $value){
-					if(\strpos($dsn, $value) !== false){
+					if(strpos($dsn, $value) !== false){
 						$notify[] = $value;
 					}
 				}
 			}
 
-			$rcpt = 'RCPT TO:<'.$address.'> NOTIFY='.\implode(',', $notify);
+			$rcpt = 'RCPT TO:<'.$address.'> NOTIFY='.implode(',', $notify);
 		}
 
 		return $this->sendCommand('RCPT TO', $rcpt, [250, 251]);
@@ -735,7 +744,7 @@ class SMTP extends MailerAbstract{
 		}
 
 		//Reject line breaks in all commands
-		if(\strpos($commandstring, "\n") !== false || \strpos($commandstring, "\r") !== false){
+		if(strpos($commandstring, "\n") !== false || strpos($commandstring, "\r") !== false){
 			$this->setError('Command '.$command.' contained line breaks');
 
 			return false;
@@ -745,29 +754,29 @@ class SMTP extends MailerAbstract{
 
 		$this->last_reply = $this->getLines();
 		// Fetch SMTP code and possible error code explanation
-		if(\preg_match('/^([0-9]{3})[ -](?:([0-9]\\.[0-9]\\.[0-9]{1,2}) )?/', $this->last_reply, $matches)){
+		if(preg_match('/^([0-9]{3})[ -](?:([0-9]\\.[0-9]\\.[0-9]{1,2}) )?/', $this->last_reply, $matches)){
 			$code    = $matches[1];
-			$code_ex = \count($matches) > 2 ? $matches[2] : null;
+			$code_ex = count($matches) > 2 ? $matches[2] : null;
 			// Cut off error code from each response line
-			$detail = \preg_replace(
-				'/'.$code.'[ -]'.($code_ex ? \str_replace('.', '\\.', $code_ex).' ' : '').'/m',
+			$detail = preg_replace(
+				'/'.$code.'[ -]'.($code_ex ? str_replace('.', '\\.', $code_ex).' ' : '').'/m',
 				'',
 				$this->last_reply
 			);
 		}
 		else{
 			// Fall back to simple parsing if regex fails
-			$code    = \substr($this->last_reply, 0, 3);
+			$code    = substr($this->last_reply, 0, 3);
 			$code_ex = null;
-			$detail  = \substr($this->last_reply, 4);
+			$detail  = substr($this->last_reply, 4);
 		}
 
 		$this->edebug('[SRV > CLI] '.$this->last_reply, $this::DEBUG_SERVER);
 
-		if(!\in_array($code, $expect)){
+		if(!in_array($code, $expect)){
 			$this->setError($command.' command failed', $detail, $code, $code_ex);
 			$this->edebug(
-				\sprintf('SMTP ERROR: %s: %s', $this->error['error'], $this->last_reply),
+				sprintf('SMTP ERROR: %s: %s', $this->error['error'], $this->last_reply),
 				$this::DEBUG_CLIENT
 			);
 
@@ -845,13 +854,13 @@ class SMTP extends MailerAbstract{
 	public function client_send(string $data, string $command = null):int{
 		//If SMTP transcripts are left enabled, or debug output is posted online
 		//it can leak credentials, so hide credentials in all but lowest level
-		$this->loglevel <= $this::DEBUG_LOWLEVEL && \in_array($command, ['User & Password', 'Username', 'Password'], true)
+		$this->loglevel <= $this::DEBUG_LOWLEVEL && in_array($command, ['User & Password', 'Username', 'Password'], true)
 			? $this->edebug('[CLI > SRV] <credentials hidden>', $this::DEBUG_CLIENT)
 			: $this->edebug('[CLI > SRV] '.$data, $this::DEBUG_CLIENT);
 
-		\set_error_handler([$this, 'errorHandler']);
-		$result = \fwrite($this->socket, $data);
-		\restore_error_handler();
+		set_error_handler([$this, 'errorHandler']);
+		$result = fwrite($this->socket, $data);
+		restore_error_handler();
 
 		return (int)$result;
 	}
@@ -899,13 +908,13 @@ class SMTP extends MailerAbstract{
 			return null;
 		}
 
-		if(!\array_key_exists($name, $this->server_caps)){
+		if(!array_key_exists($name, $this->server_caps)){
 
 			if('HELO' == $name){
 				return $this->server_caps['EHLO'];
 			}
 
-			if('EHLO' == $name || \array_key_exists('EHLO', $this->server_caps)){
+			if('EHLO' == $name || array_key_exists('EHLO', $this->server_caps)){
 				return null;
 			}
 
@@ -937,32 +946,32 @@ class SMTP extends MailerAbstract{
 	 */
 	protected function getLines():string{
 		// If the connection is bad, give up straight away
-		if(!\is_resource($this->socket)){
+		if(!is_resource($this->socket)){
 			return '';
 		}
 
 		$data    = '';
 		$endtime = 0;
 
-		\stream_set_timeout($this->socket, $this->timeout);
+		stream_set_timeout($this->socket, $this->timeout);
 
 		if($this->Timelimit > 0){
-			$endtime = \time() + $this->Timelimit;
+			$endtime = time() + $this->Timelimit;
 		}
 
 		$selR = [$this->socket];
 		$selW = null;
 
-		while(\is_resource($this->socket) && !\feof($this->socket)){
+		while(is_resource($this->socket) && !feof($this->socket)){
 			// Must pass vars in here as params are by reference
-			if(!\stream_select($selR, $selW, $selW, $this->Timelimit)){
+			if(!stream_select($selR, $selW, $selW, $this->Timelimit)){
 				$this->edebug('SMTP -> getLines(): timed-out ('.$this->timeout.' sec)', $this::DEBUG_LOWLEVEL);
 				break;
 			}
 
 			// Deliberate noise suppression - errors are handled afterwards
-			$str = @\fgets($this->socket, 515);
-			$this->edebug('SMTP INBOUND: "'.\trim($str).'"', $this::DEBUG_LOWLEVEL);
+			$str = @fgets($this->socket, 515);
+			$this->edebug('SMTP INBOUND: "'.trim($str).'"', $this::DEBUG_LOWLEVEL);
 			$data .= $str;
 
 			// If response is only 3 chars (not valid, but RFC5321 S4.2 says it must be handled),
@@ -973,14 +982,14 @@ class SMTP extends MailerAbstract{
 			}
 
 			// Timed-out? Log and break
-			$info = \stream_get_meta_data($this->socket);
+			$info = stream_get_meta_data($this->socket);
 			if($info['timed_out']){
 				$this->edebug('SMTP -> getLines(): timed-out ('.$this->timeout.' sec)', $this::DEBUG_LOWLEVEL);
 				break;
 			}
 
 			// Now check if reads took too long
-			if($endtime && \time() > $endtime){
+			if($endtime && time() > $endtime){
 				$this->edebug('SMTP -> getLines(): timelimit reached ('.$this->Timelimit.' sec)', $this::DEBUG_LOWLEVEL);
 				break;
 			}
@@ -1023,7 +1032,7 @@ class SMTP extends MailerAbstract{
 		$notice = 'Connection failed.';
 		$this->setError($notice, $errmsg, $errno);
 		$this->edebug(
-			\sprintf('%s Error #%s: %s [%s line %s]', $notice, $errno, $errmsg, $errfile, $errline),
+			sprintf('%s Error #%s: %s [%s line %s]', $notice, $errno, $errmsg, $errfile, $errline),
 			$this::DEBUG_CONNECTION
 		);
 	}
@@ -1046,8 +1055,8 @@ class SMTP extends MailerAbstract{
 		else{
 			$this->last_smtp_transaction_id = false;
 			foreach($this::smtp_transaction_id_patterns as $smtp_transaction_id_pattern){
-				if(\preg_match($smtp_transaction_id_pattern, $reply, $matches)){
-					$this->last_smtp_transaction_id = \trim($matches[1]);
+				if(preg_match($smtp_transaction_id_pattern, $reply, $matches)){
+					$this->last_smtp_transaction_id = trim($matches[1]);
 					break;
 				}
 			}

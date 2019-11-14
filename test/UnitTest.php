@@ -12,7 +12,13 @@
 
 namespace PHPMailer\Test;
 
-use PHPMailer\PHPMailer\PHPMailerException;
+use PHPMailer\PHPMailer\{PHPMailer, PHPMailerException};
+
+use function PHPMailer\PHPMailer\{generateId, punyencodeAddress, validateAddress};
+use function base64_encode, file_get_contents, hash, mb_convert_encoding, openssl_pkey_export_to_file,
+	openssl_pkey_new, quoted_printable_decode, realpath, str_repeat, str_replace, strlen, strpos, unlink;
+
+use const OPENSSL_KEYTYPE_RSA;
 
 class UnitTest extends TestAbstract{
 
@@ -27,12 +33,12 @@ class UnitTest extends TestAbstract{
 		};
 
 		$this->assertTrue(
-			\PHPMailer\PHPMailer\validateAddress('user@example.com', $validator),
+			validateAddress('user@example.com', $validator),
 			'Custom validator false negative'
 		);
 
 		$this->assertFalse(
-			\PHPMailer\PHPMailer\validateAddress('userexample.com', $validator),
+			validateAddress('userexample.com', $validator),
 			'Custom validator false positive'
 		);
 
@@ -157,7 +163,7 @@ class UnitTest extends TestAbstract{
 	public function testCreateBody(string $messageType){
 		$this->setProperty($this->mailer, 'message_type', $messageType);
 
-		$uid  = \PHPMailer\PHPMailer\generateId();
+		$uid  = generateId();
 		$body = $this->mailer->createBody($uid);
 
 		$this->assertIsString($body);
@@ -493,6 +499,10 @@ class UnitTest extends TestAbstract{
 		$this->assertSame([['yux'], ['Content-Type', ' application/json']], $this->mailer->getCustomHeaders());
 	}
 
+	/**
+	 * @noinspection HtmlUnknownTarget
+	 * @noinspection HtmlRequiredAltAttribute
+	 */
 	public function testMessageFromHTMLIgnorePaths(){
 		// Test that local paths without a basedir are ignored
 		$this->mailer->messageFromHTML('<img src="/etc/hostname">test');
@@ -651,7 +661,7 @@ class UnitTest extends TestAbstract{
 		$this->mailer->preSend();
 
 		// Addresses with IDN are returned by get*Addresses() after send() call.
-		$domain = \PHPMailer\PHPMailer\punyencodeAddress($domain);
+		$domain = punyencodeAddress($domain);
 
 		$this->assertSame([['test'.$domain, '']], $this->mailer->getTOs(), 'Bad "to" recipients');
 		$this->assertSame([['test+cc'.$domain, '']], $this->mailer->getCCs(), 'Bad "cc" recipients');

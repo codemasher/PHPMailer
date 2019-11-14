@@ -12,13 +12,15 @@
 
 namespace PHPMailer\Test;
 
-use Closure;
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\AbstractLogger;
-use Psr\Log\LoggerInterface;
-use Psr\Log\NullLogger;
-use ReflectionClass, ReflectionMethod, ReflectionProperty;
+use Psr\Log\{AbstractLogger, LoggerInterface, NullLogger};
+use Closure, DirectoryIterator, ReflectionClass, ReflectionMethod, ReflectionProperty;
+
+use function count, date, defined, dirname, file_get_contents, mb_strlen, sprintf, str_repeat,
+	str_replace, strlen, strpos, substr, trim, unlink;
+
+use const PHP_VERSION;
 
 abstract class TestAbstract extends TestCase{
 
@@ -148,6 +150,7 @@ abstract class TestAbstract extends TestCase{
 	 */
 	protected function getDebugLogger():LoggerInterface{
 		return new class () extends AbstractLogger{
+
 			public function log($level, $message, array $context = []){
 				echo sprintf(
 					'[%s][%s] %s',
@@ -217,7 +220,7 @@ abstract class TestAbstract extends TestCase{
 
 		$this->logger->info($id);
 
-		foreach(new \DirectoryIterator($this->INCLUDE_DIR.'/logs') as $fileinfo){
+		foreach(new DirectoryIterator($this->INCLUDE_DIR.'/logs') as $fileinfo){
 			if(!$fileinfo->isDot()){
 				$content = file_get_contents($fileinfo->getPathname());
 
