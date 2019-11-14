@@ -85,6 +85,12 @@ class UnitTest extends TestAbstract{
 		$this->mailer->addAttachment($path);
 	}
 
+	public function testAddAttachmentInvalidEncoding(){
+		$this->expectException(PHPMailerException::class);
+		$this->expectExceptionMessage('Unknown encoding: whatever');
+
+		$this->mailer->addAttachment(realpath($this->INCLUDE_DIR.'/examples/images/phpmailer.png'), 'foo', 'whatever');
+	}
 
 	/**
 	 * Test header encoding & folding.
@@ -538,6 +544,27 @@ class UnitTest extends TestAbstract{
 		$this->expectExceptionMessage('Could not access file: thisfiledoesntexist');
 
 		$this->mailer->addEmbeddedImage('thisfiledoesntexist', 'xyz'); //Non-existent file
+	}
+
+	public function testAddEmbeddedImageInvalidEncoding(){
+		$this->expectException(PHPMailerException::class);
+		$this->expectExceptionMessage('Unknown encoding: whatever');
+
+		$this->mailer->addEmbeddedImage(realpath($this->INCLUDE_DIR.'/examples/images/phpmailer.png'), 'foo', 'bar', 'whatever');
+	}
+
+	public function testAddStringAttachmentInvalidEncoding(){
+		$this->expectException(PHPMailerException::class);
+		$this->expectExceptionMessage('Unknown encoding: whatever');
+
+		$this->mailer->addStringAttachment('foo', 'string_attach.txt', 'whatever');
+	}
+
+	public function testAddStringEmbeddedImageInvalidEncoding(){
+		$this->expectException(PHPMailerException::class);
+		$this->expectExceptionMessage('Unknown encoding: whatever');
+
+		$this->mailer->addStringEmbeddedImage(realpath($this->INCLUDE_DIR.'/examples/images/phpmailer.png'), 'foo', 'bar', 'whatever');
 	}
 
 	public function testLinebreakNormalization(){

@@ -982,6 +982,10 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 		string $disposition = 'attachment'
 	):PHPMailer{
 
+		if(!\in_array($encoding, $this::ENCODINGS, true)){
+			throw new PHPMailerException($this->lang('encoding') . $encoding);
+		}
+
 		if(!isPermittedPath($path) || !@\is_file($path)){
 			$msg = $this->lang('file_access').$path;
 
@@ -1029,6 +1033,7 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 	 * @param string $disposition Disposition to use
 	 *
 	 * @return \PHPMailer\PHPMailer\PHPMailer
+	 * @throws \PHPMailer\PHPMailer\PHPMailerException
 	 */
 	public function addStringAttachment(
 		string $string,
@@ -1037,6 +1042,11 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 		string $type = '',
 		string $disposition = 'attachment'
 	):PHPMailer{
+
+		if(!\in_array($encoding, $this::ENCODINGS, true)){
+			throw new PHPMailerException($this->lang('encoding') . $encoding);
+		}
+
 		// If a MIME type is not specified, try to work it out from the file name
 		if(empty($type)){
 			$type = filenameToType($filename);
@@ -1086,6 +1096,10 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 		string $type = '',
 		string $disposition = 'inline'
 	):PHPMailer{
+
+		if(!\in_array($encoding, $this::ENCODINGS, true)){
+			throw new PHPMailerException($this->lang('encoding') . $encoding);
+		}
 
 		if(!isPermittedPath($path) || !@\is_file($path)){
 			$msg = $this->lang('file_access').$path;
@@ -1137,6 +1151,7 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 	 * @param string $disposition Disposition to use
 	 *
 	 * @return \PHPMailer\PHPMailer\PHPMailer
+	 * @throws \PHPMailer\PHPMailer\PHPMailerException
 	 */
 	public function addStringEmbeddedImage(
 		string $string,
@@ -1146,6 +1161,11 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 		string $type = '',
 		string $disposition = 'inline'
 	):PHPMailer{
+
+		if(!\in_array($encoding, $this::ENCODINGS, true)){
+			throw new PHPMailerException($this->lang('encoding') . $encoding);
+		}
+
 		// If a MIME type is not specified, try to work it out from the name
 		if(empty($type) && !empty($name)){
 			$type = filenameToType($name);
