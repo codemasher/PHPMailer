@@ -45,6 +45,7 @@ abstract class MailerAbstract implements LoggerAwareInterface{
 	 */
 	public const LINE_LENGTH_STD = 76;
 
+	public const CHARSET_ASCII    = 'us-ascii';
 	public const CHARSET_ISO88591 = 'iso-8859-1';
 	public const CHARSET_UTF8     = 'utf-8';
 
@@ -153,6 +154,16 @@ abstract class MailerAbstract implements LoggerAwareInterface{
 	 * @var int
 	 */
 	protected const STOP_CRITICAL = 2;
+
+	/**
+	 * The maximum line length supported by mail().
+	 *
+	 * Background: mail() will sometimes corrupt messages
+	 * with headers headers longer than 65 chars, see #818.
+	 *
+	 * @var int
+	 */
+	protected const MAIL_MAX_LINE_LENGTH = 63;
 
 	/**
 	 * SMTP/POP3 host(s).

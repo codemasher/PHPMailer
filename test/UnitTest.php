@@ -101,7 +101,16 @@ class UnitTest extends TestAbstract{
 	/**
 	 * Test header encoding & folding.
 	 */
-	public function testHeaderEncoding(){
+	public function testHeaderEncodingB(){
+		$this->mailer->CharSet = 'UTF-8';
+
+		// This should select B-encoding automatically and should not fold
+		$exp = '=?UTF-8?B?w6nDqcOpw6nDqcOpw6nDqcOpw6k=?=';
+		$act = str_repeat('é', 10);
+		$this->assertSame($exp, $this->mailer->encodeHeader($act), 'B-encoded header value incorrect');
+	}
+
+	public function testHeaderEncodingFoldedB(){
 		$this->mailer->CharSet = 'UTF-8';
 
 		// This should select B-encoding automatically and should fold
@@ -114,6 +123,19 @@ class UnitTest extends TestAbstract{
 		       ' =?UTF-8?B?w6nDqcOpw6nDqcOpw6nDqcOpw6nDqQ==?=';
 		$act = str_repeat('é', $this->mailer::LINE_LENGTH_STD + 1);
 		$this->assertSame($exp, $this->mailer->encodeHeader($act), 'Folded B-encoded header value incorrect');
+	}
+
+	public function testHeaderEncodingQ(){
+		$this->mailer->CharSet = 'UTF-8';
+
+		// This should select Q-encoding automatically and should not fold
+		$exp = '=?UTF-8?Q?eeeeeeeee=C3=A9?=';
+		$act = str_repeat('e', 9).'é';
+		$this->assertSame($exp, $this->mailer->encodeHeader($act), 'Q-encoded header value incorrect');
+	}
+
+	public function testHeaderEncodingFoldedQ(){
+		$this->mailer->CharSet = 'UTF-8';
 
 		// This should select Q-encoding automatically and should fold
 		$exp = '=?UTF-8?Q?eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee?='.
@@ -121,26 +143,42 @@ class UnitTest extends TestAbstract{
 		       ' =?UTF-8?Q?eeeeeeeeeeeeeeeeeeeeeeeeee=C3=A9?=';
 		$act = str_repeat('e', $this->mailer::LINE_LENGTH_STD).'é';
 		$this->assertSame($exp, $this->mailer->encodeHeader($act), 'Folded Q-encoded header value incorrect');
+	}
 
-		// This should select B-encoding automatically and should not fold
-		$exp = '=?UTF-8?B?w6nDqcOpw6nDqcOpw6nDqcOpw6k=?=';
-		$act = str_repeat('é', 10);
-		$this->assertSame($exp, $this->mailer->encodeHeader($act), 'B-encoded header value incorrect');
-
-		// This should select Q-encoding automatically and should not fold
-		$exp = '=?UTF-8?Q?eeeeeeeee=C3=A9?=';
-		$act = str_repeat('e', 9).'é';
-		$this->assertSame($exp, $this->mailer->encodeHeader($act), 'Q-encoded header value incorrect');
-
-		// This should not encode, but just fold automatically
-		$exp = str_repeat('e', 76).$this->mailer->getLE().' eeeeeeeeee';
-		$act = str_repeat('e', $this->mailer::LINE_LENGTH_STD + 10);
-		$this->assertSame($exp, $this->mailer->encodeHeader($act), 'Folded header value incorrect');
+	public function testHeaderEncodingUnencoded(){
+		$this->mailer->CharSet = 'UTF-8';
 
 		// This should not change
 		$exp = 'eeeeeeeeee';
 		$act = 'eeeeeeeeee';
 		$this->assertSame($exp, $this->mailer->encodeHeader($act), 'Unencoded header value incorrect');
+	}
+
+	public function testHeaderEncodingFoldedQASCII(){
+		$this->mailer->CharSet = 'UTF-8';
+		//This should Q-encode as ASCII and fold (previously, this did not encode)
+		$act = str_repeat('e', $this->mailer::LINE_LENGTH_STD + 10);
+		$exp = '=?us-ascii?Q?eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee?='.
+		       $this->mailer->getLE().
+		       ' =?us-ascii?Q?eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee?=';
+
+		$this->assertSame($exp, $this->mailer->encodeHeader($act), 'Long header value incorrect');
+	}
+
+	public function testHeaderEncodingFoldedQUtf8(){
+		$this->mailer->CharSet = 'UTF-8';
+
+		//This should Q-encode as UTF-8 and fold
+		$act = str_repeat('é', $this->mailer::LINE_LENGTH_STD + 10);
+		$exp = '=?UTF-8?B?w6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6k=?='.
+		       $this->mailer->getLE().
+		       ' =?UTF-8?B?w6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6k=?='.
+		       $this->mailer->getLE().
+		       ' =?UTF-8?B?w6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6k=?='.
+		       $this->mailer->getLE().
+		       ' =?UTF-8?B?w6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6nDqQ==?=';
+
+		$this->assertEquals($exp, $this->mailer->encodeHeader($act), 'Long UTF-8 header value incorrect');
 	}
 
 	public function messageTypeDataprovider():array{
