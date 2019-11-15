@@ -2675,7 +2675,7 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 						$directory = '';
 					}
 
-					$cid = hash('sha256', $url).'@phpmailer.0'; // RFC2392 S 2
+					$cid = substr(hash('sha256', $url), 0, 32).'@phpmailer.0'; // RFC2392 S 2
 
 					if(strlen($basedir) > 1 && substr($basedir, -1) !== '/'){
 						$basedir .= '/';
