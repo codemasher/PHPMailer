@@ -454,7 +454,7 @@ class UnitTest extends TestAbstract{
 		$subject = 'example';
 
 		$headerLines      = "From:$from\r\nTo:$to\r\nDate:$date\r\n";
-		$copyHeaderFields = " z=From:$from\r\n |To:$to\r\n |Date:$date\r\n |Subject:=20$subject;\r\n";
+		$copyHeaderFields = " z=From:$from\r\n |To:$to\r\n |Date:$date\r\n |Subject:$subject;\r\n";
 
 		$this->mailer->setDKIMCredentials('example.com', 'phpmailer', 'dkim_private.pem', null, null, null, true);
 
@@ -508,7 +508,7 @@ class UnitTest extends TestAbstract{
 		$headerLines .= "X-AnyHeader:$anyHeader\r\nBaz:bar\r\n";
 		$headerLines .= 'List-Unsubscribe:'.$this->mailer->encodeHeader($unsubscribeUrl)."\r\n";
 
-		$headerFields = 'h=From:To:Date:Subject:Baz:List-Unsubscribe';
+		$headerFields = 'h=From:To:Date:Baz:List-Unsubscribe:Subject';
 
 		$result = $this->mailer->DKIM_Add($headerLines, $subject, '');
 

@@ -691,7 +691,7 @@ function DKIM_HeaderC(string $signHeader):string{
 	// @see https://tools.ietf.org/html/rfc5322#section-2.2
 	// That means this may break if you do something daft like put vertical tabs in your headers.
 	//Unfold header lines
-	$signHeader = preg_replace('/\r\n[ \t]+/m', '', $signHeader);
+	$signHeader = preg_replace('/\r\n[ \t]+/', ' ', $signHeader);
 	//Collapse internal whitespace to a single space
 #	$signHeader = preg_replace('/[ \t]+/', ' ', $signHeader);
 	//Break headers out into an array
