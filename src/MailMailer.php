@@ -47,7 +47,8 @@ class MailMailer extends PHPMailer{
 	 * @return bool
 	 */
 	protected function mailSend(string $header, string $body):bool{
-		$toArr = [];
+		$header = rtrim($header, "\r\n ").$this->LE.$this->LE;
+		$toArr  = [];
 
 		foreach($this->to as $toaddr){
 			$toArr[] = $this->addrFormat($toaddr);

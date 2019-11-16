@@ -102,6 +102,7 @@ class SMTPMailer extends PHPMailer{
 	 *
 	 */
 	protected function smtpSend(string $header, string $body):bool{
+		$header   = rtrim($header, "\r\n ").$this->LE.$this->LE;
 		$bad_rcpt = [];
 
 		if(!$this->smtpConnect($this->SMTPOptions)){

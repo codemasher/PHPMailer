@@ -67,6 +67,7 @@ class SendmailMailer extends PHPMailer{
 	 *
 	 */
 	protected function sendmailSend(string $header, string $body):bool{
+		$header = rtrim($header, "\r\n ").$this->LE.$this->LE;
 		// CVE-2016-10033, CVE-2016-10045: Don't pass -f if characters will be escaped.
 		if(!empty($this->Sender) && isShellSafe($this->Sender)){
 			$sendmailFmt = $this->Mailer === 'qmail' ? '%s -f%s' : '%s -oi -f%s -t';
