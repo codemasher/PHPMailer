@@ -2276,8 +2276,9 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 					$mime[] = sprintf('Content-Transfer-Encoding: %s%s', $attachment->encoding, $this->LE);
 				}
 
-				if(!empty($attachment->cid)){
-					$mime[] = sprintf('Content-ID: <%s>%s', $attachment->cid, $this->LE);
+				//Only set Content-IDs on inline attachments
+				if((string)$attachment->cid !== '' && $attachment->disposition === 'inline'){
+					$mime[] = 'Content-ID: <'.$this->encodeHeader(secureHeader($attachment->cid)).'>' . $this->LE;
 				}
 
 				// If a filename contains any of these chars, it should be quoted,
