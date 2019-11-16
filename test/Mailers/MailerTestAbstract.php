@@ -392,13 +392,13 @@ EOT;
         <p>Russian text: Пустое тело сообщения</p>
         <p>Armenian text: Հաղորդագրությունը դատարկ է</p>
         <p>Czech text: Prázdné tělo zprávy</p>
-        Embedded Image: <img alt="phpmailer" src="cid:my-attach">
+        Embedded Image: <img alt="phpmailer" src="cid:bäck">
     </body>
 </html>
 EOT;
 		$this->mailer->addEmbeddedImage(
 			realpath($this->INCLUDE_DIR.'/examples/images/phpmailer.png'),
-			'my-attach',
+			'bäck',
 			'phpmailer.png',
 			$this->mailer::ENCODING_BASE64,
 			'image/png'
