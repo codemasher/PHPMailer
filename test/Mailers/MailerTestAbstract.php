@@ -158,12 +158,12 @@ abstract class MailerTestAbstract extends TestAbstract{
 	public function testPlainUtf8(){
 		$this->mailer->CharSet = $this->mailer::CHARSET_UTF8;
 
-		$body = <<<'EOT'
+		$body = '
 Chinese text: 郵件內容為空
 Russian text: Пустое тело сообщения
 Armenian text: Հաղորդագրությունը դատարկ է
-Czech text: Prázdné tělo zprávy
-EOT;
+Czech text: Prázdné tělo zprávy';
+
 		$this->setMessage($body, __FUNCTION__)->assertSentMail();
 		$msg = $this->mailer->getSentMIMEMessage();
 		$this->assertStringNotContainsString("\r\n\r\nMIME-Version:", $msg, 'Incorrect MIME headers');
@@ -254,8 +254,8 @@ EOT;
 	}
 
 	public function testHTMLCidHeaderFormatting(){
-		$this->mailer->messageFromHTML('<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+		$this->mailer->messageFromHTML('<!DOCTYPE html>
+<html lang="en">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>E-Mail Inline Image Test</title>
@@ -301,8 +301,8 @@ EOT;
 	public function testHtml(){
 		$this->mailer->ContentType = $this->mailer::CONTENT_TYPE_TEXT_HTML;
 
-		$body = <<<'EOT'
-<html>
+		$body = '<!DOCTYPE html>
+<html lang="en">
     <head>
         <title>HTML email test</title>
     </head>
@@ -313,8 +313,8 @@ EOT;
         for new versions of PHPMailer.</p>
         <p>Thank you!</p>
     </body>
-</html>
-EOT;
+</html>';
+
 		$this->setMessage($body, __FUNCTION__)->assertSentMail();
 
 		$msg = $this->mailer->getSentMIMEMessage();
@@ -355,8 +355,8 @@ EOT;
 		$this->mailer->ContentType = $this->mailer::CONTENT_TYPE_TEXT_HTML;
 		$this->mailer->CharSet     = $this->mailer::CHARSET_UTF8;
 
-		$body = <<<'EOT'
-<html>
+		$body = '<!DOCTYPE html>
+<html lang="en">
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
         <title>HTML email test</title>
@@ -367,8 +367,8 @@ EOT;
         <p>Armenian text: Հաղորդագրությունը դատարկ է</p>
         <p>Czech text: Prázdné tělo zprávy</p>
     </body>
-</html>
-EOT;
+</html>';
+
 		$this->setMessage($body, __FUNCTION__)->assertSentMail();
 		$msg = $this->mailer->getSentMIMEMessage();
 		$this->assertStringNotContainsString("\r\n\r\nMIME-Version:", $msg, 'Incorrect MIME headers');
@@ -381,8 +381,8 @@ EOT;
 		$this->mailer->ContentType = $this->mailer::CONTENT_TYPE_TEXT_HTML;
 		$this->mailer->CharSet     = $this->mailer::CHARSET_UTF8;
 
-		$body = <<<'EOT'
-<html>
+		$body = '<!DOCTYPE html>
+<html lang="en">
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
         <title>HTML email test</title>
@@ -394,8 +394,7 @@ EOT;
         <p>Czech text: Prázdné tělo zprávy</p>
         Embedded Image: <img alt="phpmailer" src="cid:bäck">
     </body>
-</html>
-EOT;
+</html>';
 		$this->mailer->addEmbeddedImage(
 			realpath($this->INCLUDE_DIR.'/examples/images/phpmailer.png'),
 			'bäck',
@@ -481,16 +480,16 @@ EOT;
 	public function testDsn(){
 		$this->mailer->ContentType = $this->mailer::CONTENT_TYPE_TEXT_HTML;
 
-		$body = <<<'EOT'
-<html>
+		$body = '
+<!DOCTYPE html>
+<html lang="en">
     <head>
         <title>HTML email test</title>
     </head>
     <body>
         <p>PHPMailer</p>
     </body>
-</html>
-EOT;
+</html>';
 
 		$this->setMessage($body, __FUNCTION__.' DSN: SUCCESS,FAILURE');
 
