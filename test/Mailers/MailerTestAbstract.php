@@ -253,6 +253,27 @@ EOT;
 		$this->setMessage($body, __FUNCTION__)->assertSentMail();
 	}
 
+	public function testHTMLCidHeaderFormatting(){
+		$this->mailer->messageFromHTML('<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>E-Mail Inline Image Test</title>
+  </head>
+  <body>
+    <p><img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="></p>
+  </body>
+</html>');
+
+		$this->setMessage($this->mailer->Body, __FUNCTION__)->assertSentMail(
+			function(string $sent, array $received){
+				$cid = 'Content-ID: <bb229a48bee31f5d54ca12dc9bd960c6@phpmailer.0>';
+				$this->assertStringContainsString($cid, $sent);
+				$this->assertStringContainsString($cid, $received[0]);
+			}
+		);
+	}
+
 	/**
 	 * An embedded attachment test.
 	 */
