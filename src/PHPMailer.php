@@ -2649,7 +2649,7 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 
 					//Hash the decoded data, not the URL so that the same data-URI image used in multiple places
 					//will only be embedded once, even if it used a different encoding
-					$cid = hash('sha256', $data).'@phpmailer.0'; // RFC2392 S 2
+					$cid = substr(hash('sha256', $data), 0, 32).'@phpmailer.0'; // RFC2392 S 2
 
 					if(!$this->cidExists($cid)){
 						$this->addStringEmbeddedImage($data, $cid, 'embed'.$imgindex, $this::ENCODING_BASE64, $match[1]);
