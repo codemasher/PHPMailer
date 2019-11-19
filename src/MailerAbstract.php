@@ -37,6 +37,15 @@ abstract class MailerAbstract implements LoggerAwareInterface{
 	public const LINE_LENGTH_MAX = 998;
 
 	/**
+	 * The maximum line length allowed for replies in RFC 5321 section 4.5.3.1.5,
+	 * *including* a trailing CRLF line break.
+	 * @see https://tools.ietf.org/html/rfc5321#section-4.5.3.1.5
+	 *
+	 * @var int
+	 */
+	public const MAX_REPLY_LENGTH = 512;
+
+	/**
 	 * The lower maximum line length allowed by RFC 2822 section 2.1.1.
 	 * This length does NOT include the line break
 	 * 76 means that lines will be 77 or 78 chars depending on whether

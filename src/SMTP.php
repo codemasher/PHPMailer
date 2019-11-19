@@ -969,7 +969,7 @@ class SMTP extends MailerAbstract{
 			}
 
 			// Deliberate noise suppression - errors are handled afterwards
-			$str = @fgets($this->socket, 515);
+			$str = @fgets($this->socket, $this::MAX_REPLY_LENGTH);
 			$this->logger->debug('SMTP INBOUND: "'.trim($str).'"');
 			$data .= $str;
 
