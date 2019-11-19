@@ -61,7 +61,7 @@ class SMTP extends MailerAbstract{
 	 *
 	 * @var int
 	 */
-	public $Timelimit = 300; // @todo: $timeout???
+	public $Timelimit = 5; // @todo: $timeout???
 
 	/**
 	 * The last transaction ID issued in response to a DATA command,
@@ -101,6 +101,13 @@ class SMTP extends MailerAbstract{
 	 * @var string
 	 */
 	protected $last_reply = '';
+
+	/**
+	 * SMTP mandates RFC-compliant line endings
+	 *
+	 * @var string
+	 */
+	protected $LE = "\r\n";
 
 	/**
 	 * Connect to an SMTP server.

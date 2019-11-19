@@ -220,7 +220,7 @@ abstract class MailerAbstract implements LoggerAwareInterface{
 	 *
 	 * @var int
 	 */
-	public $timeout = 300;
+	public $timeout = 5;
 
 	/**
 	 * Debug output level.

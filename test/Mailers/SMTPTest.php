@@ -33,12 +33,6 @@ class SMTPTest extends MailerTestAbstract{
 	protected $pids = [];
 
 	protected function setUp():void{
-
-		if(PHP_OS_FAMILY !== 'Windows'){
-			$this->markTestSkipped('Linux skipped for now until timeout is fixed');
-			return;
-		}
-
 		parent::setUp();
 
 		$this->pids = [];

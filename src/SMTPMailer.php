@@ -19,7 +19,12 @@ use function count, defined, explode, implode, preg_match, trim;
 class SMTPMailer extends PHPMailer{
 
 	protected $Mailer = self::MAILER_SMTP;
-	// SMTP mandates RFC-compliant line endings
+
+	/**
+	 * SMTP mandates RFC-compliant line endings
+	 *
+	 * @var string
+	 */
 	protected $LE = "\r\n";
 
 	/**
