@@ -1,5 +1,6 @@
 <?php
 /**
+ * Class SendmailTest
  *
  * @filesource   SendmailTest.php
  * @created      19.11.19
@@ -16,7 +17,7 @@ use PHPMailer\PHPMailer\SendmailMailer;
 use const PHP_OS_FAMILY;
 
 /**
- * Class SendmailTest
+ * @property \PHPMailer\PHPMailer\MailMailer $mailer
  */
 class SendmailTest extends MailerTestAbstract{
 

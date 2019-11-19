@@ -16,8 +16,6 @@ use PHPMailer\PHPMailer\{POP3, SMTPMailer};
 
 use function escapeshellarg, shell_exec, sleep;
 
-use const PHP_OS_FAMILY;
-
 /**
  * @property \PHPMailer\PHPMailer\SMTPMailer $mailer
  */
