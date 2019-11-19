@@ -841,3 +841,41 @@ function normalizeBreaks(string $text, string $breaktype):string{
 
 	return $text;
 }
+
+/**
+ * Convert an HTML string into plain text.
+ * This is used by messageFromHTML().
+ * Note - older versions of this function used a bundled advanced converter
+ * which was removed for license reasons in #232.
+ * Example usage:
+ *
+ * ```php
+ * // Use default conversion
+ * $plain = $mail->html2text($html);
+ * // Use your own custom converter
+ * $plain = $mail->html2text($html, function($html) {
+ *     $converter = new MyHtml2text($html);
+ *     return $converter->get_text();
+ * });
+ * ```
+ *
+ * @param string        $html     The HTML text to convert
+ * @param string        $charset
+ * @param null|callable $advanced Any boolean value to use the internal converter,
+ *                                or provide your own callable for custom conversion
+ *
+ * @return string
+ */
+function html2text(string $html, string $charset, $advanced = null):string{
+
+	if(is_callable($advanced)){
+		return call_user_func($advanced, $html);
+	}
+
+	return html_entity_decode(
+		trim(strip_tags(preg_replace('/<(head|title|style|script)[^>]*>.*?<\/\\1>/si', '', $html))),
+		ENT_QUOTES,
+		$charset
+	);
+}
+

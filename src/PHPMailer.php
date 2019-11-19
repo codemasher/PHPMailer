@@ -2707,49 +2707,13 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 		$this->ContentType = $this::CONTENT_TYPE_TEXT_HTML;
 		// Convert all message body line breaks to LE, makes quoted-printable encoding work much better
 		$this->Body    = normalizeBreaks($message, $this->LE);
-		$this->AltBody = normalizeBreaks($this->html2text($message, $advanced), $this->LE);
+		$this->AltBody = normalizeBreaks(html2text($message, $this->CharSet, $advanced), $this->LE);
 
 		if(!empty($this->AltBody)){
 			$this->AltBody = 'This is an HTML-only message. To view it, activate HTML in your email application.'.$this->LE;
 		}
 
 		return $this;
-	}
-
-	/**
-	 * Convert an HTML string into plain text.
-	 * This is used by messageFromHTML().
-	 * Note - older versions of this function used a bundled advanced converter
-	 * which was removed for license reasons in #232.
-	 * Example usage:
-	 *
-	 * ```php
-	 * // Use default conversion
-	 * $plain = $mail->html2text($html);
-	 * // Use your own custom converter
-	 * $plain = $mail->html2text($html, function($html) {
-	 *     $converter = new MyHtml2text($html);
-	 *     return $converter->get_text();
-	 * });
-	 * ```
-	 *
-	 * @param string        $html     The HTML text to convert
-	 * @param null|callable $advanced Any boolean value to use the internal converter,
-	 *                                or provide your own callable for custom conversion
-	 *
-	 * @return string
-	 */
-	protected function html2text(string $html, $advanced = null):string{
-
-		if(is_callable($advanced)){
-			return call_user_func($advanced, $html);
-		}
-
-		return html_entity_decode(
-			trim(strip_tags(preg_replace('/<(head|title|style|script)[^>]*>.*?<\/\\1>/si', '', $html))),
-			ENT_QUOTES,
-			$this->CharSet
-		);
 	}
 
 	/**
