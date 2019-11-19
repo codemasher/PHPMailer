@@ -16,10 +16,11 @@ use function array_key_exists, array_search, array_unique, array_unshift, base64
 	file_get_contents, filter_var, function_exists, hash, hexdec, idn_to_ascii, imap_rfc822_parse_adrlist, implode,
 	in_array, is_callable, is_file, is_link, is_numeric, is_readable, is_string, mb_check_encoding, mb_convert_encoding,
 	openssl_pkey_free, openssl_pkey_get_private, openssl_sign, ord, preg_match, preg_match_all, preg_replace,
-	property_exists, random_bytes, readlink, sprintf, str_replace, strlen, strpos, strrpos, strtolower, substr, trim;
+	property_exists, random_bytes, readlink, sprintf, str_replace, strlen, strpos, strrpos, strtolower, substr, trim,
+	html_entity_decode, strip_tags;
 
 use const FILTER_FLAG_IPV4, FILTER_FLAG_IPV6, FILTER_VALIDATE_EMAIL, FILTER_VALIDATE_IP, FILTER_VALIDATE_URL,
-	INTL_IDNA_VARIANT_UTS46, PATHINFO_BASENAME, PATHINFO_DIRNAME, PATHINFO_EXTENSION, PATHINFO_FILENAME;
+	INTL_IDNA_VARIANT_UTS46, PATHINFO_BASENAME, PATHINFO_DIRNAME, PATHINFO_EXTENSION, PATHINFO_FILENAME, ENT_QUOTES;
 
 const INCLUDES_PHPMAILER_FUNCTIONS = true;
 

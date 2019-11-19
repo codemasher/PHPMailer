@@ -22,12 +22,12 @@ namespace PHPMailer\PHPMailer;
 
 use function addcslashes, array_filter, array_key_exists, array_merge, base64_decode, base64_encode, call_user_func,
 	call_user_func_array, chunk_split, count, dirname, explode, file_get_contents, file_put_contents, floor, function_exists,
-	gethostname, hash, html_entity_decode, implode, in_array, is_callable, is_file, mb_strlen, mb_substr, openssl_error_string,
+	gethostname, hash, implode, in_array, is_callable, is_file, mb_strlen, mb_substr, openssl_error_string,
 	openssl_pkcs7_sign, pack, php_uname, preg_match, preg_match_all, preg_quote, preg_replace, quoted_printable_encode,
-	rawurldecode, realpath, rtrim, serialize, sprintf, str_replace, strip_tags, strlen, strpos, strrpos, strtolower, substr,
+	rawurldecode, realpath, rtrim, serialize, sprintf, str_replace, strlen, strpos, strrpos, strtolower, substr,
 	sys_get_temp_dir, tempnam, time, trim, unlink;
 
-use const ENT_QUOTES, PKCS7_DETACHED, PATHINFO_BASENAME;
+use const PKCS7_DETACHED, PATHINFO_BASENAME;
 
 /**
  * PHPMailer - PHP email creation and transport class.
