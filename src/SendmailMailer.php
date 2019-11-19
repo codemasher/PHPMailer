@@ -18,8 +18,6 @@ use function escapeshellcmd, fwrite, ini_get, pclose, popen, sprintf, stripos;
 
 class SendmailMailer extends PHPMailer{
 
-	protected $Mailer = self::MAILER_SENDMAIL;
-
 	/**
 	 * The path to the sendmail program.
 	 *
@@ -27,6 +25,11 @@ class SendmailMailer extends PHPMailer{
 	 */
 	public $Sendmail;
 
+	/**
+	 * SendmailMailer constructor.
+	 *
+	 * @param \Psr\Log\LoggerInterface|null $logger
+	 */
 	public function __construct(LoggerInterface $logger = null){
 		parent::__construct($logger);
 
@@ -37,23 +40,21 @@ class SendmailMailer extends PHPMailer{
 			: $ini_sendmail_path;
 	}
 
-
-/*	qmail may extend this class
-
-	public function setMailerQmail():PHPMailer{ // @todo: optional $path
-		$ini_sendmail_path = \ini_get('sendmail_path');
-
-		$this->Sendmail = \stripos($ini_sendmail_path, 'qmail') === false
-			? '/var/qmail/bin/qmail-inject'
-			: $ini_sendmail_path;
-
-		$this->Mailer = $this::MAILER_QMAIL;
-
-		return $this;
-	}*/
-
+	/**
+	 * @return bool
+	 */
 	public function postSend():bool{
 		return $this->sendmailSend($this->MIMEHeader, $this->MIMEBody);
+	}
+
+	/**
+	 * @return string
+	 */
+	protected function format():string{
+		// CVE-2016-10033, CVE-2016-10045: Don't pass -f if characters will be escaped.
+		return !empty($this->Sender) && isShellSafe($this->Sender)
+			? '%s -oi -f%s -t'
+			: '%s -oi -t';
 	}
 
 	/**
@@ -69,16 +70,8 @@ class SendmailMailer extends PHPMailer{
 	 *
 	 */
 	protected function sendmailSend(string $header, string $body):bool{
-		$header = rtrim($header, "\r\n ").$this->LE.$this->LE;
-		// CVE-2016-10033, CVE-2016-10045: Don't pass -f if characters will be escaped.
-		if(!empty($this->Sender) && isShellSafe($this->Sender)){
-			$sendmailFmt = $this->Mailer === 'qmail' ? '%s -f%s' : '%s -oi -f%s -t';
-		}
-		else{
-			$sendmailFmt = $this->Mailer === 'qmail' ? '%s' : '%s -oi -t';
-		}
-
-		$sendmail = sprintf($sendmailFmt, escapeshellcmd($this->Sendmail), $this->Sender);
+		$header   = rtrim($header, "\r\n ").$this->LE.$this->LE;
+		$sendmail = sprintf($this->format(), escapeshellcmd($this->Sendmail), $this->Sender);
 
 		if($this->SingleTo){
 

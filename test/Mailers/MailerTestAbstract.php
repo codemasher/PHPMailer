@@ -69,7 +69,7 @@ abstract class MailerTestAbstract extends TestAbstract{
 	public function testEmptyBody(){
 		$this->mailer->addTO('user@example.com');
 		$this->mailer->Body       = '';
-		$this->mailer->Subject    = $this->mailer->getMailer().': '.__FUNCTION__;
+		$this->mailer->Subject    = $this->FQCN.'::'.__FUNCTION__;
 		$this->mailer->AllowEmpty = true;
 
 		$this->assertSentMail();
@@ -571,7 +571,7 @@ Czech text: Prázdné tělo zprávy';
 		$this->setupMailer();
 		$this->mailer->addTO('user@example.com');
 
-		$subject = $this->mailer->getMailer().': '.__FUNCTION__;
+		$subject = $this->FQCN.'::'.__FUNCTION__;
 
 		//To see accurate results when using postfix, set `sendmail_fix_line_endings = never` in main.cf
 		$this->mailer->Subject = $subject.' DOS line breaks';
@@ -775,6 +775,28 @@ Czech text: Prázdné tělo zprávy';
 		unlink($cakeyfile);
 		unlink($certfile);
 		unlink($keyfile);
+	}
+
+	public function testHeaderEncodingFoldedQ(){
+		$this->mailer->CharSet = 'UTF-8';
+
+		// This should select Q-encoding automatically and should fold
+		$exp = '=?UTF-8?Q?eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee?='.
+		       $this->mailer->getLE().
+		       ' =?UTF-8?Q?eeeeeeeeeeeee=C3=A9?=';
+		$act = str_repeat('e', $this->mailer::LINE_LENGTH_STD).'é';
+		$this->assertSame($exp, $this->mailer->encodeHeader($act), 'Folded Q-encoded header value incorrect');
+	}
+
+	public function testHeaderEncodingFoldedQASCII(){
+		$this->mailer->CharSet = 'UTF-8';
+		//This should Q-encode as ASCII and fold (previously, this did not encode)
+		$exp = '=?us-ascii?Q?eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee?='.
+		       $this->mailer->getLE().
+		       ' =?us-ascii?Q?eeeeeeeeeeeeeeeeeeeeeeeeee?=';
+		$act = str_repeat('e', $this->mailer::LINE_LENGTH_STD + 10);
+
+		$this->assertSame($exp, $this->mailer->encodeHeader($act), 'Long header value incorrect');
 	}
 
 }

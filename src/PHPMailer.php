@@ -162,14 +162,6 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 	public $WordWrap = 0;
 
 	/**
-	 * Which method to use to send mail.
-	 * Options: "mail", "sendmail", or "smtp".
-	 *
-	 * @var string
-	 */
-	protected $Mailer = self::MAILER_MAIL;
-
-	/**
 	 * Whether mail() uses a fully sendmail-compatible MTA.
 	 * One which supports sendmail's "-oi -f" options.
 	 *
@@ -565,15 +557,6 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 	 * @var bool
 	 */
 	public $sign = false;
-
-	/**
-	 * Return the current mailer type
-	 *
-	 * @return string
-	 */
-	public function getMailer():string{
-		return $this->Mailer;
-	}
 
 	/**
 	 * Get the OAuth instance.
@@ -1427,7 +1410,7 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 
 		// To capture the complete message when using mail(), create
 		// an extra header list which createHeader() doesn't fold in
-		if($this->Mailer === 'mail'){
+		if($this instanceof MailMailer){
 			$this->mailHeader .= count($this->to) > 0
 				? $this->addrAppend('To', $this->to)
 				: $this->headerLine('To', 'undisclosed-recipients:;');
@@ -1685,14 +1668,14 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 
 		// To be created automatically by mail()
 		if($this->SingleTo){
-			if($this->Mailer !== 'mail'){
+			if(!$this instanceof MailMailer){
 				foreach($this->to as $toaddr){
 					$this->SingleToArray[] = $this->addrFormat($toaddr);
 				}
 			}
 		}
 		else{
-			if(count($this->to) > 0 && $this->Mailer !== 'mail'){
+			if(count($this->to) > 0 && !$this instanceof MailMailer){
 				$header .= $this->addrAppend('To', $this->to);
 			}
 			elseif(count($this->cc) === 0){
@@ -1708,7 +1691,7 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 		}
 
 		// sendmail and mail() extract Bcc from the header before sending
-		if(in_array($this->Mailer, ['sendmail', 'qmail', 'mail']) && count($this->bcc) > 0){
+		if(!$this instanceof SMTPMailer && count($this->bcc) > 0){
 			$header .= $this->addrAppend('Bcc', $this->bcc);
 		}
 
@@ -1717,7 +1700,7 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 		}
 
 		// mail() sets the subject itself
-		if($this->Mailer !== 'mail'){
+		if(!$this instanceof MailMailer){
 			$header .= $this->headerLine('Subject', $this->encodeHeader(secureHeader($this->Subject)));
 		}
 
@@ -1808,9 +1791,9 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 			}
 		}
 
-		if($this->Mailer !== 'mail'){
+#		if(!$this instanceof MailMailer){
 #			$mime .= $this->LE;
-		}
+#		}
 
 		return $mime;
 	}
@@ -2406,8 +2389,8 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 			? $this->CharSet
 			: $this::CHARSET_ASCII;
 
-		$maxlen = $this->Mailer === 'mail'
-			? $this::MAIL_MAX_LINE_LENGTH
+		$maxlen = $this instanceof MailMailer
+			? $this::LINE_LENGTH_STD_MAIL
 			: $this::LINE_LENGTH_STD;
 
 		// Q/B encoding adds 8 chars and the charset ("` =?<charset>?[QB]?<content>?=`").

@@ -134,17 +134,6 @@ class UnitTest extends TestAbstract{
 		$this->assertSame($exp, $this->mailer->encodeHeader($act), 'Q-encoded header value incorrect');
 	}
 
-	public function testHeaderEncodingFoldedQ(){
-		$this->mailer->CharSet = 'UTF-8';
-
-		// This should select Q-encoding automatically and should fold
-		$exp = '=?UTF-8?Q?eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee?='.
-		       $this->mailer->getLE().
-		       ' =?UTF-8?Q?eeeeeeeeeeeeeeeeeeeeeeeeee=C3=A9?=';
-		$act = str_repeat('e', $this->mailer::LINE_LENGTH_STD).'é';
-		$this->assertSame($exp, $this->mailer->encodeHeader($act), 'Folded Q-encoded header value incorrect');
-	}
-
 	public function testHeaderEncodingUnencoded(){
 		$this->mailer->CharSet = 'UTF-8';
 
@@ -152,17 +141,6 @@ class UnitTest extends TestAbstract{
 		$exp = 'eeeeeeeeee';
 		$act = 'eeeeeeeeee';
 		$this->assertSame($exp, $this->mailer->encodeHeader($act), 'Unencoded header value incorrect');
-	}
-
-	public function testHeaderEncodingFoldedQASCII(){
-		$this->mailer->CharSet = 'UTF-8';
-		//This should Q-encode as ASCII and fold (previously, this did not encode)
-		$act = str_repeat('e', $this->mailer::LINE_LENGTH_STD + 10);
-		$exp = '=?us-ascii?Q?eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee?='.
-		       $this->mailer->getLE().
-		       ' =?us-ascii?Q?eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee?=';
-
-		$this->assertSame($exp, $this->mailer->encodeHeader($act), 'Long header value incorrect');
 	}
 
 	public function testHeaderEncodingFoldedQUtf8(){

@@ -198,7 +198,7 @@ abstract class TestAbstract extends TestCase{
 	 * @return $this
 	 */
 	protected function setMessage(string $body, string $subject, string $to = 'user@example.com'){
-		$this->mailer->Subject = $this->mailer->getMailer().': '.$subject;
+		$this->mailer->Subject = $this->FQCN.'::'.$subject;
 		$this->mailer->Body    = $this->buildBody($body);
 		$this->mailer->addTO($to);
 
@@ -339,9 +339,6 @@ abstract class TestAbstract extends TestCase{
 		}
 		if($this->mailer->WordWrap !== 0){
 			$this->addChange('WordWrap', $this->mailer->WordWrap);
-		}
-		if($this->mailer->getMailer() !== $this->mailer::MAILER_MAIL){
-			$this->addChange('Mailer', $this->mailer->getMailer());
 		}
 		if($this->mailer->port !== 25){
 			$this->addChange('Port', $this->mailer->port);

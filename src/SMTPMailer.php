@@ -16,8 +16,6 @@ use function count, defined, explode, preg_match, trim;
 
 class SMTPMailer extends PHPMailer{
 
-	protected $Mailer = self::MAILER_SMTP;
-
 	/**
 	 * SMTP mandates RFC-compliant line endings
 	 *

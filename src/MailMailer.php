@@ -19,8 +19,11 @@ use const PHP_OS_FAMILY;
 
 class MailMailer extends PHPMailer{
 
-	protected $Mailer = self::MAILER_MAIL;
-
+	/**
+	 * MailMailer constructor.
+	 *
+	 * @param \Psr\Log\LoggerInterface|null $logger
+	 */
 	public function __construct(LoggerInterface $logger = null){
 		parent::__construct($logger);
 
@@ -31,6 +34,9 @@ class MailMailer extends PHPMailer{
 
 	}
 
+	/**
+	 * @return bool
+	 */
 	public function postSend():bool{
 		return $this->mailSend($this->MIMEHeader, $this->MIMEBody);
 	}
@@ -60,12 +66,12 @@ class MailMailer extends PHPMailer{
 		$params = null;
 		//This sets the SMTP envelope sender which gets turned into a return-path header by the receiver
 		if(!empty($this->Sender) && validateAddress($this->Sender, $this->validator)){
-			//A space after `-f` is optional, but there is a long history of its presence
-			//causing problems, so we don't use one
-			//Exim docs: http://www.exim.org/exim-html-current/doc/html/spec_html/ch-the_exim_command_line.html
-			//Sendmail docs: http://www.sendmail.org/~ca/email/man/sendmail.html
-			//Qmail docs: http://www.qmail.org/man/man8/qmail-inject.html
-			//Example problem: https://www.drupal.org/node/1057954
+			// A space after `-f` is optional, but there is a long history of its presence
+			// causing problems, so we don't use one
+			// Exim docs: http://www.exim.org/exim-html-current/doc/html/spec_html/ch-the_exim_command_line.html
+			// Sendmail docs: http://www.sendmail.org/~ca/email/man/sendmail.html
+			// Qmail docs: http://www.qmail.org/man/man8/qmail-inject.html
+			// Example problem: https://www.drupal.org/node/1057954
 			// CVE-2016-10033, CVE-2016-10045: Don't pass -f if characters will be escaped.
 			if(isShellSafe($this->Sender)){
 				$params = sprintf('-f%s', $this->Sender);
@@ -116,12 +122,12 @@ class MailMailer extends PHPMailer{
 	 * @return bool
 	 */
 	protected function mailPassthru(string $to, string $subject, string $body, string $header, string $params = null):bool{
-		//Check overloading of mail function to avoid double-encoding
+		// Check overloading of mail function to avoid double-encoding
 		$subject = ini_get('mbstring.func_overload') & 1
 			? secureHeader($subject)
 			: $this->encodeHeader(secureHeader($subject));
 
-		//Calling mail() with null params breaks
+		// Calling mail() with null params breaks
 		return !$this->UseSendmailOptions || $params === null
 			? mail($to, $subject, $body, $header)
 			: mail($to, $subject, $body, $header, $params);
