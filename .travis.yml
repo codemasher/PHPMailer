@@ -15,7 +15,7 @@ before_script:
   - echo 'sendmail_path = "/usr/sbin/sendmail -t -i "' > $(php --ini|grep -m 1 "ini files in:"|cut -d ":" -f 2)/sendmail.ini
   - wget -q https://github.com/mailhog/MailHog/releases/download/v1.0.0/MailHog_linux_amd64
   - sudo chmod +x ./MailHog_linux_amd64
-  - ./MailHog_linux_amd64 -smtp-bind-addr=localhost:2500 -storage=maildir -maildir-path=./logs
+  - ./MailHog_linux_amd64 -smtp-bind-addr=localhost:2500 -storage=maildir -maildir-path=./logs > /dev/null 2>&1
 
 script: ./vendor/bin/phpunit --configuration ./travis.phpunit.xml
 
