@@ -596,8 +596,9 @@ Czech text: Prázdné tělo zprávy';
 	 * Test line length detection.
 	 */
 	public function testLineLength(){
-		$oklen  = str_repeat(str_repeat('0', $this->mailer::LINE_LENGTH_MAX)."\r\n", 2);
-		$badlen = str_repeat(str_repeat('1', $this->mailer::LINE_LENGTH_MAX + 1)."\r\n", 2);
+		$le     = $this->mailer->getLE();
+		$oklen  = str_repeat(str_repeat('0', $this->mailer::LINE_LENGTH_MAX).$le, 2);
+		$badlen = str_repeat(str_repeat('1', $this->mailer::LINE_LENGTH_MAX + 1).$le, 2);
 		$this->assertTrue($this->mailer->hasLineLongerThanMax($badlen), 'Long line not detected (only)');
 		$this->assertTrue($this->mailer->hasLineLongerThanMax($oklen.$badlen), 'Long line not detected (first)');
 		$this->assertTrue($this->mailer->hasLineLongerThanMax($badlen.$oklen), 'Long line not detected (last)');
