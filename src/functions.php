@@ -721,6 +721,30 @@ function DKIM_HeaderC(string $signHeader):string{
 }
 
 /**
+ * Generate a DKIM canonicalization body.
+ * Uses the 'simple' algorithm from RFC6376 section 3.4.3.
+ * Canonicalized bodies should *always* use CRLF, regardless of mailer setting.
+ *
+ * @see    https://tools.ietf.org/html/rfc6376#section-3.4.3
+ *
+ * @param string $body Message Body
+ *
+ * @return string
+ */
+function DKIM_BodyC(string $body):string{
+
+	if(empty($body)){
+		return "\r\n";
+	}
+
+	// Normalize line endings to CRLF
+	$body = normalizeBreaks($body, "\r\n");
+
+	//Reduce multiple trailing line breaks to a single one
+	return rtrim($body, "\r\n")."\r\n";
+}
+
+/**
  * Generate a DKIM signature.
  *
  * @param string      $signHeader
@@ -794,4 +818,26 @@ function punyencodeAddress(string $address, string $charset = PHPMailer::CHARSET
 	}
 
 	return $address;
+}
+
+/**
+ * Normalize line breaks in a string.
+ * Converts UNIX LF, Mac CR and Windows CRLF line breaks into a single line break format.
+ * Defaults to CRLF (for message bodies) and preserves consecutive breaks.
+ *
+ * @param string $text
+ * @param string $breaktype What kind of line break to use; defaults to $this->LE
+ *
+ * @return string
+ */
+function normalizeBreaks(string $text, string $breaktype):string{
+
+	// Normalise to \n
+	$text = str_replace(["\r\n", "\r"], "\n", $text);
+	// Now convert LE as needed
+	if($breaktype !== "\n"){
+		$text = str_replace("\n", $breaktype, $text);
+	}
+
+	return $text;
 }

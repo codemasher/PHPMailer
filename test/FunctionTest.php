@@ -16,7 +16,7 @@ use PHPMailer\PHPMailer;
 use PHPUnit\Framework\TestCase;
 
 use function PHPMailer\PHPMailer\{
-	DKIM_HeaderC, encodeQ, filenameToType, get_mime_type, isValidHost,
+	DKIM_BodyC, DKIM_HeaderC, encodeQ, filenameToType, get_mime_type, isValidHost,
 	mb_pathinfo, parseAddresses, punyencodeAddress, validateAddress
 };
 use function chr, mb_convert_encoding, str_repeat, trim;
@@ -585,6 +585,24 @@ class FunctionTest extends TestCase{
 			DKIM_HeaderC($preheaders),
 			'DKIM header canonicalization of long lines incorrect'
 		);
+	}
+
+	/**
+	 * DKIM body canonicalization tests.
+	 *
+	 * @see https://tools.ietf.org/html/rfc6376#section-3.4.4
+	 */
+	public function testDKIMBodyCanonicalization(){
+		//Example from https://tools.ietf.org/html/rfc6376#section-3.4.5
+		$prebody  = " C \r\nD \t E\r\n\r\n\r\n";
+		$postbody = " C \r\nD \t E\r\n";
+		$this->assertSame(DKIM_BodyC(''), "\r\n", 'DKIM empty body canonicalization incorrect');
+		$this->assertSame(
+			'frcCV1k9oG9oKj3dpUqdJg1PxRT2RSN/XKdLCPjaYaY=',
+			base64_encode(hash('sha256', DKIM_BodyC(''), true)),
+			'DKIM canonicalized empty body hash mismatch'
+		);
+		$this->assertSame(DKIM_BodyC($prebody), $postbody, 'DKIM body canonicalization incorrect');
 	}
 
 	public function punycodeAddresProvider():array{

@@ -1470,7 +1470,7 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 				$this->MIMEBody
 			);
 
-			$this->MIMEHeader = rtrim($this->MIMEHeader, "\r\n ").$this->LE.$this->normalizeBreaks($header_dkim).$this->LE;
+			$this->MIMEHeader = rtrim($this->MIMEHeader, "\r\n ").$this->LE.normalizeBreaks($header_dkim, $this->LE).$this->LE;
 		}
 
 		return $this;
@@ -1600,7 +1600,7 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 		$is_utf8 = strtolower($this->CharSet) === $this::CHARSET_UTF8;
 		$lelen   = strlen($this->LE);
 
-		$message = $this->normalizeBreaks($message);
+		$message = normalizeBreaks($message, $this->LE);
 		//Remove a trailing line break
 		if(substr($message, -$lelen) == $this->LE){
 			$message = substr($message, 0, -$lelen);
@@ -2376,7 +2376,7 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 				return chunk_split(base64_encode($str), $this::LINE_LENGTH_STD, $this->LE);
 			case $this::ENCODING_7BIT:
 			case $this::ENCODING_8BIT:
-				$encoded = $this->normalizeBreaks($str);
+				$encoded = normalizeBreaks($str, $this->LE);
 				// Make sure it ends with a line break
 				if(substr($encoded, -strlen($this->LE)) !== $this->LE){
 					$encoded .= $this->LE;
@@ -2386,7 +2386,7 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 			case $this::ENCODING_BINARY:
 				return $str;
 			case $this::ENCODING_QUOTED_PRINTABLE:
-				return $this->normalizeBreaks(quoted_printable_encode($str));
+				return normalizeBreaks(quoted_printable_encode($str), $this->LE);
 		}
 
 		$this->setError($this->lang('encoding').$encoding);
@@ -2484,7 +2484,7 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 				return $str;
 		}
 
-		return trim($this->normalizeBreaks($encoded));
+		return trim(normalizeBreaks($encoded, $this->LE));
 	}
 
 	/**
@@ -2706,8 +2706,8 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 
 		$this->ContentType = $this::CONTENT_TYPE_TEXT_HTML;
 		// Convert all message body line breaks to LE, makes quoted-printable encoding work much better
-		$this->Body    = $this->normalizeBreaks($message);
-		$this->AltBody = $this->normalizeBreaks($this->html2text($message, $advanced));
+		$this->Body    = normalizeBreaks($message, $this->LE);
+		$this->AltBody = normalizeBreaks($this->html2text($message, $advanced), $this->LE);
 
 		if(!empty($this->AltBody)){
 			$this->AltBody = 'This is an HTML-only message. To view it, activate HTML in your email application.'.$this->LE;
@@ -2750,57 +2750,6 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 			ENT_QUOTES,
 			$this->CharSet
 		);
-	}
-
-	/**
-	 * @param string $text
-	 * @param string $breaktype What kind of line break to use; defaults to $this->LE
-	 *
-	 * @return string
-	 * @todo: make protected
-	 *
-	 * Normalize line breaks in a string.
-	 * Converts UNIX LF, Mac CR and Windows CRLF line breaks into a single line break format.
-	 * Defaults to CRLF (for message bodies) and preserves consecutive breaks.
-	 *
-	 */
-	public function normalizeBreaks(string $text, string $breaktype = null):string{
-		$breaktype = $breaktype ?? $this->LE;
-
-		// Normalise to \n
-		$text = str_replace(["\r\n", "\r"], "\n", $text);
-		// Now convert LE as needed
-		if($breaktype !== "\n"){
-			$text = str_replace("\n", $breaktype, $text);
-		}
-
-		return $text;
-	}
-
-	/**
-	 * @param string $body Message Body
-	 *
-	 * @return string
-	 * @todo   : make protected
-	 *
-	 * Generate a DKIM canonicalization body.
-	 * Uses the 'simple' algorithm from RFC6376 section 3.4.3.
-	 * Canonicalized bodies should *always* use CRLF, regardless of mailer setting.
-	 *
-	 * @see    https://tools.ietf.org/html/rfc6376#section-3.4.3
-	 *
-	 */
-	public function DKIM_BodyC(string $body):string{
-
-		if(empty($body)){
-			return "\r\n";
-		}
-
-		// Normalize line endings to CRLF
-		$body = $this->normalizeBreaks($body, "\r\n");
-
-		//Reduce multiple trailing line breaks to a single one
-		return rtrim($body, "\r\n")."\r\n";
 	}
 
 	/**
@@ -2939,7 +2888,7 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 
 		$headerKeys   = ' h='.implode(':', $headersToSignKeys).';'.$this->LE;
 		$headerValues = implode($this->LE, $headersToSign);
-		$body         = $this->DKIM_BodyC($body);
+		$body         = DKIM_BodyC($body);
 		$DKIMlen      = strlen($body); // Length of body
 		$DKIMb64      = base64_encode(pack('H*', hash('sha256', $body))); // Base64 of packed binary SHA-256 hash of body
 		$ident        = '';
@@ -2970,7 +2919,7 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 		$signature            = DKIM_Sign($canonicalizedHeaders, $this->DKIM_key, $this->DKIM_passphrase);
 		$signature            = trim(chunk_split($signature, self::LINE_LENGTH_STD - 3, $this->LE.' '));
 
-		return $this->normalizeBreaks($dkimSignatureHeader.$signature).$this->LE;
+		return normalizeBreaks($dkimSignatureHeader.$signature, $this->LE).$this->LE;
 	}
 
 	/**

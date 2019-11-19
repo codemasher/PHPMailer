@@ -14,8 +14,8 @@ namespace PHPMailer\Test;
 
 use PHPMailer\PHPMailer\{PHPMailer, PHPMailerException};
 
-use function PHPMailer\PHPMailer\{generateId, punyencodeAddress, validateAddress};
-use function base64_encode, file_get_contents, hash, mb_convert_encoding, openssl_pkey_export_to_file,
+use function PHPMailer\PHPMailer\{generateId, normalizeBreaks, punyencodeAddress, validateAddress};
+use function file_get_contents, hash, mb_convert_encoding, openssl_pkey_export_to_file,
 	openssl_pkey_new, quoted_printable_decode, realpath, str_repeat, str_replace, strlen, strpos, unlink;
 
 use const OPENSSL_KEYTYPE_RSA;
@@ -414,24 +414,6 @@ class UnitTest extends TestAbstract{
 	}
 
 	/**
-	 * DKIM body canonicalization tests.
-	 *
-	 * @see https://tools.ietf.org/html/rfc6376#section-3.4.4
-	 */
-	public function testDKIMBodyCanonicalization(){
-		//Example from https://tools.ietf.org/html/rfc6376#section-3.4.5
-		$prebody  = " C \r\nD \t E\r\n\r\n\r\n";
-		$postbody = " C \r\nD \t E\r\n";
-		$this->assertSame($this->mailer->DKIM_BodyC(''), "\r\n", 'DKIM empty body canonicalization incorrect');
-		$this->assertSame(
-			'frcCV1k9oG9oKj3dpUqdJg1PxRT2RSN/XKdLCPjaYaY=',
-			base64_encode(hash('sha256', $this->mailer->DKIM_BodyC(''), true)),
-			'DKIM canonicalized empty body hash mismatch'
-		);
-		$this->assertSame($this->mailer->DKIM_BodyC($prebody), $postbody, 'DKIM body canonicalization incorrect');
-	}
-
-	/**
 	 * DKIM copied header fields tests.
 	 *
 	 * @group dkim
@@ -621,10 +603,10 @@ class UnitTest extends TestAbstract{
 		$eol = $this->mailer->getLE();
 
 		$target = "hello{$eol}World{$eol}Again{$eol}";
-		$this->assertSame($target, $this->mailer->normalizeBreaks("hello\nWorld\nAgain\n"), 'UNIX break reformatting failed');
-		$this->assertSame($target, $this->mailer->normalizeBreaks("hello\rWorld\rAgain\r"), 'Mac break reformatting failed');
-		$this->assertSame($target, $this->mailer->normalizeBreaks("hello\r\nWorld\r\nAgain\r\n"), 'Windows break reformatting failed');
-		$this->assertSame($target, $this->mailer->normalizeBreaks("hello\nWorld\rAgain\r\n"), 'Mixed break reformatting failed');
+		$this->assertSame($target, normalizeBreaks("hello\nWorld\nAgain\n", $eol), 'UNIX break reformatting failed');
+		$this->assertSame($target, normalizeBreaks("hello\rWorld\rAgain\r", $eol), 'Mac break reformatting failed');
+		$this->assertSame($target, normalizeBreaks("hello\r\nWorld\r\nAgain\r\n", $eol), 'Windows break reformatting failed');
+		$this->assertSame($target, normalizeBreaks("hello\nWorld\rAgain\r\n", $eol), 'Mixed break reformatting failed');
 	}
 
 	/**
