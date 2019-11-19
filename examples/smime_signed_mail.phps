@@ -85,7 +85,7 @@ $mail->setSignCredentials(
 
 //Send the message, check for errors
 if(!$mail->send()){
-	echo "Mailer Error: ".$mail->ErrorInfo;
+	echo "Mailer Error: ";
 }
 else{
 	echo "Message sent!";

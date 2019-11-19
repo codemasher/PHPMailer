@@ -12,6 +12,7 @@
 
 namespace PHPMailer\PHPMailer;
 
+use Psr\Log\LoggerInterface;
 use function count, implode, ini_get, ini_set, mail, sprintf;
 
 use const PHP_OS_FAMILY;
@@ -20,8 +21,8 @@ class MailMailer extends PHPMailer{
 
 	protected $Mailer = self::MAILER_MAIL;
 
-	public function __construct(){
-		parent::__construct();
+	public function __construct(LoggerInterface $logger = null){
+		parent::__construct($logger);
 
 		// RFC-compliant line endings with mail() on Windows
 		if(PHP_OS_FAMILY === 'Windows'){
@@ -94,7 +95,7 @@ class MailMailer extends PHPMailer{
 		}
 
 		if(!$result){
-			throw new PHPMailerException($this->lang('instantiate'), $this::STOP_CRITICAL);
+			throw new PHPMailerException($this->lang('instantiate'));
 		}
 
 		return true;

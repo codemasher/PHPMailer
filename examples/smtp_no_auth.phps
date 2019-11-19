@@ -14,11 +14,6 @@ require '../vendor/autoload.php';
 
 //Create a new PHPMailer instance
 $mail = new SMTPMailer;
-//Enable SMTP debugging
-// 0 = off (for production use)
-// 1 = client messages
-// 2 = client and server messages
-$mail->loglevel = 2;
 //Set the hostname of the mail server
 $mail->host = 'mail.example.com';
 //Set the SMTP port number - likely to be 25, 465 or 587
@@ -43,7 +38,7 @@ $mail->addAttachment('images/phpmailer_mini.png');
 
 //send the message, check for errors
 if(!$mail->send()){
-	echo "Mailer Error: ".$mail->ErrorInfo;
+	echo "Mailer Error: ";
 }
 else{
 	echo "Message sent!";

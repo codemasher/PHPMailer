@@ -47,7 +47,7 @@ foreach($result as $row){
 	}
 
 	if(!$mail->send()){
-		echo "Mailer Error (".str_replace("@", "&#64;", $row["email"]).') '.$mail->ErrorInfo.'<br />';
+		echo "Mailer Error (".str_replace("@", "&#64;", $row["email"]).') <br />';
 		break; //Abandon sending
 	}
 	else{

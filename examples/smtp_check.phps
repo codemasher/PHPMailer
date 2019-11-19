@@ -17,9 +17,6 @@ date_default_timezone_set('Etc/UTC');
 //Create a new SMTP instance
 $smtp = new SMTP;
 
-//Enable connection-level debug output
-$smtp->loglevel = SMTP::DEBUG_CONNECTION;
-
 try{
 	//Connect to an SMTP server
 	if(!$smtp->connect('mail.example.com', 25)){
@@ -27,7 +24,7 @@ try{
 	}
 	//Say hello
 	if(!$smtp->hello(gethostname())){
-		throw new PHPMailerException('EHLO failed: '.$smtp->getError()['error']);
+		throw new PHPMailerException('EHLO failed');
 	}
 	//Get the list of ESMTP services the server offers
 	$e = $smtp->getServerExtList();
@@ -35,11 +32,11 @@ try{
 	if(is_array($e) && array_key_exists('STARTTLS', $e)){
 		$tlsok = $smtp->startTLS();
 		if(!$tlsok){
-			throw new PHPMailerException('Failed to start encryption: '.$smtp->getError()['error']);
+			throw new PHPMailerException('Failed to start encryption');
 		}
 		//Repeat EHLO after STARTTLS
 		if(!$smtp->hello(gethostname())){
-			throw new PHPMailerException('EHLO (2) failed: '.$smtp->getError()['error']);
+			throw new PHPMailerException('EHLO (2) failed');
 		}
 		//Get new capabilities list, which will usually now include AUTH if it didn't before
 		$e = $smtp->getServerExtList();
@@ -50,7 +47,7 @@ try{
 			echo "Connected ok!";
 		}
 		else{
-			throw new PHPMailerException('Authentication failed: '.$smtp->getError()['error']);
+			throw new PHPMailerException('Authentication failed');
 		}
 	}
 }

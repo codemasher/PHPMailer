@@ -71,13 +71,6 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 	public $Encoding = self::ENCODING_8BIT;
 
 	/**
-	 * Holds the most recent mailer error message.
-	 *
-	 * @var string
-	 */
-	public $ErrorInfo = '';
-
-	/**
 	 * The From email address for the message.
 	 *
 	 * @var string
@@ -529,13 +522,6 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 	protected $message_type = '';
 
 	/**
-	 * The number of errors encountered.
-	 *
-	 * @var int
-	 */
-	protected $error_count = 0;
-
-	/**
 	 * The S/MIME certificate file path.
 	 *
 	 * @var string
@@ -827,8 +813,7 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 			   && !validateAddress($address, $this->validator)
 		){
 			$error_message = sprintf('%s (From): %s', $this->lang('invalid_address'), $address);
-			$this->setError($error_message);
-			$this->edebug($error_message);
+			$this->logger->error($error_message);
 
 			return false;
 		}
@@ -866,8 +851,7 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 			// At-sign is missing.
 			$error_message = sprintf('%s (%s): %s', $this->lang('invalid_address'), $kind, $address);
 
-			$this->setError($error_message);
-			$this->edebug($error_message);
+			$this->logger->error($error_message);
 
 			return false;
 		}
@@ -913,8 +897,7 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 		if(!in_array($kind, ['to', 'cc', 'bcc', 'Reply-To'])){
 			$error_message = sprintf('%s: %s', $this->lang('Invalid recipient kind'), $kind);
 
-			$this->setError($error_message);
-			$this->edebug($error_message);
+			$this->logger->error($error_message);
 
 			return false;
 		}
@@ -922,8 +905,7 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 		if(!validateAddress($address, $this->validator)){
 			$error_message = sprintf('%s (%s): %s', $this->lang('invalid_address'), $kind, $address);
 
-			$this->setError($error_message);
-			$this->edebug($error_message);
+			$this->logger->error($error_message);
 
 			return false;
 		}
@@ -998,8 +980,7 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 		if(!isPermittedPath($path) || !@is_file($path)){
 			$msg = $this->lang('file_access').$path;
 
-			$this->setError($msg);
-			$this->edebug($msg);
+			$this->logger->error($msg);
 
 			throw new PHPMailerException($msg);
 		}
@@ -1112,8 +1093,7 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 
 		if(!isPermittedPath($path) || !@is_file($path)){
 			$msg = $this->lang('file_access').$path;
-			$this->edebug($msg);
-			$this->setError($msg);
+			$this->logger->error($msg);
 
 			throw new PHPMailerException($msg);
 		}
@@ -1375,9 +1355,7 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 			;
 		}
 		catch(PHPMailerException $e){
-			$this->mailHeader = '';
-			$this->setError($e->getMessage());
-			$this->edebug($e->getMessage());
+			$this->logger->error($e->getMessage());
 
 			throw $e;
 		}
@@ -1391,7 +1369,6 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 	 * @throws \PHPMailer\PHPMailer\PHPMailerException
 	 */
 	public function preSend():PHPMailer{
-		$this->error_count = 0; // Reset errors
 		$this->mailHeader  = '';
 
 		// Dequeue recipient and Reply-To addresses with IDN
@@ -1401,7 +1378,7 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 		}
 
 		if(count($this->to) + count($this->cc) + count($this->bcc) < 1){
-			throw new PHPMailerException($this->lang('provide_address'), $this::STOP_CRITICAL);
+			throw new PHPMailerException($this->lang('provide_address'));
 		}
 
 		// Validate From, Sender, and ConfirmReadingTo addresses
@@ -1415,7 +1392,7 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 			$this->{$type} = punyencodeAddress($this->{$type}, $this->CharSet);
 
 			if(!validateAddress($this->{$type}, $this->validator)){
-				$this->edebug(sprintf('%s (%s): %s', $this->lang('invalid_address'), $type, $this->{$type}));
+				$this->logger->error(sprintf('%s (%s): %s', $this->lang('invalid_address'), $type, $this->{$type}));
 				// clear the invalid address
 				unset($this->{$type});
 			}
@@ -1429,7 +1406,7 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 		$this->setMessageType();
 		// Refuse to send an empty message unless we are specifically allowing it
 		if(!$this->AllowEmpty && empty($this->Body)){
-			throw new PHPMailerException($this->lang('empty_message'), $this::STOP_CRITICAL);
+			throw new PHPMailerException($this->lang('empty_message'));
 		}
 
 		//Create unique IDs and preset boundaries
@@ -1440,10 +1417,6 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 		// Create body before headers in case body makes changes to headers (e.g. altering transfer encoding)
 		$this->MIMEHeader = '';
 		$this->MIMEBody   = $this->createBody($uniqueid);
-
-		if($this->isError()){
-			throw new PHPMailerException($this->lang('empty_message'), $this::STOP_CRITICAL);
-		}
 
 		if($this->sign){
 			$this->MIMEBody = $this->pkcs7Sign($this->MIMEBody);
@@ -2317,10 +2290,6 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 					? $this->encodeString($string, $attachment->encoding)
 					: $this->encodeFile($path, $attachment->encoding);
 
-				if($this->isError()){
-					return '';
-				}
-
 				$mime[] = $this->LE;
 			}
 		}
@@ -2389,8 +2358,9 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 				return normalizeBreaks(quoted_printable_encode($str), $this->LE);
 		}
 
-		$this->setError($this->lang('encoding').$encoding);
-		throw new PHPMailerException($this->lang('encoding').$encoding);
+		$msg = $this->lang('encoding').$encoding;
+		$this->logger->error($msg);
+		throw new PHPMailerException($msg);
 	}
 
 	/**
@@ -2916,49 +2886,6 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 		if(!empty($this->action_function) && is_callable($this->action_function)){
 			call_user_func($this->action_function, $isSent, $to, $cc, $bcc, $subject, $body, $from, $extra);
 		}
-	}
-
-	/**
-	 * @return bool True if an error did occur
-	 * @todo
-	 * Check if an error occurred.
-	 *
-	 */
-	public function isError():bool{
-		return $this->error_count > 0;
-	}
-
-	/**
-	 * @param string $msg
-	 *
-	 * @todo
-	 * Add an error message to the error container.
-	 *
-	 */
-	protected function setError(string $msg):void{
-		++$this->error_count;
-
-		if($this->Mailer === 'smtp' && $this->smtp instanceof SMTP){
-			$lasterror = $this->smtp->getError();
-
-			if(!empty($lasterror['error'])){
-				$msg .= $this->lang('smtp_error').$lasterror['error'];
-
-				if(!empty($lasterror['detail'])){
-					$msg .= ' Detail: '.$lasterror['detail'];
-				}
-
-				if(!empty($lasterror['smtp_code'])){
-					$msg .= ' SMTP code: '.$lasterror['smtp_code'];
-				}
-
-				if(!empty($lasterror['smtp_code_ex'])){
-					$msg .= ' Additional SMTP info: '.$lasterror['smtp_code_ex'];
-				}
-			}
-		}
-
-		$this->ErrorInfo = $msg;
 	}
 
 }

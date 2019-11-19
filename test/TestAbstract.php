@@ -180,7 +180,6 @@ abstract class TestAbstract extends TestCase{
 		$this->mailer->Subject  = 'Unit Test';
 		$this->mailer->Helo     = 'localhost.localdomain';
 		$this->mailer->Priority = 3;
-		$this->mailer->loglevel = $this->mailer::DEBUG_CONNECTION; //Full debug output
 
 		// for mail()
 		// @todo: PHPMailer should do this internally
@@ -212,7 +211,7 @@ abstract class TestAbstract extends TestCase{
 	 * @param \Closure|null $assertFunc
 	 */
 	protected function assertSentMail(Closure $assertFunc = null){
-		$this->assertTrue($this->mailer->send(), $this->mailer->ErrorInfo);
+		$this->assertTrue($this->mailer->send());
 
 		$id       = $this->mailer->getLastMessageID();
 		$sent     = $this->mailer->getSentMIMEMessage();

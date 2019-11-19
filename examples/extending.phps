@@ -10,6 +10,7 @@
 //Import PHPMailer classes into the global namespace
 use PHPMailer\PHPMailer\PHPMailerException;
 use PHPMailer\PHPMailer\SMTPMailer;
+use Psr\Log\LoggerInterface;
 
 require '../vendor/autoload.php';
 
@@ -21,19 +22,18 @@ class myPHPMailer extends SMTPMailer{
 	/**
 	 * myPHPMailer constructor.
 	 *
-	 * @param string $body A default HTML message body
+	 * @param string                        $body A default HTML message body
+	 * @param \Psr\Log\LoggerInterface|null $logger
 	 */
-	public function __construct($body = ''){
+	public function __construct($body = '', LoggerInterface $logger = null){
 		//Don't forget to do this or other things may not be set correctly!
-		parent::__construct();
+		parent::__construct($logger);
 		//Set a default 'From' address
 		$this->setFrom('joe@example.com', 'Joe User');
 		//Equivalent to setting `Host`, `Port` and `SMTPSecure` all at once
 		$this->host = 'tls://smtp.example.com:587';
 		//Set an HTML and plain-text body, import relative image references
 		$this->messageFromHTML($body, './images/');
-		//Show debug output
-		$this->loglevel = 2;
 	}
 
 	//Extend the send function

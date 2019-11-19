@@ -393,7 +393,6 @@ class UnitTest extends TestAbstract{
 		$this->mailer->Body = $this->buildBody('invalid address');
 
 		$this->mailer->preSend();
-		$this->assertSame($this->mailer->ErrorInfo, 'Invalid address:  (to): invalidaddressexample.com');
 
 		$this->mailer->addAttachment(realpath($this->INCLUDE_DIR.'/examples/images/phpmailer_mini.png'), 'phpmailer_mini.png');
 		$this->assertTrue($this->mailer->attachmentExists());

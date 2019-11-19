@@ -33,7 +33,7 @@ $mail->setDKIMCredentials(
 
 // When you send, the DKIM settings will be used to sign the message
 if(!$mail->send()){
-	echo "Mailer Error: ".$mail->ErrorInfo;
+	echo "Mailer Error: ";
 }
 else{
 	echo "Message sent!";

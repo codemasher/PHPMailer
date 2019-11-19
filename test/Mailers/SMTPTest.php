@@ -12,7 +12,7 @@
 
 namespace PHPMailer\Test\Mailers;
 
-use PHPMailer\PHPMailer\{POP3, SMTPMailer};
+use PHPMailer\PHPMailer\{PHPMailerException, POP3, SMTPMailer};
 
 use function escapeshellarg, shell_exec, sleep;
 
@@ -64,37 +64,37 @@ class SMTPTest extends MailerTestAbstract{
 	 * @group slow
 	 */
 	public function testConnectInvalidHosts(){
+		$this->expectException(PHPMailerException::class);
 		// All these hosts are expected to fail
 		$this->mailer->host = 'xyz://bogus:25;tls://[bogus]:25;ssl://localhost:12345;tls://localhost:587;10.10.10.10:54321;localhost:12345;10.10.10.10'.TEST_MAIL_HOST.' ';
 		$this->assertFalse($this->mailer->smtpConnect());
-		$this->mailer->closeSMTP();
 	}
 
 	/**
 	 * @group slow
 	 */
 	public function testConnectIPv6(){
+		$this->expectException(PHPMailerException::class);
 		$this->mailer->host = '[::1]:'.$this->mailer->port.';'.TEST_MAIL_HOST;
 		$this->assertTrue($this->mailer->smtpConnect(), 'SMTP IPv6 literal multi-connect failed');
-		$this->mailer->closeSMTP();
 	}
 
 	/**
 	 * @group slow
 	 */
 	public function testMultiConnect(){
+		$this->expectException(PHPMailerException::class);
 		$this->mailer->host = 'localhost:12345;10.10.10.10:54321;'.TEST_MAIL_HOST;
 		$this->assertTrue($this->mailer->smtpConnect(), 'SMTP multi-connect failed');
-		$this->mailer->closeSMTP();
 	}
 
 	/**
 	 * @group slow
 	 */
 	public function testConnectHostWithSpaces(){
+		$this->expectException(PHPMailerException::class);
 		$this->mailer->host = ' localhost:12345 ; '.TEST_MAIL_HOST.' ';
 		$this->assertTrue($this->mailer->smtpConnect(), 'SMTP hosts with stray spaces failed');
-		$this->mailer->closeSMTP();
 	}
 
 	public function testConnectWithTLS(){
@@ -156,7 +156,7 @@ class SMTPTest extends MailerTestAbstract{
 		sleep(1);
 		//Test a known-good login
 		$this->assertTrue(
-			(new POP3)->authorise('localhost', 1100, 10, 'user', 'test', $this->mailer->loglevel),
+			(new POP3)->authorise('localhost', 1100, 10, 'user', 'test'),
 			'POP before SMTP failed'
 		);
 
@@ -193,7 +193,7 @@ class SMTPTest extends MailerTestAbstract{
 
 		//Test a known-bad login
 		$this->assertFalse(
-			(new POP3)->authorise('localhost', 1101, 10, 'user', 'xxx', $this->mailer->loglevel),
+			(new POP3)->authorise('localhost', 1101, 10, 'user', 'xxx'),
 			'POP before SMTP should have failed'
 		);
 

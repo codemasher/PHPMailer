@@ -24,7 +24,7 @@ if(array_key_exists('userfile', $_FILES)){
 		// Attach the uploaded file
 		$mail->addAttachment($uploadfile, 'My uploaded file');
 		if(!$mail->send()){
-			$msg .= "Mailer Error: ".$mail->ErrorInfo;
+			$msg .= "Mailer Error: ";
 		}
 		else{
 			$msg .= "Message sent!";

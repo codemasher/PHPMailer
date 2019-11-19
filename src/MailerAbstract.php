@@ -12,7 +12,8 @@
 
 namespace PHPMailer\PHPMailer;
 
-use Psr\Log\{LoggerAwareInterface, LoggerAwareTrait, NullLogger};
+use ErrorException;
+use Psr\Log\{LoggerAwareInterface, LoggerAwareTrait, LoggerInterface, NullLogger};
 
 use function array_key_exists, count, dirname, extension_loaded, file_exists, function_exists, preg_match;
 
@@ -79,41 +80,6 @@ abstract class MailerAbstract implements LoggerAwareInterface{
 	public const ENCRYPTION_SMTPS    = 'ssl';
 
 	/**
-	 * Debug level for no output.
-	 *
-	 * @var int
-	 */
-	public const DEBUG_OFF = 0;
-
-	/**
-	 * Debug level to show client -> server messages.
-	 *
-	 * @var int
-	 */
-	public const DEBUG_CLIENT = 1;
-
-	/**
-	 * Debug level to show client -> server and server -> client messages.
-	 *
-	 * @var int
-	 */
-	public const DEBUG_SERVER = 2;
-
-	/**
-	 * Debug level to show connection status, client -> server and server -> client messages.
-	 *
-	 * @var int
-	 */
-	public const DEBUG_CONNECTION = 3;
-
-	/**
-	 * Debug level to show all messages.
-	 *
-	 * @var int
-	 */
-	public const DEBUG_LOWLEVEL = 4;
-
-	/**
 	 * The SMTP port to use if one is not specified.
 	 *
 	 * @var int
@@ -133,27 +99,6 @@ abstract class MailerAbstract implements LoggerAwareInterface{
 	 * @var int
 	 */
 	protected const DEFAULT_TIMEOUT_POP3 = 30;
-
-	/**
-	 * Error severity: message only, continue processing.
-	 *
-	 * @var int
-	 */
-	protected const STOP_MESSAGE = 0;
-
-	/**
-	 * Error severity: message, likely ok to continue processing.
-	 *
-	 * @var int
-	 */
-	protected const STOP_CONTINUE = 1;
-
-	/**
-	 * Error severity: message, plus full stop, critical error reached.
-	 *
-	 * @var int
-	 */
-	protected const STOP_CRITICAL = 2;
 
 	/**
 	 * The maximum line length supported by mail().
@@ -223,19 +168,6 @@ abstract class MailerAbstract implements LoggerAwareInterface{
 	public $timeout = 5;
 
 	/**
-	 * Debug output level.
-	 * Options:
-	 * * self::DEBUG_OFF (`0`) No debug output, default
-	 * * self::DEBUG_CLIENT (`1`) Client commands
-	 * * self::DEBUG_SERVER (`2`) Client commands and server responses
-	 * * self::DEBUG_CONNECTION (`3`) As DEBUG_SERVER plus connection status
-	 * * self::DEBUG_LOWLEVEL (`4`) Low-level data output, all messages.
-	 *
-	 * @var int
-	 */
-	public $loglevel = self::DEBUG_OFF;
-
-	/**
 	 * The socket for the server connection.
 	 *
 	 * @var ?resource
@@ -266,12 +198,14 @@ abstract class MailerAbstract implements LoggerAwareInterface{
 	/**
 	 * MailerAbstract constructor.
 	 *
+	 * @param \Psr\Log\LoggerInterface|null $logger
+	 *
 	 * @throws \PHPMailer\PHPMailer\PHPMailerException
 	 */
-	public function __construct(){
-		$this->logger = new NullLogger;
+	public function __construct(LoggerInterface $logger = null){
+		$this->logger = $logger ?? new NullLogger;
 
-		// check for missing extensions first (may ocur if not installed via composer)
+		// check for missing extensions first (may occur if not installed via composer)
 		foreach(['ctype', 'filter', 'mbstring', 'openssl'] as $ext){
 			if(!extension_loaded($ext)){
 				throw new PHPMailerException($this->lang('extension_missing').$ext);
@@ -287,51 +221,12 @@ abstract class MailerAbstract implements LoggerAwareInterface{
 	}
 
 	/**
-	 * Set debug output level.
-	 *
-	 * @param int $level
-	 *
-	 * @return \PHPMailer\PHPMailer\MailerAbstract
-	 */
-	public function setDebugLevel(int $level = 0):MailerAbstract{
-		$this->loglevel = $level;
-
-		return $this;
-	}
-
-	/**
-	 * Get debug output level.
-	 *
-	 * @return int
-	 */
-	public function getDebugLevel():int{
-		return $this->loglevel;
-	}
-
-	/**
 	 * Return the current line break format string.
 	 *
 	 * @return string
 	 */
 	public function getLE():string{
 		return $this->LE;
-	}
-
-	/**
-	 * Output debugging info via PSR-3 LoggerInterface
-	 *
-	 * @param string $str   Debug string to output
-	 * @param int    $level The debug level of this message; see DEBUG_* constants
-	 *
-	 * @see SMTP::$loglevel
-	 */
-	protected function edebug(string $str, int $level = self::DEBUG_OFF):void{
-
-		if($level > $this->loglevel){
-			return;
-		}
-
-		$this->logger->debug($str);
 	}
 
 	/**
@@ -450,6 +345,19 @@ abstract class MailerAbstract implements LoggerAwareInterface{
 
 		//Return the key as a fallback
 		return $key;
+	}
+
+	/**
+	 * @param int    $severity
+	 * @param string $msg
+	 * @param string $file
+	 * @param int    $line
+	 *
+	 * @return void
+	 * @throws \ErrorException
+	 */
+	protected function errorHandler(int $severity, string $msg, string $file, int $line):void{
+		throw new ErrorException($msg, 0, $severity, $file, $line);
 	}
 
 }

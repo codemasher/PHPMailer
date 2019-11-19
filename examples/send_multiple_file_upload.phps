@@ -27,7 +27,7 @@ if(array_key_exists('userfile', $_FILES)){
 		}
 	}
 	if(!$mail->send()){
-		$msg .= "Mailer Error: ".$mail->ErrorInfo;
+		$msg .= "Mailer Error: ";
 	}
 	else{
 		$msg .= "Message sent!";

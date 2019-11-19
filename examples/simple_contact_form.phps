@@ -69,7 +69,7 @@ if(array_key_exists('to', $_POST)){
 		$mail->Subject = 'Contact form: '.$subject;
 		$mail->Body    = "Contact form submission\n\n".$query;
 		if(!$mail->send()){
-			$msg .= "Mailer Error: ".$mail->ErrorInfo;
+			$msg .= "Mailer Error: ";
 		}
 		else{
 			$msg .= "Message sent!";

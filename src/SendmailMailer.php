@@ -12,6 +12,8 @@
 
 namespace PHPMailer\PHPMailer;
 
+use Psr\Log\LoggerInterface;
+
 use function escapeshellcmd, fwrite, ini_get, pclose, popen, sprintf, stripos;
 
 class SendmailMailer extends PHPMailer{
@@ -25,8 +27,8 @@ class SendmailMailer extends PHPMailer{
 	 */
 	public $Sendmail;
 
-	public function __construct(){
-		parent::__construct();
+	public function __construct(LoggerInterface $logger = null){
+		parent::__construct($logger);
 
 		$ini_sendmail_path = ini_get('sendmail_path');
 
@@ -84,7 +86,7 @@ class SendmailMailer extends PHPMailer{
 				$mail = @popen($sendmail, 'w');
 
 				if(!$mail){
-					throw new PHPMailerException($this->lang('execute').$this->Sendmail, $this::STOP_CRITICAL);
+					throw new PHPMailerException($this->lang('execute').$this->Sendmail);
 				}
 
 				fwrite($mail, 'To: '.$toAddr."\n");
@@ -95,7 +97,7 @@ class SendmailMailer extends PHPMailer{
 				$this->doCallback(($result === 0), [$toAddr], $this->cc, $this->bcc, $this->Subject, $body, $this->From, []);
 
 				if($result !== 0){
-					throw new PHPMailerException($this->lang('execute').$this->Sendmail, $this::STOP_CRITICAL);
+					throw new PHPMailerException($this->lang('execute').$this->Sendmail);
 				}
 			}
 		}
@@ -103,7 +105,7 @@ class SendmailMailer extends PHPMailer{
 			$mail = @popen($sendmail, 'w');
 
 			if(!$mail){
-				throw new PHPMailerException($this->lang('execute').$this->Sendmail, $this::STOP_CRITICAL);
+				throw new PHPMailerException($this->lang('execute').$this->Sendmail);
 			}
 
 			fwrite($mail, $header);
@@ -113,7 +115,7 @@ class SendmailMailer extends PHPMailer{
 			$this->doCallback(($result === 0), $this->to, $this->cc, $this->bcc, $this->Subject, $body, $this->From, []);
 
 			if($result !== 0){
-				throw new PHPMailerException($this->lang('execute').$this->Sendmail, $this::STOP_CRITICAL);
+				throw new PHPMailerException($this->lang('execute').$this->Sendmail);
 			}
 		}
 
