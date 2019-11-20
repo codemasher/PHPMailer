@@ -260,12 +260,10 @@ class SMTPMailer extends PHPMailer{
 					$this->smtp->hello($hello);
 					//Automatically enable TLS encryption if:
 					// * it's not disabled
-					// * we have openssl extension
 					// * we are not already using SSL
 					// * the server offers STARTTLS
 					if(
 						$this->SMTPAutoTLS
-						&& $sslext
 						&& $secure !== $this::ENCRYPTION_SMTPS
 						&& $this->smtp->getServerExt('STARTTLS')
 					){
