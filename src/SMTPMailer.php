@@ -243,16 +243,6 @@ class SMTPMailer extends PHPMailer{
 				$secure = $this::ENCRYPTION_STARTTLS;
 			}
 
-			//Do we need the OpenSSL extension?
-			$sslext = defined('OPENSSL_ALGO_SHA256');
-
-			if($secure === $this::ENCRYPTION_STARTTLS || $secure === $this::ENCRYPTION_SMTPS){
-				//Check for an OpenSSL constant rather than using extension_loaded, which is sometimes disabled
-				if(!$sslext){
-					throw new PHPMailerException($this->lang('extension_missing').'openssl');
-				}
-			}
-
 			$host    = $hostinfo[3];
 			$port    = $this->port ?? $this::DEFAULT_PORT_SMTP;
 			$options = $options ?? $this->SMTPOptions;
