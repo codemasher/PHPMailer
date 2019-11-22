@@ -275,15 +275,6 @@ abstract class MailerAbstract implements LoggerAwareInterface{
 	}
 
 	/**
-	 * Get the array of strings for the current language.
-	 *
-	 * @return array
-	 */
-	public function getTranslations():array{
-		return $this->lang->strings();
-	}
-
-	/**
 	 * @param int    $severity
 	 * @param string $msg
 	 * @param string $file
