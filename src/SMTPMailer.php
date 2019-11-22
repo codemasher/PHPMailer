@@ -12,7 +12,7 @@
 
 namespace PHPMailer\PHPMailer;
 
-use function count, defined, explode, preg_match, trim;
+use function count, explode, implode, preg_match, sprintf, trim;
 
 class SMTPMailer extends PHPMailer{
 
@@ -104,33 +104,27 @@ class SMTPMailer extends PHPMailer{
 	 */
 	protected function smtpSend(string $header, string $body):bool{
 		$header   = rtrim($header, "\r\n ").$this->LE.$this->LE;
-		$bad_rcpt = 0;
+		$bad_rcpt = [];
 
 		if(!$this->smtpConnect($this->SMTPOptions)){
-			throw new PHPMailerException($this->lang('smtp_connect_failed'));
+			throw new PHPMailerException($this->lang->string('smtp_connect_failed'));
 		}
 		//Sender already validated in preSend()
 		$smtp_from = empty($this->Sender) ? $this->From : $this->Sender;
 
 		if(!$this->smtp->mail($smtp_from)){
-			$msg = $this->lang('from_failed').$smtp_from;
-			$this->logger->error($msg);
-
-			throw new PHPMailerException($msg);
+			throw new PHPMailerException(sprintf($this->lang->string('from_failed'), $smtp_from));
 		}
 
 		$callbacks = [];
 		// Attempt to send to all recipients
 		foreach([$this->to, $this->cc, $this->bcc] as $togroup){
 			foreach($togroup as $to){
+				$isSent = true;
 
 				if(!$this->smtp->recipient($to[0], $this->dsn)){
-					$bad_rcpt++;
-					$this->logger->error('Recipient failed: '.$to[0]);
-					$isSent     = false;
-				}
-				else{
-					$isSent = true;
+					$bad_rcpt[] = $to[0];
+					$isSent = false;
 				}
 
 				$callbacks[] = ['issent' => $isSent, 'to' => $to[0]];
@@ -138,8 +132,8 @@ class SMTPMailer extends PHPMailer{
 		}
 
 		// Only send the DATA command if we have viable recipients
-		if((count($this->all_recipients) > $bad_rcpt) && !$this->smtp->data($header.$body)){
-			throw new PHPMailerException($this->lang('data_not_accepted'));
+		if((count($this->all_recipients) > count($bad_rcpt)) && !$this->smtp->data($header.$body)){
+			throw new PHPMailerException($this->lang->string('data_not_accepted'));
 		}
 
 		$smtp_transaction_id = $this->smtp->getLastTransactionID();
@@ -166,8 +160,8 @@ class SMTPMailer extends PHPMailer{
 		}
 
 		//Create error message for any bad addresses
-		if($bad_rcpt > 0){
-			$this->logger->error($this->lang('recipients_failed'));
+		if(count($bad_rcpt) > 0){
+			$this->logger->error(sprintf($this->lang->string('recipients_failed'), implode(', ', $bad_rcpt)));
 
 			return false;
 		}
@@ -210,7 +204,7 @@ class SMTPMailer extends PHPMailer{
 
 			/** @noinspection RegExpRedundantEscape */
 			if(!preg_match('/^((ssl|tls):\/\/)*([a-zA-Z0-9\.-]*|\[[a-fA-F0-9:]+\]):?([0-9]*)$/', trim($hostentry), $hostinfo)){
-				$this->logger->warning($this->lang('connect_host').' '.$hostentry);
+				$this->logger->warning($this->lang->string('connect_host').' '.$hostentry);
 				// Not a valid host entry
 				continue;
 			}
@@ -223,7 +217,7 @@ class SMTPMailer extends PHPMailer{
 
 			//Check the host name is a valid name or IP address before trying to use it
 			if(!isValidHost($hostinfo[3])){
-				$this->logger->warning($this->lang('connect_host').' '.$hostentry);
+				$this->logger->warning($this->lang->string('connect_host').' '.$hostentry);
 
 				continue;
 			}
@@ -272,7 +266,7 @@ class SMTPMailer extends PHPMailer{
 
 					if($tls){
 						if(!$this->smtp->startTLS()){
-							throw new PHPMailerException($this->lang('connect_host'));
+							throw new PHPMailerException($this->lang->string('connect_host'));
 						}
 						// We must resend EHLO after TLS negotiation
 						$this->smtp->hello($hello);
@@ -280,7 +274,7 @@ class SMTPMailer extends PHPMailer{
 
 					if($this->SMTPAuth){
 						if(!$this->smtp->authenticate($this->username, $this->password, $this->AuthType, $this->oauth)){
-							throw new PHPMailerException($this->lang('authenticate'));
+							throw new PHPMailerException($this->lang->string('authenticate'));
 						}
 					}
 

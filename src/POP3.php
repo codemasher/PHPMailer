@@ -124,9 +124,7 @@ class POP3 extends MailerAbstract{
 		//  Did we connect?
 		if($this->socket === false){
 			//  It would appear not...
-			$this->logger->error(
-				sprintf('Failed to connect to server %s on port %s. errno: %s; errstr: %s', $host, $port, $errno, $errstr)
-			);
+			$this->logger->error(sprintf($this->lang->string('pop3_socket_error'), $host, $port, $errno, $errstr));
 
 			return false;
 		}
@@ -158,7 +156,7 @@ class POP3 extends MailerAbstract{
 	public function login(string $username = null, string $password = null):bool{
 
 		if(!$this->connected){
-			$this->logger->error('Not connected to POP3 server');
+			$this->logger->error($this->lang->string('pop3_not_connected'));
 		}
 
 		// Send the Username
@@ -206,10 +204,10 @@ class POP3 extends MailerAbstract{
 	 */
 	protected function getResponse(int $size = null):string{
 		$response = fgets($this->socket, $size ?? 128);
-		$this->logger->debug('Server -> Client: '.$response);
+		$this->logger->debug(sprintf($this->lang->string('server_client'), $response));
 
 		if($response === false){
-			$this->logger->error('fgets error');
+			$this->logger->error($this->lang->string('pop3_response'));
 
 			return '';
 		}
@@ -225,11 +223,11 @@ class POP3 extends MailerAbstract{
 	 * @return int
 	 */
 	protected function sendString(string $string):int{
-		$this->logger->debug('Client -> Server: '.$string);
+		$this->logger->debug(sprintf($this->lang->string('client_server'), $string));
 		$bytes_written = fwrite($this->socket, $string, strlen($string));
 
 		if($bytes_written === false){
-			$this->logger->error('fwrite error');
+			$this->logger->error($this->lang->string('pop3_request'));
 
 			return 0;
 		}
@@ -248,7 +246,7 @@ class POP3 extends MailerAbstract{
 	protected function checkResponse(string $string):bool{
 
 		if(substr($string, 0, 3) !== '+OK'){
-			$this->logger->error(sprintf('Server reported an error: %s', $string));
+			$this->logger->error(sprintf($this->lang->string('pop3_server_error'), $string));
 
 			return false;
 		}

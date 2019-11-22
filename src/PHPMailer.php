@@ -795,8 +795,7 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 			|| (!has8bitChars(substr($address, ++$pos)) || !idnSupported())
 			   && !validateAddress($address, $this->validator)
 		){
-			$error_message = sprintf('%s (From): %s', $this->lang('invalid_address'), $address);
-			$this->logger->error($error_message);
+			$this->logger->error(sprintf($this->lang->string('invalid_address'), 'From', $address));
 
 			return false;
 		}
@@ -832,9 +831,7 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 
 		if($pos === false){
 			// At-sign is missing.
-			$error_message = sprintf('%s (%s): %s', $this->lang('invalid_address'), $kind, $address);
-
-			$this->logger->error($error_message);
+			$this->logger->error(sprintf($this->lang->string('invalid_address'), $kind, $address));
 
 			return false;
 		}
@@ -878,17 +875,13 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 	protected function addAnAddress(string $kind, string $address, string $name = null):bool{
 
 		if(!in_array($kind, ['to', 'cc', 'bcc', 'Reply-To'])){
-			$error_message = sprintf('%s: %s', $this->lang('Invalid recipient kind'), $kind);
-
-			$this->logger->error($error_message);
+			$this->logger->error(sprintf($this->lang->string('invalid_recipient_type'), $kind));
 
 			return false;
 		}
 
 		if(!validateAddress($address, $this->validator)){
-			$error_message = sprintf('%s (%s): %s', $this->lang('invalid_address'), $kind, $address);
-
-			$this->logger->error($error_message);
+			$this->logger->error(sprintf($this->lang->string('invalid_address'), $kind, $address));
 
 			return false;
 		}
@@ -957,15 +950,11 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 	):PHPMailer{
 
 		if(!in_array($encoding, $this::ENCODINGS, true)){
-			throw new PHPMailerException($this->lang('encoding').$encoding);
+			throw new PHPMailerException(sprintf($this->lang->string('encoding'), $encoding));
 		}
 
 		if(!isPermittedPath($path) || !@is_file($path)){
-			$msg = $this->lang('file_access').$path;
-
-			$this->logger->error($msg);
-
-			throw new PHPMailerException($msg);
+			throw new PHPMailerException(sprintf($this->lang->string('file_access'), $path));
 		}
 
 		// If a MIME type is not specified, try to work it out from the file name
@@ -1017,7 +1006,7 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 	):PHPMailer{
 
 		if(!in_array($encoding, $this::ENCODINGS, true)){
-			throw new PHPMailerException($this->lang('encoding').$encoding);
+			throw new PHPMailerException(sprintf($this->lang->string('encoding'), $encoding));
 		}
 
 		// If a MIME type is not specified, try to work it out from the file name
@@ -1071,14 +1060,11 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 	):PHPMailer{
 
 		if(!in_array($encoding, $this::ENCODINGS, true)){
-			throw new PHPMailerException($this->lang('encoding').$encoding);
+			throw new PHPMailerException(sprintf($this->lang->string('encoding'), $encoding));
 		}
 
 		if(!isPermittedPath($path) || !@is_file($path)){
-			$msg = $this->lang('file_access').$path;
-			$this->logger->error($msg);
-
-			throw new PHPMailerException($msg);
+			throw new PHPMailerException(sprintf($this->lang->string('file_access'), $path));
 		}
 
 		// If a MIME type is not specified, try to work it out from the file name
@@ -1135,7 +1121,7 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 	):PHPMailer{
 
 		if(!in_array($encoding, $this::ENCODINGS, true)){
-			throw new PHPMailerException($this->lang('encoding').$encoding);
+			throw new PHPMailerException(sprintf($this->lang->string('encoding'), $encoding));
 		}
 
 		// If a MIME type is not specified, try to work it out from the name
@@ -1217,29 +1203,29 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 	):PHPMailer{
 
 		if(!fileCheck($cert_filename) || !isPermittedPath($cert_filename)){
-			throw new PHPMailerException('invalid sign cert file: '.$cert_filename);
+			throw new PHPMailerException(sprintf($this->lang->string('sign_cert_file'), $cert_filename));
 		}
 
 		if(!fileCheck($key_filename) || !isPermittedPath($key_filename)){
-			throw new PHPMailerException('invalid sign key file: '.$key_filename);
+			throw new PHPMailerException(sprintf($this->lang->string('sign_key_file'), $key_filename));
 		}
 
 		if(empty($key_pass)){
-			throw new PHPMailerException('invalid sign key passphrase');
+			throw new PHPMailerException($this->lang->string('sign_key_passphrase'));
+		}
+
+		if($extracerts_filename !== null){
+
+			if(!fileCheck($extracerts_filename) || !isPermittedPath($extracerts_filename)){
+				throw new PHPMailerException(sprintf($this->lang->string('extra_certs_file'), $extracerts_filename));
+			}
+
+			$this->sign_extracerts_file = $extracerts_filename;
 		}
 
 		$this->sign_cert_file = $cert_filename;
 		$this->sign_key_file  = $key_filename;
 		$this->sign_key_pass  = $key_pass;
-
-		if($extracerts_filename !== null){
-
-			if(!fileCheck($extracerts_filename) || !isPermittedPath($extracerts_filename)){
-				throw new PHPMailerException('invalid extra certs file: '.$extracerts_filename);
-			}
-
-			$this->sign_extracerts_file = $extracerts_filename;
-		}
 
 		$this->signCredentials = true;
 		// enable signing as soon as we get credentials
@@ -1276,14 +1262,14 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 			${$arg} = trim(${$arg});
 
 			if(empty(${$arg})){
-				throw new PHPMailerException($arg.' must not be empty');
+				throw new PHPMailerException(sprintf($this->lang->string('arg_empty'), $arg));
 			}
 
 			$this->{'DKIM_'.$arg} = ${$arg};
 		}
 
 		if(fileCheck($key) && !isPermittedPath($key)){
-			throw new PHPMailerException('invalid key file path: '.$key);
+			throw new PHPMailerException(sprintf($this->lang->string('dkim_key_file'), $key));
 		}
 
 		$this->DKIM_passphrase  = !empty($keyPassphrase) ? $keyPassphrase : null;
@@ -1326,23 +1312,13 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 	 * Create a message and send it.
 	 * Uses the sending method specified by $Mailer.
 	 *
-	 * @return bool false on error - See the ErrorInfo property for details of the error
-	 * @throws \PHPMailer\PHPMailer\PHPMailerException
+	 * @return bool false on error
 	 */
 	public function send():bool{
-
-		try{
-			return $this
-				->preSend()
-				->postSend()
-			;
-		}
-		catch(PHPMailerException $e){
-			$this->logger->error($e->getMessage());
-
-			throw $e;
-		}
-
+		return $this
+			->preSend()
+			->postSend()
+		;
 	}
 
 	/**
@@ -1361,7 +1337,7 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 		}
 
 		if(count($this->to) + count($this->cc) + count($this->bcc) < 1){
-			throw new PHPMailerException($this->lang('provide_address'));
+			throw new PHPMailerException($this->lang->string('provide_address'));
 		}
 
 		// Validate From, Sender, and ConfirmReadingTo addresses
@@ -1375,7 +1351,7 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 			$this->{$type} = punyencodeAddress($this->{$type}, $this->CharSet);
 
 			if(!validateAddress($this->{$type}, $this->validator)){
-				$this->logger->error(sprintf('%s (%s): %s', $this->lang('invalid_address'), $type, $this->{$type}));
+				$this->logger->error(sprintf($this->lang->string('invalid_address'), $type, $this->{$type}));
 				// clear the invalid address
 				unset($this->{$type});
 			}
@@ -1389,7 +1365,7 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 		$this->setMessageType();
 		// Refuse to send an empty message unless we are specifically allowing it
 		if(!$this->AllowEmpty && empty($this->Body)){
-			throw new PHPMailerException($this->lang('empty_message'));
+			throw new PHPMailerException($this->lang->string('empty_message'));
 		}
 
 		//Create unique IDs and preset boundaries
@@ -2065,7 +2041,7 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 	protected function pkcs7Sign(string $message):string{
 
 		if(!$this->signCredentials){
-			throw new PHPMailerException('no sign credentials set');
+			throw new PHPMailerException($this->lang->string('sign_credentials'));
 		}
 
 		$tmpdir = sys_get_temp_dir();
@@ -2089,7 +2065,7 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 		unlink($signed);
 
 		if(!$sign){
-			throw new PHPMailerException($this->lang('signing').openssl_error_string());
+			throw new PHPMailerException(sprintf($this->lang->string('signing'), openssl_error_string()));
 		}
 
 		//The message returned by openssl contains both headers and body, so need to split them up
@@ -2295,13 +2271,13 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 	protected function encodeFile(string $path, string $encoding = self::ENCODING_BASE64):string{
 
 		if(!fileCheck($path) || !isPermittedPath($path)){
-			throw new PHPMailerException($this->lang('file_open').$path);
+			throw new PHPMailerException(sprintf($this->lang->string('file_open'), $path));
 		}
 
 		$file_buffer = file_get_contents($path);
 
 		if($file_buffer === false){
-			throw new PHPMailerException($this->lang('file_open').$path);
+			throw new PHPMailerException(sprintf($this->lang->string('file_open'), $path));
 		}
 
 		$file_buffer = $this->encodeString($file_buffer, $encoding);
@@ -2341,9 +2317,7 @@ abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
 				return normalizeBreaks(quoted_printable_encode($str), $this->LE);
 		}
 
-		$msg = $this->lang('encoding').$encoding;
-		$this->logger->error($msg);
-		throw new PHPMailerException($msg);
+		throw new PHPMailerException(sprintf($this->lang->string('encoding'), $encoding));
 	}
 
 	/**

@@ -26,7 +26,7 @@ use function array_key_exists, array_shift, base64_decode, base64_encode, count,
 	fgets, fsockopen, function_exists, fwrite, hash_hmac, implode, in_array, ini_get, is_array, is_resource, md5,
 	pack, preg_match, preg_replace, restore_error_handler, set_error_handler, set_time_limit, sprintf, str_pad,
 	str_replace, stream_context_create, stream_get_meta_data, stream_select, stream_set_timeout, stream_socket_client,
-	stream_socket_enable_crypto, strlen, strpos, strrpos, strtoupper, substr, time, trim, var_export;
+	stream_socket_enable_crypto, strlen, strpos, strrpos, strtoupper, substr, time, trim;
 
 use const PHP_OS_FAMILY, STREAM_CLIENT_CONNECT, STREAM_CRYPTO_METHOD_TLS_CLIENT,
 	STREAM_CRYPTO_METHOD_TLSv1_1_CLIENT, STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT;
@@ -56,14 +56,6 @@ class SMTP extends MailerAbstract{
 		'SendGrid'        => '/[\d]{3} Ok: queued as (.*)/',
 		'CampaignMonitor' => '/[\d]{3} 2.0.0 OK:([a-zA-Z\d]{48})/',
 	];
-
-	/**
-	 * How long to wait for commands to complete, in seconds.
-	 * Default of 5 minutes (300sec) is from RFC2821 section 4.5.3.2.
-	 *
-	 * @var int
-	 */
-	public $Timelimit = 5; // @todo: $timeout???
 
 	/**
 	 * The last transaction ID issued in response to a DATA command,
@@ -115,7 +107,7 @@ class SMTP extends MailerAbstract{
 		// Make sure we are __not__ connected
 		if($this->connected()){
 			// Already connected, generate error
-			$this->logger->error('Already connected to a server');
+			$this->logger->error($this->lang->string('already_connected'));
 
 			return false;
 		}
@@ -123,15 +115,7 @@ class SMTP extends MailerAbstract{
 		$port = $port ?? $this::DEFAULT_PORT_SMTP;
 
 		// Connect to the SMTP server
-		$this->logger->debug(
-			sprintf(
-				'Connection: opening to %s:%s, timeout=%s, options=%s',
-				$host,
-				$port,
-				$timeout,
-				!empty($stream_options) ? var_export($stream_options, true) : '[]'
-			)
-		);
+		$this->logger->debug(sprintf($this->lang->string('smtp_open'), $host, $port, $timeout), $stream_options);
 
 		$errno  = 0;
 		$errstr = '';
@@ -155,15 +139,13 @@ class SMTP extends MailerAbstract{
 			}
 			else{
 				//Fall back to fsockopen which should work in more places, but is missing some features
-				$this->logger->debug('Connection: stream_socket_client not available, falling back to fsockopen');
+				$this->logger->debug($this->lang->string('smtp_nostream'));
 
 				$this->socket = fsockopen($host, $port, $errno, $errstr, $timeout);
 			}
 
 		}
 		catch(Throwable $exception){
-			$this->logger->error($exception->getMessage());
-
 			throw new PHPMailerException($exception->getMessage());
 		}
 
@@ -171,12 +153,12 @@ class SMTP extends MailerAbstract{
 
 		// Verify we connected properly
 		if(!is_resource($this->socket)){
-			$this->logger->error(sprintf('SMTP ERROR: Failed to connect to server: %s (%s)', $errstr, $errno));
+			$this->logger->error(sprintf($this->lang->string('smtp_connect_error'), $errstr, $errno));
 
 			return false;
 		}
 
-		$this->logger->debug('Connection: opened');
+		$this->logger->debug($this->lang->string('smtp_dbg_open'));
 
 		// SMTP server can take longer to respond, give longer timeout for first read
 		// Windows does not have support for this timeout function
@@ -193,7 +175,7 @@ class SMTP extends MailerAbstract{
 
 		// Get any announcement
 		$announce = $this->getLines();
-		$this->logger->debug('[SRV > CLI] '.$announce);
+		$this->logger->debug(sprintf($this->lang->string('server_client'), $announce));
 
 		return true;
 	}
@@ -226,7 +208,7 @@ class SMTP extends MailerAbstract{
 			$crypto_ok = (bool)stream_socket_enable_crypto($this->socket, true, $crypto_method);
 		}
 		catch(Throwable $exception){
-			$this->logger->warning('stream_socket_enable_crypto failed');
+			$this->logger->warning($this->lang->string('stream_crypto_fail'));
 			$crypto_ok = false;
 		}
 
@@ -255,7 +237,7 @@ class SMTP extends MailerAbstract{
 	):bool{
 
 		if(!$this->server_caps){
-			$this->logger->error('Authentication is not allowed before HELO/EHLO');
+			$this->logger->error($this->lang->string('auth_before_helo'));
 
 			return false;
 		}
@@ -265,17 +247,17 @@ class SMTP extends MailerAbstract{
 			if(!array_key_exists('AUTH', $this->server_caps)){
 				// 'at this stage' means that auth may be allowed after the stage changes
 				// e.g. after STARTTLS
-				$this->logger->error('Authentication is not allowed at this stage');
+				$this->logger->error($this->lang->string('auth_stage'));
 
 				return false;
 			}
 
-			$this->logger->debug('Auth method requested: '.($authtype ? $authtype : 'UNSPECIFIED'));
-			$this->logger->debug('Auth methods available on the server: '.implode(',', $this->server_caps['AUTH']));
+			$this->logger->debug(sprintf($this->lang->string('dbg_auth_requested'), $authtype ? $authtype : 'UNSPECIFIED'));
+			$this->logger->debug(sprintf($this->lang->string('dbg_auth_available'), implode(',', $this->server_caps['AUTH'])));
 
 			// If we have requested a specific auth type, check the server supports it before trying others
 			if($authtype !== null && !in_array($authtype, $this->server_caps['AUTH'])){
-				$this->logger->debug('Requested auth method not available: '.$authtype);
+				$this->logger->warning(sprintf($this->lang->string('auth_unavailable'), $authtype));
 				$authtype = null;
 			}
 
@@ -290,16 +272,16 @@ class SMTP extends MailerAbstract{
 				}
 
 				if(empty($authtype)){
-					$this->logger->error('No supported authentication methods found');
+					$this->logger->error($this->lang->string('no_supported_auth'));
 
 					return false;
 				}
 
-				$this->logger->debug('Auth method selected: '.$authtype);
+				$this->logger->debug(sprintf($this->lang->string('dbg_auth_method'), $authtype));
 			}
 
 			if(!in_array($authtype, $this->server_caps['AUTH'])){
-				$this->logger->error('The requested authentication method "'.$authtype.'" is not supported by the server');
+				$this->logger->error(sprintf($this->lang->string('auth_unsupported'), $authtype));
 
 				return false;
 			}
@@ -366,7 +348,7 @@ class SMTP extends MailerAbstract{
 				break;
 
 			default:
-				$this->logger->error('Authentication method "'.$authtype.'" is not supported');
+				$this->logger->error(sprintf($this->lang->string('auth_unsupported'), $authtype));
 
 				return false;
 		}
@@ -428,7 +410,7 @@ class SMTP extends MailerAbstract{
 
 		if($sock_status['eof']){
 			// The socket is valid but we are not connected
-			$this->logger->debug('SMTP NOTICE: EOF caught while checking if connected');
+			$this->logger->debug($this->lang->string('dbg_eof'));
 			$this->close();
 
 			return false;
@@ -452,7 +434,7 @@ class SMTP extends MailerAbstract{
 			// close the connection and cleanup
 			fclose($this->socket);
 			$this->socket = null; //Makes for cleaner serialization
-			$this->logger->debug('Connection: closed');
+			$this->logger->debug($this->lang->string('smtp_closed'));
 		}
 
 		return $this;
@@ -548,12 +530,12 @@ class SMTP extends MailerAbstract{
 
 		//Message data has been sent, complete the command
 		//Increase timelimit for end of DATA command
-		$savetimelimit   = $this->Timelimit;
-		$this->Timelimit = $this->Timelimit * 2;
-		$result          = $this->sendCommand('DATA END', '.', [250]);
+		$savetimelimit = $this->timeout;
+		$this->timeout = $this->timeout * 2;
+		$result        = $this->sendCommand('DATA END', '.', [250]);
 		$this->recordLastTransactionID();
 		//Restore timelimit
-		$this->Timelimit = $savetimelimit;
+		$this->timeout = $savetimelimit;
 
 		return $result;
 	}
@@ -740,17 +722,17 @@ class SMTP extends MailerAbstract{
 	 *
 	 * @return bool True on success
 	 */
-	protected function sendCommand(string $command, string $commandstring, array $expect):bool{ // @todo: return :?string?
+	protected function sendCommand(string $command, string $commandstring, array $expect):bool{
 
 		if(!$this->connected()){
-			$this->logger->error('Called '.$command.' without being connected');
+			$this->logger->error(sprintf($this->lang->string('cmd_unconnected'), $command));
 
 			return false;
 		}
 
 		//Reject line breaks in all commands
 		if(strpos($commandstring, "\n") !== false || strpos($commandstring, "\r") !== false){
-			$this->logger->error('Command '.$command.' contained line breaks');
+			$this->logger->error(sprintf($this->lang->string('cmd_linebreaks'), $command));
 
 			return false;
 		}
@@ -776,12 +758,12 @@ class SMTP extends MailerAbstract{
 			$detail  = substr($this->last_reply, 4);
 		}
 
-		$this->logger->debug('[SRV > CLI] '.$this->last_reply);
+		$this->logger->debug(sprintf($this->lang->string('server_client'), $this->last_reply));
 
 		if(!in_array($code, $expect)){
 			$this->logger->error(
-				sprintf('SMTP ERROR: %s: %s', $command.' command failed', $this->last_reply),
-				[$detail, $code, $code_ex]
+				sprintf($this->lang->string('command_failed'), $command, $this->last_reply),
+				['detail' => $detail, 'code' => $code, 'code_ex' => $code_ex]
 			);
 
 			return false;
@@ -839,7 +821,7 @@ class SMTP extends MailerAbstract{
 	 * @return bool
 	 */
 	public function turn():bool{
-		$this->logger->error('SMTP NOTICE: The SMTP TURN command is not implemented');
+		$this->logger->error($this->lang->string('cmd_turn'));
 
 		return false;
 	}
@@ -856,8 +838,8 @@ class SMTP extends MailerAbstract{
 		//If SMTP transcripts are left enabled, or debug output is posted online
 		//it can leak credentials, so hide credentials in all but lowest level
 		in_array($command, ['User & Password', 'Username', 'Password'], true)
-			? $this->logger->debug('[CLI > SRV] <credentials hidden>')
-			: $this->logger->debug('[CLI > SRV] '.$data);
+			? $this->logger->debug(sprintf($this->lang->string('client_server'), '<credentials hidden>'))
+			: $this->logger->debug(sprintf($this->lang->string('client_server'), $data));
 
 		set_error_handler([$this, 'errorHandler']);
 
@@ -902,7 +884,7 @@ class SMTP extends MailerAbstract{
 	public function getServerExt(string $name):?string{
 
 		if(!$this->server_caps){
-			$this->logger->error('No HELO/EHLO was sent');
+			$this->logger->error($this->lang->string('no_helo'));
 
 			return null;
 		}
@@ -917,7 +899,7 @@ class SMTP extends MailerAbstract{
 				return null;
 			}
 
-			$this->logger->error('HELO handshake was used; No information about server extensions available');
+			$this->logger->error($this->lang->string('helo_noinfo'));
 
 			return null;
 		}
@@ -954,8 +936,8 @@ class SMTP extends MailerAbstract{
 
 		stream_set_timeout($this->socket, $this->timeout);
 
-		if($this->Timelimit > 0){
-			$endtime = time() + $this->Timelimit;
+		if($this->timeout > 0){
+			$endtime = time() + $this->timeout;
 		}
 
 		$selR = [$this->socket];
@@ -963,14 +945,14 @@ class SMTP extends MailerAbstract{
 
 		while(is_resource($this->socket) && !feof($this->socket)){
 			// Must pass vars in here as params are by reference
-			if(!stream_select($selR, $selW, $selW, $this->Timelimit)){
-				$this->logger->debug('SMTP -> getLines(): timed-out ('.$this->timeout.' sec)');
+			if(!stream_select($selR, $selW, $selW, $this->timeout)){
+				$this->logger->debug(sprintf($this->lang->string('smtp_timeout'), $this->timeout));
 				break;
 			}
 
 			// Deliberate noise suppression - errors are handled afterwards
 			$str = @fgets($this->socket, $this::MAX_REPLY_LENGTH);
-			$this->logger->debug('SMTP INBOUND: "'.trim($str).'"');
+			$this->logger->debug(sprintf($this->lang->string('smtp_inbound'), trim($str)));
 			$data .= $str;
 
 			// If response is only 3 chars (not valid, but RFC5321 S4.2 says it must be handled),
@@ -982,13 +964,13 @@ class SMTP extends MailerAbstract{
 			// Timed-out? Log and break
 			$info = stream_get_meta_data($this->socket);
 			if($info['timed_out']){
-				$this->logger->debug('SMTP -> getLines(): timed-out ('.$this->timeout.' sec)');
+				$this->logger->debug(sprintf($this->lang->string('smtp_timeout'), $this->timeout));
 				break;
 			}
 
 			// Now check if reads took too long
 			if($endtime && time() > $endtime){
-				$this->logger->debug('SMTP -> getLines(): timelimit reached ('.$this->Timelimit.' sec)');
+				$this->logger->debug(sprintf($this->lang->string('smtp_timelimit'), $this->timeout));
 				break;
 			}
 		}

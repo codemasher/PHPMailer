@@ -11,6 +11,9 @@
 
 namespace PHPMailer\PHPMailer;
 
+use DirectoryIterator, ReflectionClass;
+use PHPMailer\PHPMailer\Language\PHPMailerLanguageInterface;
+
 use function array_key_exists, array_search, array_unique, array_unshift, base64_encode, call_user_func, ctype_alnum,
 	date, date_default_timezone_get, date_default_timezone_set, escapeshellarg, escapeshellcmd, explode, file_exists,
 	file_get_contents, filter_var, function_exists, hash, hexdec, idn_to_ascii, imap_rfc822_parse_adrlist, implode,
@@ -880,3 +883,31 @@ function html2text(string $html, string $charset, $advanced = null):string{
 	);
 }
 
+/**
+ * @return array
+ */
+function getLanguages():array{
+	$languages = [];
+
+	/** @var \SplFileInfo $e */
+	foreach(new DirectoryIterator(__DIR__.'\\Language') as $e){
+
+		if($e->isDot() || $e->getExtension() !== 'php'){
+			continue;
+		}
+
+		$class = __NAMESPACE__.str_replace('/', '\\', substr($e->getPathname(), strlen(__DIR__), -4));
+		$r     = new ReflectionClass($class);
+
+		if(!$r->implementsInterface(PHPMailerLanguageInterface::class) || $r->isAbstract()){
+			continue;
+		}
+
+		$languages[$class] = $r
+			->newInstance()
+			->strings(['code', 'dir', 'name', 'native_name'])
+		;
+	}
+
+	return $languages;
+}

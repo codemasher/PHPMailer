@@ -14,10 +14,9 @@ namespace PHPMailer\PHPMailer;
 
 use ErrorException;
 use Psr\Log\{LoggerAwareInterface, LoggerAwareTrait, LoggerInterface, NullLogger};
+use PHPMailer\PHPMailer\Language\PHPMailerLanguageInterface;
 
-use function array_key_exists, count, dirname, extension_loaded, file_exists, function_exists, preg_match;
-
-use const DIRECTORY_SEPARATOR;
+use function class_exists, extension_loaded, function_exists, preg_match, sprintf, str_replace, strtoupper;
 
 abstract class MailerAbstract implements LoggerAwareInterface{
 	use LoggerAwareTrait;
@@ -197,9 +196,9 @@ abstract class MailerAbstract implements LoggerAwareInterface{
 	/**
 	 * The array of available languages.
 	 *
-	 * @var array
+	 * @var  \PHPMailer\PHPMailer\Language\PHPMailerLanguageInterface
 	 */
-	protected $language = [];
+	protected $lang;
 
 	/**
 	 * MailerAbstract constructor.
@@ -212,9 +211,9 @@ abstract class MailerAbstract implements LoggerAwareInterface{
 		$this->logger = $logger ?? new NullLogger;
 
 		// check for missing extensions first (may occur if not installed via composer)
-		foreach(['ctype', 'filter', 'mbstring', 'openssl'] as $ext){
+		foreach(['filter', 'mbstring', 'openssl'] as $ext){
 			if(!extension_loaded($ext)){
-				throw new PHPMailerException($this->lang('extension_missing').$ext);
+				throw new PHPMailerException(sprintf($this->lang->string('extension_missing'), $ext));
 			}
 		}
 
@@ -224,6 +223,7 @@ abstract class MailerAbstract implements LoggerAwareInterface{
 			$this->streamOK = function_exists('stream_socket_client');
 		}
 
+		$this->setLanguage('en');
 	}
 
 	/**
@@ -236,84 +236,42 @@ abstract class MailerAbstract implements LoggerAwareInterface{
 	}
 
 	/**
-	 * @todo: simplify, clean up
-	 *
 	 * Set the language for error messages.
-	 * Returns false if it cannot load the language file.
 	 * The default language is English.
 	 *
-	 * @param string $langcode  ISO 639-1 2-character language code (e.g. French is "fr")
-	 * @param string $lang_path Path to the language file directory, with trailing separator (slash)
+	 * @param string $langcode ISO 639-1 2-character language code (e.g. French is "fr")
 	 *
-	 * @return bool
+	 * @return \PHPMailer\PHPMailer\MailerAbstract
+	 * @throws \PHPMailer\PHPMailer\PHPMailerException
 	 */
-	public function setLanguage(string $langcode = 'en', string $lang_path = ''):bool{
-		// Backwards compatibility for renamed language codes
-		$renamed_langcodes = [
-			'br' => 'pt_br',
-			'cz' => 'cs',
-			'dk' => 'da',
-			'no' => 'nb',
-			'se' => 'sv',
-			'rs' => 'sr',
-			'tg' => 'tl',
-		];
+	public function setLanguage(string $langcode):MailerAbstract{
 
-		if(isset($renamed_langcodes[$langcode])){
-			$langcode = $renamed_langcodes[$langcode];
-		}
-
-		// Define full set of translatable strings in English
-		$PHPMAILER_LANG = [
-			'authenticate'         => 'SMTP Error: Could not authenticate.',
-			'connect_host'         => 'SMTP Error: Could not connect to SMTP host.',
-			'data_not_accepted'    => 'SMTP Error: data not accepted.',
-			'empty_message'        => 'Message body empty',
-			'encoding'             => 'Unknown encoding: ',
-			'execute'              => 'Could not execute: ',
-			'file_access'          => 'Could not access file: ',
-			'file_open'            => 'File Error: Could not open file: ',
-			'from_failed'          => 'The following From address failed: ',
-			'instantiate'          => 'Could not instantiate mail function.',
-			'invalid_address'      => 'Invalid address: ',
-			'mailer_not_supported' => ' mailer is not supported.',
-			'provide_address'      => 'You must provide at least one recipient email address.',
-			'recipients_failed'    => 'SMTP Error: The following recipients failed: ',
-			'signing'              => 'Signing Error: ',
-			'smtp_connect_failed'  => 'SMTP connect() failed.',
-			'smtp_error'           => 'SMTP server error: ',
-			'variable_set'         => 'Cannot set or reset variable: ',
-			'extension_missing'    => 'Extension missing: ',
-		];
-
-		if(empty($lang_path)){
-			// Calculate an absolute path so it can work if CWD is not here
-			$lang_path = dirname(__DIR__).DIRECTORY_SEPARATOR.'language'.DIRECTORY_SEPARATOR;
-		}
 		//Validate $langcode
-		if(!preg_match('/^[a-z]{2}(?:_[a-zA-Z]{2})?$/', $langcode)){
+		if(!preg_match('/^[a-z]{2}(?:-_[a-z]{2})?$/i', $langcode)){
 			$langcode = 'en';
 		}
 
-		$foundlang = true;
-		$lang_file = $lang_path.'phpmailer.lang-'.$langcode.'.php';
+		$class = 'Language'.strtoupper(str_replace('-', '_', $langcode));
+		$fqcn = __NAMESPACE__.'\\Language\\'.$class;
 
-		// There is no English translation file
-		if($langcode !== 'en'){
-			// Make sure language file path is readable
-			if(!isPermittedPath($lang_file) || !file_exists($lang_file)){
-				$foundlang = false;
-			}
-			else{
-				// Overwrite language-specific strings.
-				// This way we'll never have missing translation keys.
-				$foundlang = include $lang_file;
-			}
+		if(!class_exists($fqcn)){
+			throw new PHPMailerException(sprintf($this->lang->string('language_missing'), $class));
 		}
 
-		$this->language = $PHPMAILER_LANG;
+		$this->lang = new $fqcn;
 
-		return (bool)$foundlang; // Returns false if language not found
+		return $this;
+	}
+
+	/**
+	 * @param \PHPMailer\PHPMailer\Language\PHPMailerLanguageInterface $language
+	 *
+	 * @return \PHPMailer\PHPMailer\MailerAbstract
+	 */
+	public function setLanguageInterface(PHPMailerLanguageInterface $language):MailerAbstract{
+		$this->lang = $language;
+
+		return $this;
 	}
 
 	/**
@@ -322,35 +280,7 @@ abstract class MailerAbstract implements LoggerAwareInterface{
 	 * @return array
 	 */
 	public function getTranslations():array{
-		return $this->language;
-	}
-
-	/**
-	 * Get an error message in the current language.
-	 *
-	 * @param string $key
-	 *
-	 * @return string
-	 */
-	protected function lang(string $key):string{
-
-		if(count($this->language) < 1){
-			$this->setLanguage('en'); // set the default language
-		}
-
-		if(array_key_exists($key, $this->language)){
-			if($key === 'smtp_connect_failed'){
-				//Include a link to troubleshooting docs on SMTP connection failure
-				//this is by far the biggest cause of support questions
-				//but it's usually not PHPMailer's fault.
-				return $this->language[$key].' https://github.com/PHPMailer/PHPMailer/wiki/Troubleshooting';
-			}
-
-			return $this->language[$key];
-		}
-
-		//Return the key as a fallback
-		return $key;
+		return $this->lang->strings();
 	}
 
 	/**

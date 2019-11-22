@@ -101,7 +101,7 @@ class MailMailer extends PHPMailer{
 		}
 
 		if(!$result){
-			throw new PHPMailerException($this->lang('instantiate'));
+			throw new PHPMailerException($this->lang->string('instantiate'));
 		}
 
 		return true;

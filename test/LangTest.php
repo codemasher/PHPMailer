@@ -1,70 +1,78 @@
 <?php
 /**
- * PHPMailer - language file tests.
+ * Class LangTest
  *
- * PHP version 5.5.
- *
- * @author    Marcus Bointon <phpmailer@synchromedia.co.uk>
- * @author    Andy Prevost
- * @copyright 2010 - 2017 Marcus Bointon
- * @copyright 2004 - 2009 Andy Prevost
- * @license   http://www.gnu.org/copyleft/lesser.html GNU Lesser General Public License
+ * @filesource   LangTest.php
+ * @created      22.11.2019
+ * @package      PHPMailer\Test
+ * @author       smiley <smiley@chillerlan.net>
+ * @copyright    2019 smiley
+ * @license      MIT
  */
 
 namespace PHPMailer\Test;
 
-use PHPMailer\PHPMailer\SMTPMailer;
+use PHPMailer\PHPMailer\Language\{LanguageEN, PHPMailerLanguageInterface};
 use PHPUnit\Framework\TestCase;
+
+use function array_diff, array_diff_key, array_keys, print_r, sprintf, strpos;
+
+use function PHPMailer\PHPMailer\getLanguages;
 
 /**
  * Check language files for missing or excess translations.
  */
-final class LangTest extends TestCase{
+class LangTest extends TestCase{
 
 	/**
-	 * Holds a PHPMailer instance.
-	 *
-	 * @var \PHPMailer\PHPMailer\PHPMailerInterface
+	 * @var \PHPMailer\PHPMailer\Language\LanguageEN
 	 */
-	private $Mail;
+	protected $en;
 
-	/**
-	 * Run before each test is started.
-	 */
 	protected function setUp():void{
-		$this->Mail = new SMTPMailer();
+		$this->en = new LanguageEN;
+	}
+
+	public function languageProvider():array{
+		$languages = [];
+
+		foreach(getLanguages() as $fqcn => $info){
+			$languages[$info['name']] = [$fqcn, $info['name'], $info['dir'], $info['code']];
+		}
+
+		return $languages;
 	}
 
 	/**
-	 * Test language files for missing and excess translations.
-	 * All languages are compared with English.
+	 * @dataProvider languageProvider
 	 *
-	 * @group languages
+	 * @param string $fqcn
+	 * @param string $name
+	 * @param string $dir
+	 * @param string $code
+	 *
+	 * @return void
 	 */
-	public function testTranslations(){
-		$this->Mail->setLanguage('en');
-		$definedStrings = $this->Mail->getTranslations();
-		$err            = '';
-		foreach(new \DirectoryIterator(__DIR__.'/../language') as $fileInfo){
-			if($fileInfo->isDot()){
-				continue;
-			}
-			$matches = [];
-			//Only look at language files, ignore anything else in there
-			if(preg_match('/^phpmailer\.lang-([a-z_]{2,})\.php$/', $fileInfo->getFilename(), $matches)){
-				$lang           = $matches[1]; //Extract language code
-				$PHPMAILER_LANG = []; //Language strings get put in here
-				include $fileInfo->getPathname(); //Get language strings
-				$missing = array_diff(array_keys($definedStrings), array_keys($PHPMAILER_LANG));
-				$extra   = array_diff(array_keys($PHPMAILER_LANG), array_keys($definedStrings));
-				if(!empty($missing)){
-					$err .= "\nMissing translations in $lang: ".implode(', ', $missing);
-				}
-				if(!empty($extra)){
-					$err .= "\nExtra translations in $lang: ".implode(', ', $extra);
-				}
-			}
+	public function testTranslations(string $fqcn, string $name, string $dir, string $code):void{
+		/** @var \PHPMailer\PHPMailer\Language\PHPMailerLanguageInterface $lang */
+		$lang = new $fqcn;
+
+		$this->assertInstanceOf(PHPMailerLanguageInterface::class, $lang);
+
+		// check position of the link in RTL languages
+		if($dir === 'RTL'){
+			$this->assertSame(strpos($lang->string('smtp_connect_failed'), 'https'), 0);
 		}
-		$this->assertEmpty($err, $err);
+
+		$existing = array_diff($lang->strings(), $this->en->strings());
+		$missing  = array_diff_key($this->en->strings(), $existing);
+
+		unset($missing['dir']); // this key is intentionally (not) set
+
+		print_r([
+			sprintf('missing translations in language "%s" (%s):', $name, $code),
+			array_keys($missing),
+		]);
 	}
+
 }
