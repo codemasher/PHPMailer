@@ -140,7 +140,7 @@ PHPMailer defaults to English, but in the [language](https://github.com/PHPMaile
 
 ```php
 // To load the French version
-$mail->setLanguage('fr', '/optional/path/to/language/directory/');
+$mail->setLanguage('fr');
 ```
 
 We welcome corrections and new languages - if you're looking for corrections to do, run the [PHPMailerLangTest.php](https://github.com/PHPMailer/PHPMailer/tree/master/test/PHPMailerLangTest.php) script in the tests folder and it will show any missing translations.
