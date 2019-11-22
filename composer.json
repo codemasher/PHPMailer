@@ -20,8 +20,7 @@
 		}
 	],
 	"require": {
-		"php": ">=7.2.0",
-		"ext-ctype": "*",
+		"php": "^7.2",
 		"ext-filter": "*",
 		"ext-intl": "*",
 		"ext-mbstring": "*",
@@ -29,14 +28,7 @@
 		"psr/log": "^1.1"
 	},
 	"require-dev": {
-		"phpunit/phpunit": "^8.0",
-		"league/oauth2-client": "^2.4"
-	},
-	"suggest": {
-		"phpdocumentor/phpdocumentor": "Needed for building docs from the docblocks",
-		"league/oauth2-google": "Needed for Google XOAUTH2 authentication",
-		"hayageek/oauth2-yahoo": "Needed for Yahoo XOAUTH2 authentication",
-		"stevenmaguire/oauth2-microsoft": "Needed for Microsoft XOAUTH2 authentication"
+		"phpunit/phpunit": "^8.4"
 	},
 	"autoload": {
 		"psr-4": {
