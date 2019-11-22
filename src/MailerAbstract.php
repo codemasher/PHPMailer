@@ -13,13 +13,13 @@
 namespace PHPMailer\PHPMailer;
 
 use ErrorException;
+use PHPMailer\PHPMailer\Language\LanguageTrait;
 use Psr\Log\{LoggerAwareInterface, LoggerAwareTrait, LoggerInterface, NullLogger};
-use PHPMailer\PHPMailer\Language\PHPMailerLanguageInterface;
 
-use function class_exists, extension_loaded, function_exists, preg_match, sprintf, str_replace, strtoupper;
+use function extension_loaded, function_exists, sprintf;
 
-abstract class MailerAbstract implements LoggerAwareInterface{
-	use LoggerAwareTrait;
+abstract class MailerAbstract implements PHPMailerInterface, LoggerAwareInterface{
+	use LoggerAwareTrait, LanguageTrait;
 
 	/**
 	 * The POP3 PHPMailer Version number.
@@ -102,20 +102,6 @@ abstract class MailerAbstract implements LoggerAwareInterface{
 	public const DEFAULT_PORT_SMTP = 25;
 
 	/**
-	 * Default POP3 port number.
-	 *
-	 * @var int
-	 */
-	public const DEFAULT_PORT_POP3 = 110;
-
-	/**
-	 * Default timeout in seconds.
-	 *
-	 * @var int
-	 */
-	protected const DEFAULT_TIMEOUT_POP3 = 30;
-
-	/**
 	 * SMTP/POP3 host(s).
 	 * Either a single hostname or multiple semicolon-delimited hostnames.
 	 * You can also specify a different port
@@ -194,13 +180,6 @@ abstract class MailerAbstract implements LoggerAwareInterface{
 	protected $streamOK = null;
 
 	/**
-	 * The array of available languages.
-	 *
-	 * @var  \PHPMailer\PHPMailer\Language\PHPMailerLanguageInterface
-	 */
-	protected $lang;
-
-	/**
 	 * MailerAbstract constructor.
 	 *
 	 * @param \Psr\Log\LoggerInterface|null $logger
@@ -233,45 +212,6 @@ abstract class MailerAbstract implements LoggerAwareInterface{
 	 */
 	public function getLE():string{
 		return $this->LE;
-	}
-
-	/**
-	 * Set the language for error messages.
-	 * The default language is English.
-	 *
-	 * @param string $langcode ISO 639-1 2-character language code (e.g. French is "fr")
-	 *
-	 * @return \PHPMailer\PHPMailer\MailerAbstract
-	 * @throws \PHPMailer\PHPMailer\PHPMailerException
-	 */
-	public function setLanguage(string $langcode):MailerAbstract{
-
-		//Validate $langcode
-		if(!preg_match('/^[a-z]{2}(?:-_[a-z]{2})?$/i', $langcode)){
-			$langcode = 'en';
-		}
-
-		$class = 'Language'.strtoupper(str_replace('-', '_', $langcode));
-		$fqcn = __NAMESPACE__.'\\Language\\'.$class;
-
-		if(!class_exists($fqcn)){
-			throw new PHPMailerException(sprintf($this->lang->string('language_missing'), $class));
-		}
-
-		$this->lang = new $fqcn;
-
-		return $this;
-	}
-
-	/**
-	 * @param \PHPMailer\PHPMailer\Language\PHPMailerLanguageInterface $language
-	 *
-	 * @return \PHPMailer\PHPMailer\MailerAbstract
-	 */
-	public function setLanguageInterface(PHPMailerLanguageInterface $language):MailerAbstract{
-		$this->lang = $language;
-
-		return $this;
 	}
 
 	/**

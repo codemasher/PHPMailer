@@ -20,6 +20,8 @@
 
 namespace PHPMailer\PHPMailer;
 
+use PHPMailer\PHPMailer\Language\LanguageTrait;
+use Psr\Log\{LoggerAwareTrait, LoggerInterface, NullLogger};
 use Throwable;
 
 use function fclose, fgets, fsockopen, fwrite, is_resource, restore_error_handler,
@@ -43,7 +45,29 @@ use function fclose, fgets, fsockopen, fwrite, is_resource, restore_error_handle
  * @author  Jim Jagielski (jimjag) <jimjag@gmail.com>
  * @author  Andy Prevost (codeworxtech) <codeworxtech@users.sourceforge.net>
  */
-class POP3 extends MailerAbstract{
+class POP3{
+	use LoggerAwareTrait, LanguageTrait;
+
+	/**
+	 * Default POP3 port number.
+	 *
+	 * @var int
+	 */
+	protected const DEFAULT_PORT_POP3 = 110;
+
+	/**
+	 * Default timeout in seconds.
+	 *
+	 * @var int
+	 */
+	protected const DEFAULT_TIMEOUT_POP3 = 30;
+
+	/**
+	 * The socket for the server connection.
+	 *
+	 * @var ?resource
+	 */
+	protected $socket;
 
 	/**
 	 * Are we connected?
@@ -51,6 +75,17 @@ class POP3 extends MailerAbstract{
 	 * @var bool
 	 */
 	protected $connected = false;
+
+	/**
+	 * POP3 constructor.
+	 *
+	 * @param \Psr\Log\LoggerInterface|null $logger
+	 */
+	public function __construct(LoggerInterface $logger = null){
+		$this->logger = $logger ?? new NullLogger;
+
+		$this->setLanguage('en');
+	}
 
 	/**
 	 * Authenticate with a POP3 server.
@@ -160,12 +195,12 @@ class POP3 extends MailerAbstract{
 		}
 
 		// Send the Username
-		$this->sendString('USER '.($username ?? $this->username ?? '').$this->LE);
+		$this->sendString('USER '.($username ?? $this->username ?? '')."\n");
 
 		if($this->checkResponse($this->getResponse())){
 
 			// Send the Password
-			$this->sendString('PASS '.($password ?? $this->password ?? '').$this->LE);
+			$this->sendString('PASS '.($password ?? $this->password ?? '')."\n");
 
 			if($this->checkResponse($this->getResponse())){
 				return true;

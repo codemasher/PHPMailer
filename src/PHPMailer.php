@@ -37,7 +37,7 @@ use const PKCS7_DETACHED, PATHINFO_BASENAME;
  * @author  Andy Prevost (codeworxtech) <codeworxtech@users.sourceforge.net>
  * @author  Brent R. Matzelle (original founder)
  */
-abstract class PHPMailer extends MailerAbstract implements PHPMailerInterface{
+abstract class PHPMailer extends MailerAbstract{ // @todo
 
 	/**
 	 * Email priority.

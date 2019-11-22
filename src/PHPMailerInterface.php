@@ -12,6 +12,11 @@
 
 namespace PHPMailer\PHPMailer;
 
+use PHPMailer\PHPMailer\Language\PHPMailerLanguageInterface;
+
 interface PHPMailerInterface{
+	public function setLanguage(string $langcode):void;
+	public function setLanguageInterface(PHPMailerLanguageInterface $language):void;
+	public function getLE():string;
 	public function postSend():bool;
 }
