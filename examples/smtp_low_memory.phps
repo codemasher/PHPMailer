@@ -17,7 +17,7 @@ require '../vendor/autoload.php';
  * This is mainly of academic interest, but shows how you can change how
  * core classes work without having to alter the library itself.
  */
-class SMTPLowMemory extends SMTP{
+class PHPMailerLowMemory extends SMTPMailer{
 
 	public function data(string $msg_data):bool{
 		//This will use the standard timelimit
@@ -106,27 +106,5 @@ class SMTPLowMemory extends SMTP{
 		$this->timeout = $savetimelimit;
 
 		return $result;
-	}
-}
-
-/**
- * We need to use a PHPMailer subclass to make it use our SMTP implementation.
- *
- * @package PHPMailer\PHPMailer
- */
-class PHPMailerLowMemory extends SMTPMailer{
-
-	/**
-	 * Patch in the new SMTP class.
-	 *
-	 * @return SMTP
-	 */
-	public function getSMTP():SMTP{
-
-		if(!$this->smtp instanceof SMTP){
-			$this->smtp = new SMTPLowMemory;
-		}
-
-		return $this->smtp;
 	}
 }

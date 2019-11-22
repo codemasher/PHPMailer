@@ -48,8 +48,7 @@ class SMTPTest extends MailerTestAbstract{
 
 	public function testBadCommand(){
 		$this->mailer->smtpConnect();
-		$smtp = $this->mailer->getSMTP();
-		$this->assertFalse($smtp->mail("somewhere\nbad"), 'Bad SMTP command containing breaks accepted');
+		$this->assertFalse($this->mailer->mail("somewhere\nbad"), 'Bad SMTP command containing breaks accepted');
 	}
 
 	/**
@@ -102,8 +101,7 @@ class SMTPTest extends MailerTestAbstract{
 		$this->mailer->host = TEST_MAIL_HOST;
 		$this->assertTrue($this->mailer->smtpConnect(['ssl' => ['verify_depth' => 10]]));
 
-		$smtp = $this->mailer->getSMTP();
-		$this->assertFalse($smtp->startTLS(), 'SMTP connect with options failed');
+		$this->assertFalse($this->mailer->startTLS(), 'SMTP connect with options failed');
 		$this->assertFalse($this->mailer->SMTPAuth);
 		$this->mailer->closeSMTP();
 	}
