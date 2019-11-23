@@ -22,7 +22,7 @@ use function array_key_exists, array_search, array_unique, array_unshift, base64
 	property_exists, random_bytes, readlink, sprintf, str_replace, strlen, strpos, strrpos, strtolower, substr, trim,
 	html_entity_decode, strip_tags;
 
-use const FILTER_FLAG_IPV4, FILTER_FLAG_IPV6, FILTER_VALIDATE_EMAIL, FILTER_VALIDATE_IP, FILTER_VALIDATE_URL,
+use const DIRECTORY_SEPARATOR, FILTER_FLAG_IPV4, FILTER_FLAG_IPV6, FILTER_VALIDATE_EMAIL, FILTER_VALIDATE_IP, FILTER_VALIDATE_URL,
 	INTL_IDNA_VARIANT_UTS46, PATHINFO_BASENAME, PATHINFO_DIRNAME, PATHINFO_EXTENSION, PATHINFO_FILENAME, ENT_QUOTES;
 
 const INCLUDES_PHPMAILER_FUNCTIONS = true;
@@ -890,7 +890,7 @@ function getLanguages():array{
 	$languages = [];
 
 	/** @var \SplFileInfo $e */
-	foreach(new DirectoryIterator(__DIR__.'\\Language') as $e){
+	foreach(new DirectoryIterator(__DIR__.DIRECTORY_SEPARATOR.'Language') as $e){
 
 		if($e->isDot() || $e->getExtension() !== 'php'){
 			continue;
