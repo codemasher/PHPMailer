@@ -22,53 +22,6 @@ use const OPENSSL_KEYTYPE_RSA;
 
 class UnitTest extends TestAbstract{
 
-	/**
-	 * Test injecting a custom validator.
-	 */
-	public function testCustomValidator(){
-
-		//Inject a one-off custom validator
-		$validator = function($address){
-			return strpos($address, '@') !== false;
-		};
-
-		$this->assertTrue(
-			validateAddress('user@example.com', $validator),
-			'Custom validator false negative'
-		);
-
-		$this->assertFalse(
-			validateAddress('userexample.com', $validator),
-			'Custom validator false positive'
-		);
-
-		// Set the default validator to an injected function
-		$this->mailer->validator = function($address){
-			return $address === 'user@example.com';
-		};
-
-		$this->assertTrue(
-			$this->mailer->addTO('user@example.com'),
-			'Custom default validator false negative'
-		);
-
-		$this->assertFalse(
-			// Need to pick a failing value which would pass all other validators
-			// to be sure we're using our custom one
-			$this->mailer->addTO('bananas@example.com'),
-			'Custom default validator false positive'
-		);
-
-		//Set default validator to PHP built-in
-		$this->mailer->validator = 'php';
-
-		$this->assertFalse(
-			// This is a valid address that FILTER_VALIDATE_EMAIL thinks is invalid
-			$this->mailer->addTO('first.last@example.123'),
-			'PHP validator not behaving as expected'
-		);
-	}
-
 	public function invalidAttachmentProvider():array{
 		return [
 			'remote URL'    => ['https://github.com/PHPMailer/PHPMailer/raw/master/README.md'],
