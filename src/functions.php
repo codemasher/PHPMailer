@@ -144,39 +144,23 @@ const MIMETYPES = [
 /**
  * Check that a string looks like an email address.
  * Validation patterns supported:
- * * `auto` Pick best pattern automatically;
- * * `pcre8` Use the squiloople.com pattern, requires PCRE > 8.0;
- * * `pcre` Use old PCRE implementation;
- * * `php` Use PHP built-in FILTER_VALIDATE_EMAIL;
+ * *  null: Use PHP built-in FILTER_VALIDATE_EMAIL;
+ * * `pcre` Use PCRE implementation;
  * * `html5` Use the pattern given by the HTML5 spec for 'email' type form input elements.
- * * `noregex` Don't use a regex: super fast, really dumb.
- * Alternatively you may pass in a callable to inject your own validator, for example:
  *
- * ```php
- * validateAddress('user@example.com', function($address) {
- *     return (strpos($address, '@') !== false);
- * });
- * ```
- *
- * You can also set the PHPMailer::$validator to a callable, allowing built-in methods to use your validator.
- *
- * @param string          $address   The email address to check
- * @param string|callable $validator Which pattern to use
+ * @param string      $address   The email address to check
+ * @param string|null $validator Which pattern to use
  *
  * @return bool
  */
-function validateAddress(string $address, $validator = 'php'):bool{
-
-	if(is_callable($validator)){
-		return call_user_func($validator, $address);
-	}
+function validateAddress(string $address, string $validator = null):bool{
 
 	//Reject line breaks in addresses; it's valid RFC5322, but not RFC5321
 	if(strpos($address, "\n") !== false || strpos($address, "\r") !== false){
 		return false;
 	}
 
-	if($validator === 'pcre' || $validator === 'pcre8'){
+	if($validator === 'pcre'){
 		/*
 		 * A more complex and more permissive version of the RFC5322 regex on which FILTER_VALIDATE_EMAIL
 		 * is based.
@@ -229,13 +213,13 @@ function validateAddress(string $address, $validator = 'php'):bool{
  *
  * @see    http://www.andrew.cmu.edu/user/agreen1/testing/mrbs/web/Mail/RFC822.php A more careful implementation
  *
- * @param string          $addrstr   The address list string
- * @param bool            $useimap   Whether to use the IMAP extension to parse the list
- * @param string|callable $validator Which pattern to use
+ * @param string      $addrstr   The address list string
+ * @param bool        $useimap   Whether to use the IMAP extension to parse the list
+ * @param string|null $validator Which pattern to use
  *
  * @return array
  */
-function parseAddresses(string $addrstr, bool $useimap = true, $validator = 'php'):array{
+function parseAddresses(string $addrstr, bool $useimap = true, string $validator = null):array{
 	$addresses = [];
 
 	if($useimap && function_exists('imap_rfc822_parse_adrlist')){
