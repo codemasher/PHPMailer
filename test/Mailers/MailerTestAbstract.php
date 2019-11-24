@@ -693,10 +693,14 @@ Czech text: Prázdné tělo zprávy';
 		$this->mailer->setOptions($this->options);
 
 		$body = 'This message is S/MIME signed.';
-		$this->setMessage($body, __FUNCTION__)->assertSentMail();
 
-		$msg = $this->mailer->getSentMIMEMessage();
-		$this->assertStringNotContainsString("\r\n\r\nMIME-Version:", $msg, 'Incorrect MIME headers');
+		$this
+			->setMessage($body, __FUNCTION__)
+			->assertSentMail(function(string $sent, array $received){
+				$this->assertStringNotContainsString("\r\n\r\nMIME-Version:", $sent, 'Incorrect MIME headers');
+				$this->assertStringContainsString('Content-Type: application/x-pkcs7-signature; name="smime.p7s"', $sent);
+			})
+		;
 
 		unlink($certfile);
 		unlink($keyfile);
