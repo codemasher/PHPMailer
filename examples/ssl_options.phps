@@ -6,27 +6,28 @@
 //Import the PHPMailer class into the global namespace
 use PHPMailer\PHPMailer\SMTPMailer;
 
+require_once __DIR__.'/common.php';
+
 //SMTP needs accurate times, and the PHP time zone MUST be set
 //This should be done in your php.ini, but this is how to do it if you don't have access to that
 date_default_timezone_set('Etc/UTC');
 
-require '../vendor/autoload.php';
-
-//Create a new PHPMailer instance
-$mail = new SMTPMailer;
-
 //Set the hostname of the mail server
-$mail->host = 'smtp.example.com';
-
+$options->smtp_host = 'smtp.example.com';
 //Set the SMTP port number - 587 for authenticated TLS, a.k.a. RFC4409 SMTP submission
-$mail->port = 587;
-
+$options->smtp_port = 587;
+//Username to use for SMTP authentication - use full email address for gmail
+$options->smtp_username = 'username@example.com';
+//Password to use for SMTP authentication
+$options->smtp_password = 'yourpassword';
+//Whether to use SMTP authentication
+$options->smtp_auth = true;
 //Set the encryption system to use - ssl (deprecated) or tls
-$mail->SMTPSecure = 'tls';
+$options->smtp_encryption = SMTPMailer::ENCRYPTION_STARTTLS;
 
 //Custom connection options
 //Note that these settings are INSECURE
-$mail->SMTPOptions = [
+$options->smtp_stream_context_options = [
 	'ssl' => [
 		'verify_peer'       => true,
 		'verify_depth'      => 3,
@@ -36,14 +37,11 @@ $mail->SMTPOptions = [
 	],
 ];
 
-//Whether to use SMTP authentication
-$mail->SMTPAuth = true;
+//Create a new PHPMailer instance
+$mail = new SMTPMailer($options);
 
-//Username to use for SMTP authentication - use full email address for gmail
-$mail->username = 'username@example.com';
 
-//Password to use for SMTP authentication
-$mail->password = 'yourpassword';
+
 
 //Set who the message is to be sent from
 $mail->setFrom('from@example.com', 'First Last');

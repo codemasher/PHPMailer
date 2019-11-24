@@ -6,10 +6,10 @@
 //Import the PHPMailer class into the global namespace
 use PHPMailer\PHPMailer\MailMailer;
 
-require '../vendor/autoload.php';
+require_once __DIR__.'/common.php';
 
 //Create a new PHPMailer instance
-$mail = new MailMailer;
+$mail = new MailMailer($options);
 //Set who the message is to be sent from
 $mail->setFrom('from@example.com', 'First Last');
 //Set an alternative reply-to address

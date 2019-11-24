@@ -53,14 +53,15 @@ class POP3{
 	 *
 	 * @var int
 	 */
-	protected const DEFAULT_PORT_POP3 = 110;
+	public const DEFAULT_PORT_POP3  = 110;
+	public const DEFAULT_PORT_POP3S = 995;
 
 	/**
 	 * Default timeout in seconds.
 	 *
 	 * @var int
 	 */
-	protected const DEFAULT_TIMEOUT_POP3 = 30;
+	public const DEFAULT_TIMEOUT_POP3 = 30;
 
 	/**
 	 * The socket for the server connection.
@@ -77,14 +78,32 @@ class POP3{
 	protected $connected = false;
 
 	/**
+	 * @var \PHPMailer\PHPMailer\PHPMailerOptions|null
+	 */
+	protected $options;
+
+	/**
 	 * POP3 constructor.
 	 *
-	 * @param \Psr\Log\LoggerInterface|null $logger
+	 * @param \PHPMailer\PHPMailer\PHPMailerOptions|null $options
+	 * @param \Psr\Log\LoggerInterface|null              $logger
 	 */
-	public function __construct(LoggerInterface $logger = null){
+	public function __construct(PHPMailerOptions $options = null, LoggerInterface $logger = null){
+		$this->options = $options ?? new PHPMailerOptions;
 		$this->logger = $logger ?? new NullLogger;
 
 		$this->setLanguage('en');
+	}
+
+	/**
+	 * @param \PHPMailer\PHPMailer\PHPMailerOptions $options
+	 *
+	 * @return \PHPMailer\PHPMailer\POP3
+	 */
+	public function setOptions(PHPMailerOptions $options):POP3{
+		$this->options = $options;
+
+		return $this;
 	}
 
 	/**
@@ -126,20 +145,22 @@ class POP3{
 	/**
 	 * Connect to a POP3 server.
 	 *
-	 * @param string   $host
-	 * @param int|null $port
-	 * @param int|null $timeout
+	 * @param string|null $host
+	 * @param int|null    $port
+	 * @param int|null    $timeout
 	 *
 	 * @return bool
+	 * @throws \PHPMailer\PHPMailer\PHPMailerException
 	 */
-	public function connect(string $host, int $port = null, int $timeout = null):bool{
+	public function connect(string $host = null, int $port = null, int $timeout = null):bool{
 		//  Are we already connected?
 		if($this->connected){
 			return true;
 		}
 
-		$port    = $port ?? $this->port ?? $this::DEFAULT_PORT_POP3;
-		$timeout = $timeout ?? $this->timeout ?? $this::DEFAULT_TIMEOUT_POP3;
+		$host    = $host ?? $this->options->pop3_host ?? $this->options->smtp_host;
+		$port    = $port ?? $this->options->pop3_port;
+		$timeout = $timeout ?? $this->options->pop3_timeout;
 
 		//On Windows this will raise a PHP Warning error if the hostname doesn't exist.
 		//Rather than suppress it with @fsockopen, capture it cleanly instead
@@ -159,9 +180,7 @@ class POP3{
 		//  Did we connect?
 		if($this->socket === false){
 			//  It would appear not...
-			$this->logger->error(sprintf($this->lang->string('pop3_socket_error'), $host, $port, $errno, $errstr));
-
-			return false;
+			throw new PHPMailerException(sprintf($this->lang->string('pop3_socket_error'), $host, $port, $errno, $errstr));
 		}
 
 		//  Increase the stream time-out
@@ -195,12 +214,12 @@ class POP3{
 		}
 
 		// Send the Username
-		$this->sendString('USER '.($username ?? $this->username ?? '')."\n");
+		$this->sendString('USER '.($username ?? $this->options->pop3_username ?? $this->options->smtp_username ?? '')."\n");
 
 		if($this->checkResponse($this->getResponse())){
 
 			// Send the Password
-			$this->sendString('PASS '.($password ?? $this->password ?? '')."\n");
+			$this->sendString('PASS '.($password ?? $this->options->pop3_password ?? $this->options->smtp_password ?? '')."\n");
 
 			if($this->checkResponse($this->getResponse())){
 				return true;

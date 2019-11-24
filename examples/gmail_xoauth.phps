@@ -8,33 +8,29 @@ use League\OAuth2\Client\Provider\Google;
 use PHPMailer\PHPMailer\OAuth;
 use PHPMailer\PHPMailer\SMTPMailer;
 
+require_once __DIR__.'/common.php';
+
 // Alias the League Google OAuth2 provider class
 
 //SMTP needs accurate times, and the PHP time zone MUST be set
 //This should be done in your php.ini, but this is how to do it if you don't have access to that
 date_default_timezone_set('Etc/UTC');
 
-//Load dependencies from composer
-//If this causes an error, run 'composer install'
-require '../vendor/autoload.php';
+//Set the hostname of the mail server
+$options->smtp_host = 'smtp.gmail.com';
+//Set the SMTP port number - 587 for authenticated TLS, a.k.a. RFC4409 SMTP submission
+$options->smtp_port = 587;
+//Whether to use SMTP authentication
+$options->smtp_auth = true;
+//Set AuthType to use XOAUTH2
+$options->smtp_authtype = 'XOAUTH2';
+//Set the encryption system to use - ssl (deprecated) or tls
+$options->smtp_encryption = SMTPMailer::ENCRYPTION_STARTTLS;
 
 //Create a new PHPMailer instance
-$mail = new SMTPMailer;
+$mail = new SMTPMailer($options);
 
-//Set the hostname of the mail server
-$mail->host = 'smtp.gmail.com';
 
-//Set the SMTP port number - 587 for authenticated TLS, a.k.a. RFC4409 SMTP submission
-$mail->port = 587;
-
-//Set the encryption system to use - ssl (deprecated) or tls
-$mail->SMTPSecure = 'tls';
-
-//Whether to use SMTP authentication
-$mail->SMTPAuth = true;
-
-//Set AuthType to use XOAUTH2
-$mail->AuthType = 'XOAUTH2';
 
 //Fill in authentication details here
 //Either the gmail account owner, or the user that gave consent

@@ -6,18 +6,18 @@
 //Import the PHPMailer class into the global namespace
 use PHPMailer\PHPMailer\SMTPMailer;
 
+require_once __DIR__.'/common.php';
+
 //SMTP needs accurate times, and the PHP time zone MUST be set
 //This should be done in your php.ini, but this is how to do it if you don't have access to that
 date_default_timezone_set('Etc/UTC');
 
-require '../vendor/autoload.php';
-
-//Create a new PHPMailer instance
-$mail = new SMTPMailer;
 //Set the hostname of the mail server
-$mail->host = 'mail.example.com';
+$options->smtp_host = 'mail.example.com';
 //Set the SMTP port number - likely to be 25, 465 or 587
-$mail->port = 25;
+$options->smtp_port = 25;
+//Create a new PHPMailer instance
+$mail = new SMTPMailer($options);
 //We don't need to set this as it's the default value
 //$mail->SMTPAuth = false;
 //Set who the message is to be sent from

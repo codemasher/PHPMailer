@@ -22,10 +22,11 @@ class MailMailer extends PHPMailer{
 	/**
 	 * MailMailer constructor.
 	 *
-	 * @param \Psr\Log\LoggerInterface|null $logger
+	 * @param \PHPMailer\PHPMailer\PHPMailerOptions|null $options
+	 * @param \Psr\Log\LoggerInterface|null              $logger
 	 */
-	public function __construct(LoggerInterface $logger = null){
-		parent::__construct($logger);
+	public function __construct(PHPMailerOptions $options = null, LoggerInterface $logger = null){
+		parent::__construct($options, $logger);
 
 		// RFC-compliant line endings with mail() on Windows
 		if(PHP_OS_FAMILY === 'Windows'){
@@ -37,7 +38,7 @@ class MailMailer extends PHPMailer{
 	/**
 	 * @return bool
 	 */
-	public function postSend():bool{
+	protected function postSend():bool{
 		return $this->mailSend($this->MIMEHeader, $this->MIMEBody);
 	}
 
@@ -65,7 +66,7 @@ class MailMailer extends PHPMailer{
 
 		$params = null;
 		//This sets the SMTP envelope sender which gets turned into a return-path header by the receiver
-		if(!empty($this->Sender) && validateAddress($this->Sender, $this->validator)){
+		if(!empty($this->Sender) && validateAddress($this->Sender, $this->options->validator)){
 			// A space after `-f` is optional, but there is a long history of its presence
 			// causing problems, so we don't use one
 			// Exim docs: http://www.exim.org/exim-html-current/doc/html/spec_html/ch-the_exim_command_line.html
@@ -78,14 +79,14 @@ class MailMailer extends PHPMailer{
 			}
 		}
 
-		if(!empty($this->Sender) && validateAddress($this->Sender, $this->validator)){
+		if(!empty($this->Sender) && validateAddress($this->Sender, $this->options->validator)){
 			$old_from = ini_get('sendmail_from');
 			ini_set('sendmail_from', $this->Sender);
 		}
 
 		$result = false;
 
-		if($this->SingleTo && count($toArr) > 1){
+		if($this->options->singleTo && count($toArr) > 1){
 			foreach($toArr as $toAddr){
 				$result = $this->mailPassthru($toAddr, $this->Subject, $body, $header, $params);
 				$this->doCallback($result, [$toAddr], $this->cc, $this->bcc, $this->Subject, $body, $this->From, []);
@@ -128,7 +129,7 @@ class MailMailer extends PHPMailer{
 			: $this->encodeHeader(secureHeader($subject));
 
 		// Calling mail() with null params breaks
-		return !$this->UseSendmailOptions || $params === null
+		return !$this->options->useSendmailOptions || $params === null
 			? mail($to, $subject, $body, $header)
 			: mail($to, $subject, $body, $header, $params);
 	}

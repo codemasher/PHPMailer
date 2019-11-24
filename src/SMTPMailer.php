@@ -25,6 +25,18 @@ use const PHP_OS_FAMILY, STREAM_CLIENT_CONNECT, STREAM_CRYPTO_METHOD_TLS_CLIENT,
 
 class SMTPMailer extends PHPMailer{
 
+	public const ENCRYPTION_STARTTLS = 'tls';
+	public const ENCRYPTION_SMTPS    = 'ssl';
+
+	/**
+	 * The SMTP port to use if one is not specified.
+	 *
+	 * @var int
+	 */
+	public const DEFAULT_PORT_SMTP     = 25;
+	public const DEFAULT_PORT_SMTPS    = 465;
+	public const DEFAULT_PORT_STARTTLS = 587;
+
 	/**
 	 * Patterns to extract an SMTP transaction id from reply to a DATA command.
 	 * The first capture group in each regex will be used as the ID.
@@ -87,7 +99,7 @@ class SMTPMailer extends PHPMailer{
 	/**
 	 * @return bool
 	 */
-	public function postSend():bool{
+	protected function postSend():bool{
 		return $this->smtpSend($this->MIMEHeader, $this->MIMEBody);
 	}
 
@@ -121,7 +133,7 @@ class SMTPMailer extends PHPMailer{
 		$header   = rtrim($header, "\r\n ").$this->LE.$this->LE;
 		$bad_rcpt = [];
 
-		if(!$this->smtpConnect($this->SMTPOptions)){
+		if(!$this->smtpConnect($this->options->smtp_stream_context_options)){
 			throw new PHPMailerException($this->lang->string('smtp_connect_failed'));
 		}
 		//Sender already validated in preSend()
@@ -137,7 +149,7 @@ class SMTPMailer extends PHPMailer{
 			foreach($togroup as $to){
 				$isSent = true;
 
-				if(!$this->recipient($to[0], $this->dsn)){
+				if(!$this->recipient($to[0], $this->options->smtp_dsn)){
 					$bad_rcpt[] = $to[0];
 					$isSent = false;
 				}
@@ -151,7 +163,7 @@ class SMTPMailer extends PHPMailer{
 			throw new PHPMailerException($this->lang->string('data_not_accepted'));
 		}
 
-		if($this->SMTPKeepAlive){
+		if($this->options->smtp_keepalive){
 			$this->reset();
 		}
 		else{
@@ -201,7 +213,7 @@ class SMTPMailer extends PHPMailer{
 			return true;
 		}
 
-		$hosts         = explode(';', $this->host);
+		$hosts         = explode(';', $this->options->smtp_host);
 		$lastexception = null;
 
 		foreach($hosts as $hostentry){
@@ -228,10 +240,13 @@ class SMTPMailer extends PHPMailer{
 			}
 
 			$prefix = '';
-			$secure = $this->SMTPSecure;
-			$tls    = $this->SMTPSecure === $this::ENCRYPTION_STARTTLS;
+			$secure = $this->options->smtp_encryption;
+			$tls    = $this->options->smtp_encryption === $this::ENCRYPTION_STARTTLS;
 
-			if($hostinfo[2] === $this::ENCRYPTION_SMTPS || ($hostinfo[2] === '' && $this->SMTPSecure === $this::ENCRYPTION_SMTPS)){
+			if(
+				$hostinfo[2] === $this::ENCRYPTION_SMTPS
+				|| ($hostinfo[2] === '' && $this->options->smtp_encryption === $this::ENCRYPTION_SMTPS)
+			){
 				$prefix = 'ssl://';
 				$tls    = false; // Can't have SSL and TLS at the same time
 				$secure = $this::ENCRYPTION_SMTPS;
@@ -243,18 +258,18 @@ class SMTPMailer extends PHPMailer{
 			}
 
 			$host    = $hostinfo[3];
-			$port    = $this->port ?? $this::DEFAULT_PORT_SMTP;
-			$options = $options ?? $this->SMTPOptions;
+			$port    = $this->options->smtp_port;
+			$options = $options ?? $this->options->smtp_stream_context_options;
 			$tport   = (int)$hostinfo[4];
 
 			if($tport > 0 && $tport < 65536){
 				$port = $tport;
 			}
 
-			if($this->connect($prefix.$host, $port, $this->timeout, $options)){
+			if($this->connect($prefix.$host, $port, $this->options->smtp_timeout, $options)){
 
 				try{
-					$hello = $this->Helo ?: $this->serverHostname();
+					$hello = $this->options->hostname ?? $this->serverHostname();
 
 					$this->hello($hello);
 					//Automatically enable TLS encryption if:
@@ -262,7 +277,7 @@ class SMTPMailer extends PHPMailer{
 					// * we are not already using SSL
 					// * the server offers STARTTLS
 					if(
-						$this->SMTPAutoTLS
+						$this->options->smtp_auto_tls
 						&& $secure !== $this::ENCRYPTION_SMTPS
 						&& $this->getServerExt('STARTTLS')
 					){
@@ -277,8 +292,13 @@ class SMTPMailer extends PHPMailer{
 						$this->hello($hello);
 					}
 
-					if($this->SMTPAuth){
-						if(!$this->authenticate($this->username, $this->password, $this->AuthType, $this->oauth)){
+					if($this->options->smtp_auth){
+						if(!$this->authenticate(
+							$this->options->smtp_username,
+							$this->options->smtp_password,
+							$this->options->smtp_authtype,
+							$this->oauth
+						)){
 							throw new PHPMailerException($this->lang->string('authenticate'));
 						}
 					}
@@ -743,12 +763,12 @@ class SMTPMailer extends PHPMailer{
 
 		//Message data has been sent, complete the command
 		//Increase timelimit for end of DATA command
-		$savetimelimit = $this->timeout;
-		$this->timeout = $this->timeout * 2;
-		$result        = $this->sendCommand('DATA END', '.', [250]);
+		$savetimelimit                  = $this->options->smtp_timeout;
+		$this->options->smtp_timeout    *= 2;
+		$result                         = $this->sendCommand('DATA END', '.', [250]);
 		$this->last_smtp_transaction_id = $this->recordLastTransactionID();
 		//Restore timelimit
-		$this->timeout = $savetimelimit;
+		$this->options->smtp_timeout    = $savetimelimit;
 
 		return $result;
 	}
@@ -853,7 +873,7 @@ class SMTPMailer extends PHPMailer{
 	 * @return bool
 	 */
 	public function mail(string $from):bool{
-		$useVerp = $this->do_verp ? ' XVERP' : '';
+		$useVerp = $this->options->smtp_verp ? ' XVERP' : '';
 
 		return $this->sendCommand('MAIL FROM', 'MAIL FROM:<'.$from.'>'.$useVerp, [250]);
 	}
@@ -1147,10 +1167,10 @@ class SMTPMailer extends PHPMailer{
 		$data    = '';
 		$endtime = 0;
 
-		stream_set_timeout($this->socket, $this->timeout);
+		stream_set_timeout($this->socket, $this->options->smtp_timeout);
 
-		if($this->timeout > 0){
-			$endtime = time() + $this->timeout;
+		if($this->options->smtp_timeout > 0){
+			$endtime = time() + $this->options->smtp_timeout;
 		}
 
 		$selR = [$this->socket];
@@ -1158,8 +1178,8 @@ class SMTPMailer extends PHPMailer{
 
 		while(is_resource($this->socket) && !feof($this->socket)){
 			// Must pass vars in here as params are by reference
-			if(!stream_select($selR, $selW, $selW, $this->timeout)){
-				$this->logger->debug(sprintf($this->lang->string('smtp_timeout'), $this->timeout));
+			if(!stream_select($selR, $selW, $selW, $this->options->smtp_timeout)){
+				$this->logger->debug(sprintf($this->lang->string('smtp_timeout'), $this->options->smtp_timeout));
 				break;
 			}
 
@@ -1177,13 +1197,13 @@ class SMTPMailer extends PHPMailer{
 			// Timed-out? Log and break
 			$info = stream_get_meta_data($this->socket);
 			if($info['timed_out']){
-				$this->logger->debug(sprintf($this->lang->string('smtp_timeout'), $this->timeout));
+				$this->logger->debug(sprintf($this->lang->string('smtp_timeout'), $this->options->smtp_timeout));
 				break;
 			}
 
 			// Now check if reads took too long
 			if($endtime && time() > $endtime){
-				$this->logger->debug(sprintf($this->lang->string('smtp_timelimit'), $this->timeout));
+				$this->logger->debug(sprintf($this->lang->string('smtp_timelimit'), $this->options->smtp_timeout));
 				break;
 			}
 		}

@@ -10,20 +10,21 @@ use PHPMailer\PHPMailer\SMTPMailer;
 //This should be done in your php.ini, but this is how to do it if you don't have access to that
 date_default_timezone_set('Etc/UTC');
 
-require '../vendor/autoload.php';
+require_once __DIR__.'/common.php';
+
+//Set the hostname of the mail server
+$options->smtp_host = 'mail.example.com';
+//Set the SMTP port number - likely to be 25, 465 or 587
+$options->smtp_port = 25;
+//Username to use for SMTP authentication
+$options->smtp_username = 'yourname@example.com';
+//Password to use for SMTP authentication
+$options->smtp_password = 'yourpassword';
+//Whether to use SMTP authentication
+$options->smtp_auth = true;
 
 //Create a new PHPMailer instance
-$mail = new SMTPMailer;
-//Set the hostname of the mail server
-$mail->host = 'mail.example.com';
-//Set the SMTP port number - likely to be 25, 465 or 587
-$mail->port = 25;
-//Whether to use SMTP authentication
-$mail->SMTPAuth = true;
-//Username to use for SMTP authentication
-$mail->username = 'yourname@example.com';
-//Password to use for SMTP authentication
-$mail->password = 'yourpassword';
+$mail = new SMTPMailer($options);
 //Set who the message is to be sent from
 $mail->setFrom('from@example.com', 'First Last');
 //Set an alternative reply-to address

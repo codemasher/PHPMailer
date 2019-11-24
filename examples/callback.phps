@@ -7,7 +7,7 @@
 use PHPMailer\PHPMailer\PHPMailerException;
 use PHPMailer\PHPMailer\MailMailer;
 
-require '../vendor/autoload.php';
+require_once __DIR__.'/common.php';
 
 /**
  * Example PHPMailer callback function.
@@ -21,7 +21,7 @@ require '../vendor/autoload.php';
  * @param string $subject the subject
  * @param string $body    the email body
  */
-function callbackAction($result, $to, $cc, $bcc, $subject, $body){
+$callbackAction = function($result, $to, $cc, $bcc, $subject, $body){
 	echo "Message subject: \"$subject\"\n";
 	foreach($to as $address){
 		echo "Message to {$address[1]} <{$address[0]}>\n";
@@ -38,11 +38,9 @@ function callbackAction($result, $to, $cc, $bcc, $subject, $body){
 	else{
 		echo "Message send failed\n";
 	}
-}
+};
 
-require_once '../vendor/autoload.php';
-
-$mail = new MailMailer;
+$mail = new MailMailer($options);
 
 try{
 	$mail->setFrom('you@example.com', 'Your Name');
@@ -53,7 +51,7 @@ try{
 	// optional - messageFromHTML will create an alternate automatically
 	$mail->AltBody = 'To view the message, please use an HTML compatible email viewer!';
 	$mail->addAttachment('images/phpmailer_mini.png'); // attachment
-	$mail->action_function = 'callbackAction';
+	$mail->setSendCallback($callbackAction);
 	$mail->send();
 }
 catch(PHPMailerException $e){
@@ -62,14 +60,14 @@ catch(PHPMailerException $e){
 
 //Alternative approach using a closure
 try{
-	$mail->action_function = function($result, $to, $cc, $bcc, $subject, $body){
+	$mail->setSendCallback(function($result, $to, $cc, $bcc, $subject, $body){
 		if($result){
 			echo "Message sent successfully\n";
 		}
 		else{
 			echo "Message send failed\n";
 		}
-	};
+	});
 	$mail->send();
 }
 catch(PHPMailerException $e){

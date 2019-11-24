@@ -65,7 +65,8 @@ class SMTPTest extends MailerTestAbstract{
 	public function testConnectInvalidHosts(){
 		$this->expectException(PHPMailerException::class);
 		// All these hosts are expected to fail
-		$this->mailer->host = 'xyz://bogus:25;tls://[bogus]:25;ssl://localhost:12345;tls://localhost:587;10.10.10.10:54321;localhost:12345;10.10.10.10'.TEST_MAIL_HOST.' ';
+		$this->options->smtp_host = 'xyz://bogus:25;tls://[bogus]:25;ssl://localhost:12345;tls://localhost:587;10.10.10.10:54321;localhost:12345;10.10.10.10'.$this->host.' ';
+		$this->mailer->setOptions($this->options);
 		$this->assertFalse($this->mailer->smtpConnect());
 	}
 
@@ -74,7 +75,8 @@ class SMTPTest extends MailerTestAbstract{
 	 */
 	public function testConnectIPv6(){
 		$this->expectException(PHPMailerException::class);
-		$this->mailer->host = '[::1]:'.$this->mailer->port.';'.TEST_MAIL_HOST;
+		$this->options->smtp_host = '[::1]:'.$this->options->smtp_port.';'.$this->host;
+		$this->mailer->setOptions($this->options);
 		$this->assertTrue($this->mailer->smtpConnect(), 'SMTP IPv6 literal multi-connect failed');
 	}
 
@@ -83,7 +85,8 @@ class SMTPTest extends MailerTestAbstract{
 	 */
 	public function testMultiConnect(){
 		$this->expectException(PHPMailerException::class);
-		$this->mailer->host = 'localhost:12345;10.10.10.10:54321;'.TEST_MAIL_HOST;
+		$this->options->smtp_host = 'localhost:12345;10.10.10.10:54321;'.$this->host;
+		$this->mailer->setOptions($this->options);
 		$this->assertTrue($this->mailer->smtpConnect(), 'SMTP multi-connect failed');
 	}
 
@@ -92,17 +95,19 @@ class SMTPTest extends MailerTestAbstract{
 	 */
 	public function testConnectHostWithSpaces(){
 		$this->expectException(PHPMailerException::class);
-		$this->mailer->host = ' localhost:12345 ; '.TEST_MAIL_HOST.' ';
+		$this->options->smtp_host = ' localhost:12345 ; '.$this->host.' ';
+		$this->mailer->setOptions($this->options);
 		$this->assertTrue($this->mailer->smtpConnect(), 'SMTP hosts with stray spaces failed');
 	}
 
 	public function testConnectWithTLS(){
 		// Need to pick a harmless option so as not cause problems of its own! socket:bind doesn't work with Travis-CI
-		$this->mailer->host = TEST_MAIL_HOST;
-		$this->assertTrue($this->mailer->smtpConnect(['ssl' => ['verify_depth' => 10]]));
+		$this->options->smtp_host = $this->host;
+		$this->mailer->setOptions($this->options);
 
+		$this->assertTrue($this->mailer->smtpConnect(['ssl' => ['verify_depth' => 10]]));
 		$this->assertFalse($this->mailer->startTLS(), 'SMTP connect with options failed');
-		$this->assertFalse($this->mailer->SMTPAuth);
+		$this->assertFalse($this->options->smtp_auth);
 		$this->mailer->closeSMTP();
 	}
 
@@ -110,7 +115,8 @@ class SMTPTest extends MailerTestAbstract{
 	 * Test keepalive (sending multiple messages in a single connection).
 	 */
 	public function testKeepAlive(){
-		$this->mailer->SMTPKeepAlive = true;
+		$this->options->smtp_keepalive = true;
+		$this->mailer->setOptions($this->options);
 		$this->setMessage('SMTP keep-alive test.', __FUNCTION__.': SMTP keep-alive 1');
 		$this->assertSentMail();
 		$this->setMessage('SMTP keep-alive test.', __FUNCTION__.': SMTP keep-alive 2');

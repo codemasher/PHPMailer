@@ -13,6 +13,7 @@
 namespace PHPMailer\Test;
 
 use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\PHPMailerOptions;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\{AbstractLogger, LoggerInterface, NullLogger};
 use Closure, DirectoryIterator, ReflectionClass, ReflectionMethod, ReflectionProperty;
@@ -35,7 +36,7 @@ abstract class TestAbstract extends TestCase{
 	protected $reflection;
 
 	/**
-	 * @var \PHPMailer\PHPMailer\PHPMailer
+	 * @var \PHPMailer\PHPMailer\PHPMailerInterface
 	 */
 	protected $mailer;
 
@@ -72,38 +73,66 @@ abstract class TestAbstract extends TestCase{
 	 */
 	protected $INCLUDE_DIR = '..';
 
+	/**
+	 * @var string
+	 */
+	protected $host;
+
+	/**
+	 * @var int
+	 */
+	protected $port;
+
+	/**
+	 * @var string
+	 */
+	protected $from;
+	/**
+	 * @var \PHPMailer\PHPMailer\PHPMailerOptions
+	 */
+	protected $options;
+
 	protected function setUp():void{
 		$this->IS_CI       = defined('TEST_IS_CI') && TEST_IS_CI === true;
 		$this->INCLUDE_DIR = dirname(__DIR__); //Default to the dir above the test dir, i.e. the project home dir
 
 		$this->reflection  = $this->FQCN !== null
 			? new ReflectionClass($this->FQCN)
-			: new ReflectionClass(new class () extends PHPMailer{ // @todo
-				public function postSend():bool{return true;}
-			});
+			: new ReflectionClass(new class () extends PHPMailer{});
 
-		$this->mailer      = $this->getInstance();
-		$this->logger      = new NullLogger;
+		$this->logger  = $this->getDebugLogger();
+		$this->options = new PHPMailerOptions;
 
-		if(!$this->IS_CI){
-			$this->logger = $this->getDebugLogger();
-			$this->mailer->setLogger($this->logger);
-		}
+		$this->host = defined('TEST_MAIL_HOST') ? TEST_MAIL_HOST : 'localhost';
+		$this->port = defined('TEST_MAIL_PORT') && !empty(TEST_MAIL_PORT) ? intval(TEST_MAIL_PORT) : 2500;
+		$this->from = defined('TEST_MAIL_FROM') ? TEST_MAIL_FROM : 'unit_test@phpmailer.example.com';
+
+
+		$this->options->smtp_host     = $this->host;
+		$this->options->smtp_port     = $this->port;
+		$this->options->smtp_username = '';
+		$this->options->smtp_password = '';
+		$this->options->hostname = 'localhost.localdomain';
+
+		$this->mailer = $this->reflection->newInstanceArgs([$this->options, $this->logger]);
+
+		$this->mailer->From     = $this->from;
+		$this->mailer->Sender   = 'unit_test@phpmailer.example.com';
+		$this->mailer->FromName = 'Unit Tester';
+		$this->mailer->Subject  = 'Unit Test';
+		$this->mailer->Priority = 3;
+
+		// for mail()
+		// @todo: PHPMailer should do this internally
+		$this->iniSet('SMTP', $this->host); // windows only
+		$this->iniSet('smtp_port', $this->port);
+		$this->iniSet('sendmail_from', $this->from);
 	}
 
 	protected function tearDown():void{
 		unset($this->mailer);
 		$this->changelog = [];
 		$this->notelog   = [];
-	}
-
-	/**
-	 * @param mixed ...$params
-	 *
-	 * @return object
-	 */
-	protected function getInstance(...$params):object{
-		return $this->reflection->newInstanceArgs($params);
 	}
 
 	/**
@@ -149,6 +178,11 @@ abstract class TestAbstract extends TestCase{
 	 * @return \Psr\Log\LoggerInterface
 	 */
 	protected function getDebugLogger():LoggerInterface{
+
+		if($this->IS_CI){
+			return new NullLogger;
+		}
+
 		return new class () extends AbstractLogger{
 
 			public function log($level, $message, array $context = []){
@@ -159,35 +193,8 @@ abstract class TestAbstract extends TestCase{
 					str_replace("\n", "\n".str_repeat(' ', 40), trim($message))
 				)."\n";
 			}
+
 		};
-	}
-
-	/**
-	 * @return $this
-	 */
-	protected function setupMailer(){
-		$host = defined('TEST_MAIL_HOST') ? TEST_MAIL_HOST : 'localhost';
-		$port = defined('TEST_MAIL_PORT') && !empty(TEST_MAIL_PORT) ? intval(TEST_MAIL_PORT) : 2500;
-		$from = defined('TEST_MAIL_FROM') ? TEST_MAIL_FROM : 'unit_test@phpmailer.example.com';
-
-		$this->mailer->host     = $host;
-		$this->mailer->port     = $port;
-		$this->mailer->username = '';
-		$this->mailer->password = '';
-		$this->mailer->From     = $from;
-		$this->mailer->Sender   = 'unit_test@phpmailer.example.com';
-		$this->mailer->FromName = 'Unit Tester';
-		$this->mailer->Subject  = 'Unit Test';
-		$this->mailer->Helo     = 'localhost.localdomain';
-		$this->mailer->Priority = 3;
-
-		// for mail()
-		// @todo: PHPMailer should do this internally
-		$this->iniSet('SMTP', $host);
-		$this->iniSet('smtp_port', $port);
-		$this->iniSet('sendmail_from', $from);
-
-		return $this;
 	}
 
 	/**
@@ -248,7 +255,7 @@ abstract class TestAbstract extends TestCase{
 	 * @return string
 	 */
 	protected function buildBody(string $body):string{
-		$this->checkChanges();
+#		$this->checkChanges();
 
 		// Determine line endings for message
 		if($this->mailer->ContentType === 'text/html' || strlen($this->mailer->AltBody) > 0){
@@ -277,8 +284,8 @@ abstract class TestAbstract extends TestCase{
 			.'above body length: '.strlen($body).' (multibyte: '.mb_strlen($body).')'.$eol
 		;
 
-		if(strlen($this->mailer->host) > 0){
-			$report .= 'Host: '.$this->mailer->host.$eol;
+		if(strlen($this->options->smtp_host) > 0){
+			$report .= 'Host: '.$this->options->smtp_host.$eol;
 		}
 
 		// If attachments then create an attachment list
@@ -337,16 +344,16 @@ abstract class TestAbstract extends TestCase{
 		if($this->mailer->Sender !== ''){
 			$this->addChange('Sender', $this->mailer->Sender);
 		}
-		if($this->mailer->WordWrap !== 0){
-			$this->addChange('WordWrap', $this->mailer->WordWrap);
+		if($this->options->wordWrap !== 0){
+			$this->addChange('WordWrap', $this->options->wordWrap);
 		}
-		if($this->mailer->port !== 25){
-			$this->addChange('Port', $this->mailer->port);
+		if($this->options->smtp_port !== 25){
+			$this->addChange('Port', $this->options->smtp_port);
 		}
-		if($this->mailer->Helo !== 'localhost.localdomain'){
-			$this->addChange('Helo', $this->mailer->Helo);
+		if($this->options->hostname !== 'localhost.localdomain'){
+			$this->addChange('Helo', $this->options->hostname);
 		}
-		if($this->mailer->SMTPAuth){
+		if($this->options->smtp_auth){
 			$this->addChange('SMTPAuth', 'true');
 		}
 	}

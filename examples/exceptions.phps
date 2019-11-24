@@ -7,10 +7,10 @@
 use PHPMailer\PHPMailer\PHPMailerException;
 use PHPMailer\PHPMailer\MailMailer;
 
-require '../vendor/autoload.php';
+require_once __DIR__.'/common.php';
 
 //Create a new PHPMailer instance
-$mail = new MailMailer;
+$mail = new MailMailer($options);
 try{
 	//Set who the message is to be sent from
 	$mail->setFrom('from@example.com', 'First Last');

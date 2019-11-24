@@ -23,12 +23,6 @@ use const OPENSSL_KEYTYPE_RSA;
 
 abstract class MailerTestAbstract extends TestAbstract{
 
-	protected function setUp():void{
-		parent::setUp();
-
-		$this->setupMailer();
-	}
-
 	protected function tearDown():void{
 		$this->logger->info(str_repeat('-', 40));
 
@@ -39,7 +33,7 @@ abstract class MailerTestAbstract extends TestAbstract{
 	 * Simple instance test
 	 */
 	public function testInstance(){
-		$this->assertInstanceOf($this->FQCN, $this->getInstance());
+		$this->assertInstanceOf($this->FQCN, $this->mailer);
 	}
 
 	/**
@@ -67,21 +61,25 @@ abstract class MailerTestAbstract extends TestAbstract{
 	 * /usr/sbin/sendmail: Zeile 20: /tmp/fakemail/message_1.eml: Keine Berechtigung
 	 */
 	public function testEmptyBody(){
+		$this->options->allowEmpty = true;
+		$this->mailer->setOptions($this->options);
+
 		$this->mailer->addTO('user@example.com');
 		$this->mailer->Body       = '';
 		$this->mailer->Subject    = $this->FQCN.'::'.__FUNCTION__;
-		$this->mailer->AllowEmpty = true;
 
 		$this->assertSentMail();
 	}
 
 	public function testEmptyBodynotAllowedException(){
+		$this->options->allowEmpty = false;
+		$this->mailer->setOptions($this->options);
+
 		$this->expectException(PHPMailerException::class);
 		$this->expectExceptionMessage('Message body empty');
 
 		$this->mailer->addTO('user@example.com');
 		$this->mailer->Body       = '';
-		$this->mailer->AllowEmpty = false;
 		$this->mailer->send();
 	}
 
@@ -109,7 +107,8 @@ abstract class MailerTestAbstract extends TestAbstract{
 	 * Word-wrap an ASCII message.
 	 */
 	public function testWordWrap(){
-		$this->mailer->WordWrap = 40;
+		$this->options->wordWrap = 40;
+		$this->mailer->setOptions($this->options);
 
 		$body = str_repeat(
 			'Here is the main body of this message.  It should '.
@@ -127,7 +126,8 @@ abstract class MailerTestAbstract extends TestAbstract{
 	 * @todo: text is being wrapped to 20 chars instead of 40 (multibyte!)
 	 */
 	public function testWordWrapMultibyte(){
-		$this->mailer->WordWrap = 40;
+		$this->options->wordWrap = 40;
+		$this->mailer->setOptions($this->options);
 
 		$body = str_repeat(
 			'飛兒樂 團光茫 飛兒樂 團光茫 飛兒樂 團光茫 飛兒樂 團光茫 '.
@@ -449,10 +449,12 @@ Czech text: Prázdné tělo zprávy';
 	 * Simple multipart/alternative test.
 	 */
 	public function testAltBody(){
+		$this->options->wordWrap = 40;
+		$this->mailer->setOptions($this->options);
+
 		$this->mailer->AltBody  = 'Here is the plain text body of this message. '.
 		                          'It should be quite a few lines. It should be wrapped at '.
 		                          '40 characters.  Make sure that it is.';
-		$this->mailer->WordWrap = 40;
 		$this->addNote('This is a multipart/alternative email');
 		$this->mailer->Subject .= ': AltBody + Word Wrap';
 
@@ -493,12 +495,14 @@ Czech text: Prázdné tělo zprávy';
 
 		$this->setMessage($body, __FUNCTION__.' DSN: SUCCESS,FAILURE');
 
-		$this->mailer->dsn = 'SUCCESS,FAILURE';
+		$this->options->smtp_dsn = 'SUCCESS,FAILURE';
+		$this->mailer->setOptions($this->options);
 		$this->assertSentMail();
 
 		$this->setMessage($body, __FUNCTION__.' DSN: NEVER');
 		//Sends the same mail, but sets the DSN notification to NEVER
-		$this->mailer->dsn = 'NEVER';
+		$this->options->smtp_dsn = 'NEVER';
+		$this->mailer->setOptions($this->options);
 		$this->assertSentMail();
 	}
 
@@ -568,7 +572,6 @@ Czech text: Prázdné tělo zprávy';
 	 * Test line break reformatting.
 	 */
 	public function testLineBreaks(){
-		$this->setupMailer();
 		$this->mailer->addTO('user@example.com');
 
 		$subject = $this->FQCN.'::'.__FUNCTION__;

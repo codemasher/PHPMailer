@@ -42,17 +42,21 @@ class AuthTest extends TestAbstract{
 	public function testAuthCRAMMD5(){
 		$this->markTestIncomplete('Needs a connection to a server that supports this auth mechanism, so disabled out by default.');
 
-		$this->mailer->host       = 'hostname';
-		$this->mailer->port       = 587;
-		$this->mailer->SMTPAuth   = true;
-		$this->mailer->SMTPSecure = $this->mailer::ENCRYPTION_STARTTLS;
-		$this->mailer->AuthType   = 'CRAM-MD5';
-		$this->mailer->username   = 'username';
-		$this->mailer->password   = 'password';
-		$this->mailer->Body       = 'Test body';
-		$this->mailer->Subject    .= ': Auth CRAM-MD5';
-		$this->mailer->From       = 'from@example.com';
-		$this->mailer->Sender     = 'from@example.com';
+		$this->options->smtp_host       = 'hostname';
+		$this->options->smtp_port       = 587;
+		$this->options->smtp_username   = 'username';
+		$this->options->smtp_password   = 'password';
+		$this->options->smtp_auth       = true;
+		$this->options->smtp_authtype   = 'CRAM-MD5';
+		$this->options->smtp_encryption = $this->mailer::ENCRYPTION_STARTTLS;
+
+
+		$this->mailer->setOptions($this->options);
+
+		$this->mailer->Body            = 'Test body';
+		$this->mailer->Subject         .= ': Auth CRAM-MD5';
+		$this->mailer->From            = 'from@example.com';
+		$this->mailer->Sender          = 'from@example.com';
 		$this->mailer->clearAllRecipients();
 		$this->mailer->addTO('user@example.com');
 

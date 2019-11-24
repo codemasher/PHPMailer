@@ -7,7 +7,7 @@
 //Import the PHPMailer class into the global namespace
 use PHPMailer\PHPMailer\SMTPMailer;
 
-require '../vendor/autoload.php';
+require_once __DIR__.'/common.php';
 
 if(array_key_exists('to', $_POST)){
 	$err   = false;
@@ -56,10 +56,10 @@ if(array_key_exists('to', $_POST)){
 		$err = true;
 	}
 	if(!$err){
-		$mail = new SMTPMailer;
-		$mail->host    = 'localhost';
-		$mail->port    = 2500;
-		$mail->CharSet = 'utf-8';
+		$options->smtp_host = 'localhost';
+		$options->smtp_port = 2500;
+		$mail            = new SMTPMailer($options);
+		$mail->CharSet   = 'utf-8';
 		//It's important not to use the submitter's address as the from address as it's forgery,
 		//which will cause your messages to fail SPF checks.
 		//Use an address in your own domain as the from address, put the submitter's address in a reply-to

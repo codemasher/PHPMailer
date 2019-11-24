@@ -21,15 +21,16 @@ class QmailMailer extends SendmailMailer{
 	/**
 	 * QmailMailer constructor.
 	 *
-	 * @param \Psr\Log\LoggerInterface|null $logger
+	 * @param \PHPMailer\PHPMailer\PHPMailerOptions|null $options
+	 * @param \Psr\Log\LoggerInterface|null              $logger
 	 */
-	public function __construct(LoggerInterface $logger = null){
-		parent::__construct($logger);
+	public function __construct(PHPMailerOptions $options = null, LoggerInterface $logger = null){
+		parent::__construct($options, $logger);
 
 		$ini_sendmail_path = ini_get('sendmail_path');
 
-		$this->Sendmail = stripos($ini_sendmail_path, 'qmail') === false
-			? '/var/qmail/bin/qmail-inject'
+		$this->sendmail = stripos($ini_sendmail_path, 'qmail') === false
+			? $this->options->qmail_path
 			: $ini_sendmail_path;
 	}
 

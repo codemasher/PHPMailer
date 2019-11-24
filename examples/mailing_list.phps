@@ -10,18 +10,19 @@ error_reporting(E_STRICT | E_ALL);
 
 date_default_timezone_set('Etc/UTC');
 
-require '../vendor/autoload.php';
+require_once __DIR__.'/common.php';
 
-$mail = new SMTPMailer;
+$options->smtp_host      = 'smtp.example.com';
+$options->smtp_port      = 25;
+$options->smtp_username  = 'yourname@example.com';
+$options->smtp_password  = 'yourpassword';
+$options->smtp_auth      = true;
+$options->smtp_keepalive = true; // SMTP connection will not close after each email sent, reduces SMTP overhead
+
+$mail = new SMTPMailer($options);
 
 $body = file_get_contents('contents.html');
 
-$mail->host          = 'smtp.example.com';
-$mail->SMTPAuth      = true;
-$mail->SMTPKeepAlive = true; // SMTP connection will not close after each email sent, reduces SMTP overhead
-$mail->port          = 25;
-$mail->username      = 'yourname@example.com';
-$mail->password      = 'yourpassword';
 $mail->setFrom('list@example.com', 'List manager');
 $mail->addReplyTo('list@example.com', 'List manager');
 

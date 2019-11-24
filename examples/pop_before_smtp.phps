@@ -9,22 +9,24 @@ use PHPMailer\PHPMailer\PHPMailerException;
 use PHPMailer\PHPMailer\SMTPMailer;
 use PHPMailer\PHPMailer\POP3;
 
-require '../vendor/autoload.php';
+require_once __DIR__.'/common.php';
 
 //Authenticate via POP3.
 //After this you should be allowed to submit messages over SMTP for a few minutes.
 //Only applies if your host supports POP-before-SMTP.
 $pop = (new POP3)->authorise('pop3.example.com', 110, 30, 'username', 'password', 1);
 
+//Set the hostname of the mail server
+$options->smtp_host = 'mail.example.com';
+//Set the SMTP port number - likely to be 25, 465 or 587
+$options->smtp_port = 25;
+//Whether to use SMTP authentication
+$options->smtp_auth = false;
+
 //Create a new PHPMailer instance
-$mail = new SMTPMailer;
+$mail = new SMTPMailer($options);
+
 try{
-	//Set the hostname of the mail server
-	$mail->host = 'mail.example.com';
-	//Set the SMTP port number - likely to be 25, 465 or 587
-	$mail->port = 25;
-	//Whether to use SMTP authentication
-	$mail->SMTPAuth = false;
 	//Set who the message is to be sent from
 	$mail->setFrom('from@example.com', 'First Last');
 	//Set an alternative reply-to address

@@ -6,19 +6,19 @@
 //Import PHPMailer classes into the global namespace
 use PHPMailer\PHPMailer\SMTPMailer;
 
+require_once __DIR__.'/common.php';
+
 $msg = '';
 //Don't run this unless we're handling a form submission
 if(array_key_exists('email', $_POST)){
 	date_default_timezone_set('Etc/UTC');
 
-	require '../vendor/autoload.php';
-
+	$options->smtp_host = 'localhost';
+	$options->smtp_port = 25;
 	//Create a new PHPMailer instance
-	$mail = new SMTPMailer;
 	//Tell PHPMailer to use SMTP - requires a local mail server
 	//Faster and safer than using mail()
-	$mail->host = 'localhost';
-	$mail->port = 25;
+	$mail = new SMTPMailer($options);
 
 	//Use a fixed address in your own domain as the from address
 	//**DO NOT** use the submitter's address here as it will be forgery

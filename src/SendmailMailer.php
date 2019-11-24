@@ -19,31 +19,32 @@ use function escapeshellcmd, fwrite, ini_get, pclose, popen, sprintf, stripos;
 class SendmailMailer extends PHPMailer{
 
 	/**
-	 * The path to the sendmail program.
+	 * The path to the sendmail/qmail program.
 	 *
 	 * @var string
 	 */
-	public $Sendmail;
+	protected $sendmail;
 
 	/**
 	 * SendmailMailer constructor.
 	 *
-	 * @param \Psr\Log\LoggerInterface|null $logger
+	 * @param \PHPMailer\PHPMailer\PHPMailerOptions|null $options
+	 * @param \Psr\Log\LoggerInterface|null              $logger
 	 */
-	public function __construct(LoggerInterface $logger = null){
-		parent::__construct($logger);
+	public function __construct(PHPMailerOptions $options = null, LoggerInterface $logger = null){
+		parent::__construct($options, $logger);
 
 		$ini_sendmail_path = ini_get('sendmail_path');
 
-		$this->Sendmail = stripos($ini_sendmail_path, 'sendmail') === false
-			? '/usr/sbin/sendmail'
+		$this->sendmail = stripos($ini_sendmail_path, 'sendmail') === false
+			? $this->options->sendmail_path
 			: $ini_sendmail_path;
 	}
 
 	/**
 	 * @return bool
 	 */
-	public function postSend():bool{
+	protected function postSend():bool{
 		return $this->sendmailSend($this->MIMEHeader, $this->MIMEBody);
 	}
 
@@ -65,21 +66,18 @@ class SendmailMailer extends PHPMailer{
 	 *
 	 * @return bool
 	 * @throws PHPMailerException
-	 *
-	 * @see    PHPMailer::$Sendmail
-	 *
 	 */
 	protected function sendmailSend(string $header, string $body):bool{
 		$header   = rtrim($header, "\r\n ").$this->LE.$this->LE;
-		$sendmail = sprintf($this->format(), escapeshellcmd($this->Sendmail), $this->Sender);
+		$sendmail = sprintf($this->format(), escapeshellcmd($this->sendmail), $this->Sender);
 
-		if($this->SingleTo){
+		if($this->options->singleTo){
 
 			foreach($this->SingleToArray as $toAddr){
 				$mail = @popen($sendmail, 'w');
 
 				if(!$mail){
-					throw new PHPMailerException(sprintf($this->lang->string('execute'), $this->Sendmail));
+					throw new PHPMailerException(sprintf($this->lang->string('execute'), $this->sendmail));
 				}
 
 				fwrite($mail, 'To: '.$toAddr."\n");
@@ -90,7 +88,7 @@ class SendmailMailer extends PHPMailer{
 				$this->doCallback(($result === 0), [$toAddr], $this->cc, $this->bcc, $this->Subject, $body, $this->From, []);
 
 				if($result !== 0){
-					throw new PHPMailerException(sprintf($this->lang->string('execute'), $this->Sendmail));
+					throw new PHPMailerException(sprintf($this->lang->string('execute'), $this->sendmail));
 				}
 			}
 		}
@@ -98,7 +96,7 @@ class SendmailMailer extends PHPMailer{
 			$mail = @popen($sendmail, 'w');
 
 			if(!$mail){
-				throw new PHPMailerException(sprintf($this->lang->string('execute'), $this->Sendmail));
+				throw new PHPMailerException(sprintf($this->lang->string('execute'), $this->sendmail));
 			}
 
 			fwrite($mail, $header);
@@ -108,7 +106,7 @@ class SendmailMailer extends PHPMailer{
 			$this->doCallback(($result === 0), $this->to, $this->cc, $this->bcc, $this->Subject, $body, $this->From, []);
 
 			if($result !== 0){
-				throw new PHPMailerException(sprintf($this->lang->string('execute'), $this->Sendmail));
+				throw new PHPMailerException(sprintf($this->lang->string('execute'), $this->sendmail));
 			}
 		}
 

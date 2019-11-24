@@ -9,31 +9,30 @@
 //Import PHPMailer classes into the global namespace
 use PHPMailer\PHPMailer\SMTPMailer;
 
-require '../vendor/autoload.php';
-
-//Create a new PHPMailer instance
-$mail = new SMTPMailer;
+require_once __DIR__.'/common.php';
 
 //Set the hostname of the mail server
-$mail->host = 'smtp.gmail.com';
+$options->smtp_host = 'smtp.gmail.com';
 // use
-// $mail->Host = gethostbyname('smtp.gmail.com');
+// $options->Host = gethostbyname('smtp.gmail.com');
 // if your network does not support SMTP over IPv6
 
 //Set the SMTP port number - 587 for authenticated TLS, a.k.a. RFC4409 SMTP submission
-$mail->port = 587;
-
-//Set the encryption system to use - ssl (deprecated) or tls
-$mail->SMTPSecure = 'tls';
-
-//Whether to use SMTP authentication
-$mail->SMTPAuth = true;
-
+$options->smtp_port = 587;
 //Username to use for SMTP authentication - use full email address for gmail
-$mail->username = "username@gmail.com";
-
+$options->smtp_username = "username@gmail.com";
 //Password to use for SMTP authentication
-$mail->password = "yourpassword";
+$options->smtp_password = "yourpassword";
+//Whether to use SMTP authentication
+$options->smtp_auth = SMTPMailer::ENCRYPTION_STARTTLS;
+//Set the encryption system to use - ssl (deprecated) or tls
+$options->smtp_encryption = 'tls';
+
+//Create a new PHPMailer instance
+$mail = new SMTPMailer($options);
+
+
+
 
 //Set who the message is to be sent from
 $mail->setFrom('from@example.com', 'First Last');

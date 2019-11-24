@@ -5,7 +5,7 @@
 
 namespace PHPMailer\PHPMailer;
 
-require '../vendor/autoload.php';
+require_once __DIR__.'/common.php';
 
 /**
  * This class demonstrates sending an already-built RFC822 message via SMTP
@@ -99,11 +99,11 @@ class PHPMailerLowMemory extends SMTPMailer{
 
 		//Message data has been sent, complete the command
 		//Increase timelimit for end of DATA command
-		$savetimelimit = $this->timeout;
-		$this->timeout = $this->timeout * 2;
-		$result        = $this->sendCommand('DATA END', '.', [250]);
+		$savetimelimit               = $this->options->smtp_timeout;
+		$this->options->smtp_timeout *= 2;
+		$result                      = $this->sendCommand('DATA END', '.', [250]);
 		//Restore timelimit
-		$this->timeout = $savetimelimit;
+		$this->options->smtp_timeout = $savetimelimit;
 
 		return $result;
 	}

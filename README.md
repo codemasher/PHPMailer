@@ -86,25 +86,24 @@ While installing the entire package manually or with Composer is simple, conveni
 <?php
 // Import PHPMailer classes into the global namespace
 // These must be at the top of your script, not inside a function
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\PHPMailerException;
+use PHPMailer\PHPMailer\{SMTPMailer, PHPMailerOptions, PHPMailerException};
 
 // Load Composer's autoloader
 require 'vendor/autoload.php';
 
-// Instantiation and passing `true` enables exceptions
-$mail = new PHPMailer(true);
+$options = new PHPMailerOptions;
+    //Server settings
+    $options->smtp_host       = 'smtp1.example.com;smtp2.example.com';  // Specify main and backup SMTP servers
+    $options->smtp_auth       = true;                                   // Enable SMTP authentication
+    $options->smtp_username   = 'user@example.com';                     // SMTP username
+    $options->smtp_password   = 'secret';                               // SMTP password
+    $options->smtp_encryption = 'tls';                                  // Enable TLS encryption, `ssl` also accepted
+    $options->smtp_port       = 587;                                    // TCP port to connect to
+
+// Instantiation
+$mail = new SMTPMailer($options);
 
 try {
-    //Server settings
-    $mail->SMTPDebug = 2;                                       // Enable verbose debug output
-    $mail->setMailerSMTP();                                            // Set mailer to use SMTP
-    $mail->Host       = 'smtp1.example.com;smtp2.example.com';  // Specify main and backup SMTP servers
-    $mail->SMTPAuth   = true;                                   // Enable SMTP authentication
-    $mail->Username   = 'user@example.com';                     // SMTP username
-    $mail->Password   = 'secret';                               // SMTP password
-    $mail->SMTPSecure = 'tls';                                  // Enable TLS encryption, `ssl` also accepted
-    $mail->Port       = 587;                                    // TCP port to connect to
 
     //Recipients
     $mail->setFrom('from@example.com', 'Mailer');
@@ -119,7 +118,6 @@ try {
     $mail->addAttachment('/tmp/image.jpg', 'new.jpg');    // Optional name
 
     // Content
-    $mail->setMessageContentType(true);                                  // Set email format to HTML
     $mail->Subject = 'Here is the subject';
     $mail->Body    = 'This is the HTML message body <b>in bold!</b>';
     $mail->AltBody = 'This is the body in plain text for non-HTML mail clients';

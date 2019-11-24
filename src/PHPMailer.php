@@ -20,9 +20,11 @@
 
 namespace PHPMailer\PHPMailer;
 
-use function addcslashes, array_filter, array_key_exists, array_merge, base64_decode, base64_encode, call_user_func,
-	call_user_func_array, chunk_split, count, dirname, explode, file_get_contents, file_put_contents, floor, function_exists,
-	gethostname, hash, implode, in_array, is_callable, is_file, mb_strlen, mb_substr, openssl_error_string,
+use Closure;
+
+use function addcslashes, array_filter, array_key_exists, array_merge, base64_decode, base64_encode,
+	call_user_func_array, chunk_split, count, dirname, explode, file_get_contents, file_put_contents, floor,
+	function_exists, gethostname, hash, implode, in_array, is_file, mb_strlen, mb_substr, openssl_error_string,
 	openssl_pkcs7_sign, pack, php_uname, preg_match, preg_match_all, preg_quote, preg_replace, quoted_printable_encode,
 	rawurldecode, realpath, rtrim, serialize, sprintf, str_replace, strlen, strpos, strrpos, strtolower, substr,
 	sys_get_temp_dir, tempnam, time, trim, unlink;
@@ -131,60 +133,11 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	public $Ical = '';
 
 	/**
-	 * The complete compiled MIME message body.
-	 *
-	 * @var string
-	 */
-	protected $MIMEBody = '';
-
-	/**
-	 * The complete compiled MIME message headers.
-	 *
-	 * @var string
-	 */
-	protected $MIMEHeader = '';
-
-	/**
-	 * Extra headers that createHeader() doesn't fold in.
-	 *
-	 * @var string
-	 */
-	protected $mailHeader = '';
-
-	/**
-	 * Word-wrap the message body to this number of chars.
-	 * Set to 0 to not wrap. A useful value here is 78, for RFC2822 section 2.1.1 compliance.
-	 *
-	 * @see static::STD_LINE_LENGTH
-	 *
-	 * @var int
-	 */
-	public $WordWrap = 0;
-
-	/**
-	 * Whether mail() uses a fully sendmail-compatible MTA.
-	 * One which supports sendmail's "-oi -f" options.
-	 *
-	 * @var bool
-	 */
-	public $UseSendmailOptions = true;
-
-	/**
 	 * The email address that a reading confirmation should be sent to, also known as read receipt.
 	 *
 	 * @var string
 	 */
 	public $ConfirmReadingTo = '';
-
-	/**
-	 * The hostname to use in the Message-ID header and as default HELO string.
-	 * If empty, PHPMailer attempts to find one with, in order,
-	 * $_SERVER['SERVER_NAME'], gethostname(), php_uname('n'), or the value
-	 * 'localhost.localdomain'.
-	 *
-	 * @var string
-	 */
-	public $Hostname = '';
 
 	/**
 	 * An ID to be used in the Message-ID header.
@@ -207,58 +160,25 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	public $MessageDate = '';
 
 	/**
-	 * The SMTP HELO of the message.
-	 * Default is $Hostname. If $Hostname is empty, PHPMailer attempts to find
-	 * one with the same method described above for $Hostname.
-	 *
-	 * @see PHPMailer::$Hostname
+	 * The complete compiled MIME message body.
 	 *
 	 * @var string
 	 */
-	public $Helo = '';
+	protected $MIMEBody = '';
 
 	/**
-	 * What kind of encryption to use on the SMTP connection.
-	 * Options: '', self::ENCRYPTION_STARTTLS, or self::ENCRYPTION_SMTPS.
+	 * The complete compiled MIME message headers.
 	 *
 	 * @var string
 	 */
-	public $SMTPSecure = '';
+	protected $MIMEHeader = '';
 
 	/**
-	 * Whether to enable TLS encryption automatically if a server supports it,
-	 * even if `SMTPSecure` is not set to 'tls'.
-	 * Be aware that in PHP >= 5.6 this requires that the server's certificates are valid.
-	 *
-	 * @var bool
-	 */
-	public $SMTPAutoTLS = true;
-
-	/**
-	 * Whether to use SMTP authentication.
-	 * Uses the Username and Password properties.
-	 *
-	 * @see PHPMailer::$username
-	 * @see PHPMailer::$password
-	 *
-	 * @var bool
-	 */
-	public $SMTPAuth = false;
-
-	/**
-	 * Options array passed to stream_context_create when connecting via SMTP.
-	 *
-	 * @var array
-	 */
-	public $SMTPOptions = [];
-
-	/**
-	 * SMTP auth type.
-	 * Options are CRAM-MD5, LOGIN, PLAIN, XOAUTH2, attempted in that order if not specified.
+	 * Extra headers that createHeader() doesn't fold in.
 	 *
 	 * @var string
 	 */
-	public $AuthType = '';
+	protected $mailHeader = '';
 
 	/**
 	 * An instance of the PHPMailer OAuth class.
@@ -268,51 +188,13 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	protected $oauth;
 
 	/**
-	 * Comma separated list of DSN notifications
-	 * 'NEVER' under no circumstances a DSN must be returned to the sender.
-	 *         If you use NEVER all other notifications will be ignored.
-	 * 'SUCCESS' will notify you when your mail has arrived at its destination.
-	 * 'FAILURE' will arrive if an error occurred during delivery.
-	 * 'DELAY'   will notify you if there is an unusual delay in delivery, but the actual
-	 *           delivery's outcome (success or failure) is not yet decided.
-	 *
-	 * @see https://tools.ietf.org/html/rfc3461 See section 4.1 for more information about NOTIFY
-	 */
-	public $dsn = '';
-
-	/**
-	 * Whether to keep SMTP connection open after each message.
-	 * If this is set to true then to close the connection
-	 * requires an explicit call to closeSMTP().
-	 *
-	 * @var bool
-	 */
-	public $SMTPKeepAlive = false;
-
-	/**
-	 * Whether to split multiple to addresses into multiple messages
-	 * or send them all in one message.
-	 * Only supported in `mail` and `sendmail` transports, not in SMTP.
-	 *
-	 * @var bool
-	 */
-	public $SingleTo = false;
-
-	/**
 	 * Storage for addresses when SingleTo is enabled.
 	 *
 	 * @var array
 	 */
 	protected $SingleToArray = [];
 
-	/**
-	 * Whether to allow sending messages with an empty body.
-	 *
-	 * @var bool
-	 */
-	public $AllowEmpty = false;
-
-	/**
+	/** @todo
 	 * DKIM signing domain name.
 	 *
 	 * @example 'example.com'
@@ -321,21 +203,21 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	 */
 	protected $DKIM_domain;
 
-	/**
+	/** @todo
 	 * DKIM selector.
 	 *
 	 * @var string
 	 */
 	protected $DKIM_selector;
 
-	/**
+	/** @todo
 	 * DKIM private key file path or key string.
 	 *
 	 * @var string
 	 */
 	protected $DKIM_key;
 
-	/**
+	/** @todo
 	 * DKIM passphrase.
 	 * Used if your key is encrypted.
 	 *
@@ -371,53 +253,6 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	 * @var bool
 	 */
 	protected $DKIMCredentials = false;
-
-	/**
-	 * @var bool
-	 */
-	public $DKIMSign = false;
-
-	/**
-	 * Callback Action function name.
-	 *
-	 * The function that handles the result of the send email action.
-	 * It is called out by send() for each email sent.
-	 *
-	 * Value can be any php callable: http://www.php.net/is_callable
-	 *
-	 * Parameters:
-	 *   bool $result        result of the send action
-	 *   array   $to            email addresses of the recipients
-	 *   array   $cc            cc email addresses
-	 *   array   $bcc           bcc email addresses
-	 *   string  $subject       the subject
-	 *   string  $body          the email body
-	 *   string  $from          email address of sender
-	 *   string  $extra         extra information of possible use
-	 *                          "smtp_transaction_id' => last smtp transaction id
-	 *
-	 * @var string
-	 */
-	public $action_function = '';
-
-	/**
-	 * What to put in the X-Mailer header.
-	 * Options: An empty string for PHPMailer default, whitespace for none, or a string to use.
-	 *
-	 * @var string
-	 */
-	public $XMailer = '';
-
-	/**
-	 * Which validator to use by default when validating email addresses.
-	 * May be a callable to inject your own validator, but there are several built-in validators.
-	 * The default validator uses PHP's FILTER_VALIDATE_EMAIL filter_var option.
-	 *
-	 * @see PHPMailer::validateAddress()
-	 *
-	 * @var string|callable
-	 */
-	public $validator = 'php';
 
 	/**
 	 * The array of 'to' names and addresses.
@@ -550,13 +385,6 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	 * @var bool
 	 */
 	protected $signCredentials = false;
-
-	/**
-	 * Wheter or not to sign a message
-	 *
-	 * @var bool
-	 */
-	public $sign = false;
 
 	/**
 	 * Get the OAuth instance.
@@ -793,7 +621,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 		if( // @todo: clarify
 			$pos === false
 			|| (!has8bitChars(substr($address, ++$pos)) || !idnSupported())
-			   && !validateAddress($address, $this->validator)
+			   && !validateAddress($address, $this->options->validator)
 		){
 			$this->logger->error(sprintf($this->lang->string('invalid_address'), 'From', $address));
 
@@ -880,7 +708,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 			return false;
 		}
 
-		if(!validateAddress($address, $this->validator)){
+		if(!validateAddress($address, $this->options->validator)){
 			$this->logger->error(sprintf($this->lang->string('invalid_address'), $kind, $address));
 
 			return false;
@@ -1229,7 +1057,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 
 		$this->signCredentials = true;
 		// enable signing as soon as we get credentials
-		$this->sign = true;
+		$this->options->sign   = true;
 
 		return $this;
 	}
@@ -1258,6 +1086,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 		bool $copyHeaders = null
 	):PHPMailer{
 
+		// @todo: miserable hinting
 		foreach(['domain', 'selector', 'key'] as $arg){
 			${$arg} = trim(${$arg});
 
@@ -1277,8 +1106,9 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 		$this->DKIM_headers     = $headers ?? [];
 		$this->DKIM_copyHeaders = $copyHeaders ?? true;
 
-		$this->DKIMCredentials = true;
-		$this->DKIMSign        = true;
+		$this->DKIMCredentials   = true;
+		// enable signing as soon as we get credentials
+		$this->options->DKIMSign = true;
 
 		return $this;
 	}
@@ -1350,7 +1180,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 
 			$this->{$type} = punyencodeAddress($this->{$type}, $this->CharSet);
 
-			if(!validateAddress($this->{$type}, $this->validator)){
+			if(!validateAddress($this->{$type}, $this->options->validator)){
 				$this->logger->error(sprintf($this->lang->string('invalid_address'), $type, $this->{$type}));
 				// clear the invalid address
 				unset($this->{$type});
@@ -1364,7 +1194,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 
 		$this->setMessageType();
 		// Refuse to send an empty message unless we are specifically allowing it
-		if(!$this->AllowEmpty && empty($this->Body)){
+		if(!$this->options->allowEmpty && empty($this->Body)){
 			throw new PHPMailerException($this->lang->string('empty_message'));
 		}
 
@@ -1377,7 +1207,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 		$this->MIMEHeader = '';
 		$this->MIMEBody   = $this->createBody($uniqueid);
 
-		if($this->sign){
+		if($this->options->sign){
 			$this->MIMEBody = $this->pkcs7Sign($this->MIMEBody);
 		}
 
@@ -1395,7 +1225,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 		}
 
 		// Sign with DKIM if enabled
-		if($this->DKIMSign && $this->DKIMCredentials){
+		if($this->options->DKIMSign && $this->DKIMCredentials){
 			$header_dkim = $this->DKIM_Add(
 				$this->MIMEHeader.$this->mailHeader,
 				$this->encodeHeader(secureHeader($this->Subject)),
@@ -1643,7 +1473,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 		$header = $this->headerLine('Date', empty($this->MessageDate) ? rfcDate() : $this->MessageDate);
 
 		// To be created automatically by mail()
-		if($this->SingleTo){
+		if($this->options->singleTo){
 			if(!$this instanceof MailMailer){
 				foreach($this->to as $toaddr){
 					$this->SingleToArray[] = $this->addrFormat($toaddr);
@@ -1692,11 +1522,11 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 			$header .= $this->headerLine('X-Priority', $this->Priority);
 		}
 
-		$this->XMailer = trim($this->XMailer);
+		$xmailer = trim($this->options->XMailer);
 
-		$xmailer = empty($this->XMailer)
+		$xmailer = empty($xmailer)
 			? 'PHPMailer '.$this::VERSION.' (https://github.com/PHPMailer/PHPMailer)'
-			: $this->XMailer;
+			: $xmailer;
 
 		$header .= $this->headerLine('X-Mailer', $xmailer);
 
@@ -1709,7 +1539,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 			$header .= $this->headerLine(trim($h[0]), $this->encodeHeader(trim($h[1])));
 		}
 
-		if(!$this->sign || !$this->signCredentials){
+		if(!$this->options->sign || !$this->signCredentials){
 			$header .= $this->headerLine('MIME-Version', '1.0');
 			$header .= $this->getMailMIME($uniqueid);
 		}
@@ -1789,11 +1619,11 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 
 		$body = '';
 
-		if($this->sign && $this->signCredentials){
+		if($this->options->sign && $this->signCredentials){
 			$body .= $this->getMailMIME($uniqueid).$this->LE;
 		}
 
-		$this->Body = $this->wrapText($this->Body, $this->WordWrap);
+		$this->Body = $this->wrapText($this->Body, $this->options->wordWrap);
 
 		$bodyEncoding = $this->Encoding;
 		$bodyCharSet  = $this->CharSet;
@@ -1823,7 +1653,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 		}
 		elseif(in_array($this->message_type, ['alt', 'alt_inline', 'alt_attach', 'alt_inline_attach'])){
 
-			$this->AltBody = $this->wrapText($this->AltBody, $this->WordWrap);
+			$this->AltBody = $this->wrapText($this->AltBody, $this->options->wordWrap);
 
 			$altBodyEncoding = $this->Encoding;
 			$altBodyCharSet  = $this->CharSet;
@@ -2496,8 +2326,8 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	protected function serverHostname():string{
 		$hostname = '';
 
-		if(!empty($this->Hostname)){
-			$hostname = $this->Hostname;
+		if(!empty($this->options->hostname)){
+			$hostname = $this->options->hostname;
 		}
 		elseif(isset($_SERVER) && array_key_exists('SERVER_NAME', $_SERVER)){
 			$hostname = $_SERVER['SERVER_NAME'];
@@ -2840,8 +2670,8 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	 * @param array  $extra
 	 */
 	protected function doCallback($isSent, $to, $cc, $bcc, $subject, $body, $from, $extra):void{
-		if(!empty($this->action_function) && is_callable($this->action_function)){
-			call_user_func($this->action_function, $isSent, $to, $cc, $bcc, $subject, $body, $from, $extra);
+		if($this->action_function instanceof Closure){
+			$this->action_function->call($this, $isSent, $to, $cc, $bcc, $subject, $body, $from, $extra);
 		}
 	}
 

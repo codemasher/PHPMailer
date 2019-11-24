@@ -6,6 +6,8 @@
 //Import the PHPMailer class into the global namespace
 use PHPMailer\PHPMailer\MailMailer;
 
+require_once __DIR__.'/common.php';
+
 $msg = '';
 if(array_key_exists('userfile', $_FILES)){
 	// First handle the upload
@@ -15,8 +17,8 @@ if(array_key_exists('userfile', $_FILES)){
 	if(move_uploaded_file($_FILES['userfile']['tmp_name'], $uploadfile)){
 		// Upload handled successfully
 		// Now create a message
-		require '../vendor/autoload.php';
-		$mail = new MailMailer;
+
+		$mail = new MailMailer($options);
 		$mail->setFrom('from@example.com', 'First Last');
 		$mail->addTO('whoto@example.com', 'John Doe');
 		$mail->Subject = 'PHPMailer file sender';

@@ -30,6 +30,8 @@
 
 namespace PHPMailer\PHPMailer;
 
+require_once __DIR__.'/common.php';
+
 /**
  * Aliases for League Provider Classes
  * Make sure you have added these to your composer.json and run `composer install`
@@ -56,7 +58,6 @@ if (!isset($_GET['code']) && !isset($_GET['provider'])) {
 exit;
 }
 
-require 'vendor/autoload.php';
 
 session_start();
 

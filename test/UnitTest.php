@@ -14,9 +14,9 @@ namespace PHPMailer\Test;
 
 use PHPMailer\PHPMailer\{PHPMailer, PHPMailerException};
 
-use function PHPMailer\PHPMailer\{generateId, normalizeBreaks, punyencodeAddress, validateAddress};
+use function PHPMailer\PHPMailer\{generateId, normalizeBreaks, punyencodeAddress};
 use function file_get_contents, hash, mb_convert_encoding, openssl_pkey_export_to_file,
-	openssl_pkey_new, quoted_printable_decode, realpath, str_repeat, str_replace, strlen, strpos, unlink;
+	openssl_pkey_new, quoted_printable_decode, realpath, str_repeat, str_replace, strlen, unlink;
 
 use const OPENSSL_KEYTYPE_RSA;
 
@@ -145,7 +145,6 @@ class UnitTest extends TestAbstract{
 	 * Test constructing a multipart message that contains lines that are too long for RFC compliance.
 	 */
 	public function testLongBody(){
-		$this->setupMailer();
 
 		$this->mailer->ContentType = $this->mailer::CONTENT_TYPE_PLAINTEXT;
 		$this->mailer->Encoding    = $this->mailer::ENCODING_8BIT;
@@ -191,7 +190,6 @@ class UnitTest extends TestAbstract{
 	 * Test constructing a message that does NOT contain lines that are too long for RFC compliance.
 	 */
 	public function testShortBody(){
-		$this->setupMailer();
 		$this->mailer->Encoding = $this->mailer::ENCODING_8BIT;
 
 		$oklen = str_repeat(str_repeat('0', $this->mailer::LINE_LENGTH_MAX).$this->mailer->getLE(), 10);
@@ -274,8 +272,6 @@ class UnitTest extends TestAbstract{
 	 * @group network
 	 */
 	public function testDuplicateIDNAddressRemoved(){
-		$this->setupMailer();
-
 		$this->mailer->CharSet = $this->mailer::CHARSET_UTF8;
 
 		$this->assertTrue($this->mailer->addTO('test@françois.ch'));
@@ -306,8 +302,6 @@ class UnitTest extends TestAbstract{
 	 * Test address escaping.
 	 */
 	public function testAddressEscaping(){
-		$this->setupMailer();
-
 		$this->mailer->Subject .= ': Address escaping';
 		$this->mailer->clearTOs();
 		$this->mailer->addTO('foo@example.com', 'Tim "The Book" O\'Reilly');
@@ -543,7 +537,6 @@ class UnitTest extends TestAbstract{
 	 * Test setting and retrieving message ID.
 	 */
 	public function testMessageID(){
-		$this->setupMailer();
 		$this->mailer->addTO('user@example.com');
 
 		$id = hash('sha256', 12345);
@@ -572,7 +565,6 @@ class UnitTest extends TestAbstract{
 	public function testMIMEStructure(){
 		$this->markTestIncomplete('why is this acting out? test needs a fix. (original test doesn\'t with the same source)');
 
-		$this->setupMailer();
 
 		$this->setMessage('<h3>MIME structure test.</h3>', __FUNCTION__.': MIME structure');
 		$this->mailer->AltBody = 'MIME structure test.';
@@ -590,7 +582,6 @@ class UnitTest extends TestAbstract{
 	 * Tests CharSet and Unicode -> ASCII conversions for addresses with IDN.
 	 */
 	public function testAddressConvertEncoding(){
-		$this->setupMailer();
 
 		// This file is UTF-8 encoded. Create a domain encoded in "iso-8859-1".
 		$domain = '@'.mb_convert_encoding('françois.ch', 'ISO-8859-1', 'UTF-8');

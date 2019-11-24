@@ -6,16 +6,16 @@
 
 //Import the PHPMailer SMTP class into the global namespace
 use PHPMailer\PHPMailer\PHPMailerException;
-use PHPMailer\PHPMailer\SMTP;
+use PHPMailer\PHPMailer\SMTPMailer;
 
-require '../vendor/autoload.php';
+require_once __DIR__.'/common.php';
 
 //SMTP needs accurate times, and the PHP time zone MUST be set
 //This should be done in your php.ini, but this is how to do it if you don't have access to that
 date_default_timezone_set('Etc/UTC');
 
 //Create a new SMTP instance
-$smtp = new SMTP;
+$smtp = new SMTPMailer($options);
 
 try{
 	//Connect to an SMTP server
