@@ -349,44 +349,6 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	protected $message_type = '';
 
 	/**
-	 * The S/MIME certificate file path.
-	 *
-	 * @var string
-	 */
-	protected $sign_cert_file = '';
-
-	/**
-	 * The S/MIME key file path.
-	 *
-	 * @var string
-	 */
-	protected $sign_key_file = '';
-
-	/**
-	 * The optional S/MIME extra certificates ("CA Chain") file path.
-	 *
-	 * @var string
-	 */
-	protected $sign_extracerts_file = '';
-
-	/**
-	 * The S/MIME password for the key.
-	 * Used only if the key is encrypted.
-	 *
-	 * @var string
-	 */
-	protected $sign_key_pass = '';
-
-	/**
-	 * Determines whether sign credentials are set
-	 *
-	 * @see setSignCredentials()
-	 *
-	 * @var bool
-	 */
-	protected $signCredentials = false;
-
-	/**
 	 * Get the OAuth instance.
 	 *
 	 * @return \PHPMailer\PHPMailer\PHPMailerOAuthInterface
@@ -1013,56 +975,6 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	}
 
 	/**
-	 * Set the public and private key files and password for S/MIME signing.
-	 *
-	 * @param string $cert_filename
-	 * @param string $key_filename
-	 * @param string $key_pass            Password for private key
-	 * @param string $extracerts_filename Optional path to chain certificate
-	 *
-	 * @return \PHPMailer\PHPMailer\PHPMailer
-	 * @throws \PHPMailer\PHPMailer\PHPMailerException
-	 */
-	public function setSignCredentials(
-		string $cert_filename,
-		string $key_filename,
-		string $key_pass,
-		string $extracerts_filename = null
-	):PHPMailer{
-
-		if(!fileCheck($cert_filename) || !isPermittedPath($cert_filename)){
-			throw new PHPMailerException(sprintf($this->lang->string('sign_cert_file'), $cert_filename));
-		}
-
-		if(!fileCheck($key_filename) || !isPermittedPath($key_filename)){
-			throw new PHPMailerException(sprintf($this->lang->string('sign_key_file'), $key_filename));
-		}
-
-		if(empty($key_pass)){
-			throw new PHPMailerException($this->lang->string('sign_key_passphrase'));
-		}
-
-		if($extracerts_filename !== null){
-
-			if(!fileCheck($extracerts_filename) || !isPermittedPath($extracerts_filename)){
-				throw new PHPMailerException(sprintf($this->lang->string('extra_certs_file'), $extracerts_filename));
-			}
-
-			$this->sign_extracerts_file = $extracerts_filename;
-		}
-
-		$this->sign_cert_file = $cert_filename;
-		$this->sign_key_file  = $key_filename;
-		$this->sign_key_pass  = $key_pass;
-
-		$this->signCredentials = true;
-		// enable signing as soon as we get credentials
-		$this->options->sign   = true;
-
-		return $this;
-	}
-
-	/**
 	 * Sets the credentials for DKIM authentication
 	 *
 	 * @param string      $domain
@@ -1207,7 +1119,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 		$this->MIMEHeader = '';
 		$this->MIMEBody   = $this->createBody($uniqueid);
 
-		if($this->options->sign){
+		if($this->options->smime_sign){
 			$this->MIMEBody = $this->pkcs7Sign($this->MIMEBody);
 		}
 
@@ -1539,7 +1451,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 			$header .= $this->headerLine(trim($h[0]), $this->encodeHeader(trim($h[1])));
 		}
 
-		if(!$this->options->sign || !$this->signCredentials){
+		if(!$this->options->smime_sign){
 			$header .= $this->headerLine('MIME-Version', '1.0');
 			$header .= $this->getMailMIME($uniqueid);
 		}
@@ -1619,7 +1531,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 
 		$body = '';
 
-		if($this->options->sign && $this->signCredentials){
+		if($this->options->smime_sign){
 			$body .= $this->getMailMIME($uniqueid).$this->LE;
 		}
 
@@ -1870,8 +1782,20 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	 */
 	protected function pkcs7Sign(string $message):string{
 
-		if(!$this->signCredentials){
-			throw new PHPMailerException($this->lang->string('sign_credentials'));
+		if(!fileCheck($this->options->sign_cert_file) || !isPermittedPath($this->options->sign_cert_file)){
+			throw new PHPMailerException(sprintf($this->lang->string('sign_cert_file'), $this->options->sign_cert_file));
+		}
+
+		if(!fileCheck($this->options->sign_key_file) || !isPermittedPath($this->options->sign_key_file)){
+			throw new PHPMailerException(sprintf($this->lang->string('sign_key_file'), $this->options->sign_key_file));
+		}
+
+		if($this->options->sign_extracerts_file !== null){
+
+			if(!fileCheck($this->options->sign_extracerts_file) || !isPermittedPath($this->options->sign_extracerts_file)){
+				throw new PHPMailerException(sprintf($this->lang->string('extra_certs_file'), $this->options->sign_extracerts_file));
+			}
+
 		}
 
 		$tmpdir = sys_get_temp_dir();
@@ -1880,14 +1804,14 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 
 		file_put_contents($file, $message); // dump the body
 
-		$signcert = 'file://'.realpath($this->sign_cert_file);
-		$privkey  = ['file://'.realpath($this->sign_key_file), $this->sign_key_pass];
+		$signcert = 'file://'.realpath($this->options->sign_cert_file);
+		$privkey  = ['file://'.realpath($this->options->sign_key_file), $this->options->sign_key_pass];
 
 		// Workaround for PHP bug https://bugs.php.net/bug.php?id=69197
 		// this bug still exists in 7.2+ despite being closed and "fixed"
 		$sign = empty($this->sign_extracerts_file)
 			? openssl_pkcs7_sign($file, $signed, $signcert, $privkey, [])
-			: openssl_pkcs7_sign($file, $signed, $signcert, $privkey, [], PKCS7_DETACHED, $this->sign_extracerts_file);
+			: openssl_pkcs7_sign($file, $signed, $signcert, $privkey, [], PKCS7_DETACHED, $this->options->sign_extracerts_file);
 
 		$message = file_get_contents($signed);
 

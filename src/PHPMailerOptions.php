@@ -250,7 +250,36 @@ class PHPMailerOptions extends SettingsContainerAbstract{
 	 *
 	 * @var bool
 	 */
-	public $sign = false;
+	protected $smime_sign = false;
+
+	/**
+	 * The S/MIME certificate file path.
+	 *
+	 * @var string|null
+	 */
+	protected $sign_cert_file = null;
+
+	/**
+	 * The S/MIME key file path.
+	 *
+	 * @var string|null
+	 */
+	protected $sign_key_file = null;
+
+	/**
+	 * The optional S/MIME extra certificates ("CA Chain") file path.
+	 *
+	 * @var string|null
+	 */
+	protected $sign_extracerts_file = null;
+
+	/**
+	 * The S/MIME password for the key.
+	 * Used only if the key is encrypted.
+	 *
+	 * @var string
+	 */
+	protected $sign_key_pass = '';
 
 	/**
 	 * Enable DKIM signing

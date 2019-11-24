@@ -685,7 +685,12 @@ Czech text: Prázdné tělo zprávy';
 		openssl_pkey_export($pk, $pkeyout, $password);
 		file_put_contents($keyfile, $pkeyout);
 
-		$this->mailer->setSignCredentials($certfile, $keyfile, $password);
+		$this->options->sign_cert_file = $certfile;
+		$this->options->sign_key_file  = $keyfile;
+		$this->options->sign_key_pass  = $password;
+		$this->options->smime_sign     = true;
+
+		$this->mailer->setOptions($this->options);
 
 		$body = 'This message is S/MIME signed.';
 		$this->setMessage($body, __FUNCTION__)->assertSentMail();
@@ -766,7 +771,13 @@ Czech text: Prázdné tělo zprávy';
 		openssl_pkey_export($pk, $pkeyout, $password);
 		file_put_contents($keyfile, $pkeyout);
 
-		$this->mailer->setSignCredentials($certfile, $keyfile, $password, $cacertfile);
+		$this->options->sign_cert_file       = $certfile;
+		$this->options->sign_key_file        = $keyfile;
+		$this->options->sign_key_pass        = $password;
+		$this->options->sign_extracerts_file = $cacertfile;
+		$this->options->smime_sign           = true;
+
+		$this->mailer->setOptions($this->options);
 
 		$body = 'This message is S/MIME signed with an extra CA cert.';
 		$this->setMessage($body, __FUNCTION__)->assertSentMail();

@@ -52,6 +52,13 @@ use PHPMailer\PHPMailer\MailMailer;
 
 require_once __DIR__.'/common.php';
 
+// Configure message signing (the actual signing does not occur until sending)
+$options->sign_cert_file = '/path/to/cert.crt'; // The location of your certificate file
+$options->sign_key_file  = '/path/to/cert.key';// The location of your private key file
+// The password you protected your private key with (not the Import Password!
+$options->sign_key_pass = 'yourSecretPrivateKeyPassword';
+$options->sign_extracerts_file = '/path/to/certchain.pem'; // The location of your chain file
+
 //Create a new PHPMailer instance
 $mail = new MailMailer($options);
 //Set who the message is to be sent from
@@ -72,16 +79,6 @@ $mail->messageFromHTML(file_get_contents('contents.html'), __DIR__);
 $mail->AltBody = 'This is a plain-text message body';
 //Attach an image file
 $mail->addAttachment('images/phpmailer_mini.png');
-
-//Configure message signing (the actual signing does not occur until sending)
-$mail->setSignCredentials(
-	'/path/to/cert.crt', //The location of your certificate file
-	'/path/to/cert.key', //The location of your private key file
-	//The password you protected your private key with (not the Import Password!
-	//May be empty but the parameter must not be omitted!
-	'yourSecretPrivateKeyPassword',
-	'/path/to/certchain.pem' //The location of your chain file
-);
 
 //Send the message, check for errors
 if(!$mail->send()){
