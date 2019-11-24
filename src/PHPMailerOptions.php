@@ -12,7 +12,9 @@
 
 namespace PHPMailer\PHPMailer;
 
-class PHPMailerOptions{
+use chillerlan\Settings\SettingsContainerAbstract;
+
+class PHPMailerOptions extends SettingsContainerAbstract{
 
 	/**
 	 * What to put in the X-Mailer header.
