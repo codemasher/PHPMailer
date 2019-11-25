@@ -288,7 +288,62 @@ class PHPMailerOptions extends SettingsContainerAbstract{
 	 *
 	 * @var bool
 	 */
-	public $DKIMSign = false;
+	protected $DKIM_sign = false;
+
+	/**
+	 * DKIM signing domain name.
+	 *
+	 * @example 'example.com'
+	 *
+	 * @var string
+	 */
+	protected $DKIM_domain;
+
+	/**
+	 * DKIM selector.
+	 *
+	 * @var string
+	 */
+	protected $DKIM_selector;
+
+	/**
+	 * DKIM private key file path or key string.
+	 *
+	 * @var string
+	 */
+	protected $DKIM_key;
+
+	/**
+	 * DKIM passphrase.
+	 * Used if your key is encrypted.
+	 *
+	 * @var string|null
+	 */
+	protected $DKIM_passphrase = null;
+
+	/**
+	 * DKIM Identity.
+	 * Usually the email address used as the source of the email.
+	 *
+	 * @var string|null
+	 */
+	protected $DKIM_identity = null;
+
+	/**
+	 * DKIM Extra signing headers.
+	 *
+	 * @example ['List-Unsubscribe', 'List-Help']
+	 *
+	 * @var array|null
+	 */
+	protected $DKIM_headers = null;
+
+	/**
+	 * DKIM Copy header field values for diagnostic use.
+	 *
+	 * @var bool
+	 */
+	protected $DKIM_copyHeaders = true;
 
 	/**
 	 * Which validator to use by default when validating email addresses.

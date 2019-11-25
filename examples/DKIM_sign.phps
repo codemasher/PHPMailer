@@ -14,22 +14,29 @@ use PHPMailer\PHPMailer\MailMailer;
 
 require_once __DIR__.'/common.php';
 
+// This should be the same as the domain of your From address
+$options->DKIM_domain      = 'example.com';
+// Set this to your own selector
+$options->DKIM_selector    = 'phpmailer';
+// Path to your private key (see: DKIM_gen_keys.phps)
+$options->DKIM_key         = 'dkim_private.pem';
+// Put your private key's passphrase in here if it has one
+$options->DKIM_passphrase  = 'secret123';
+// The identity you're signing as - usually your From address
+$options->DKIM_identity    = $mail->From;
+// Optionally you can add extra headers for signing to meet special requirements
+$options->DKIM_headers     = ['List-Unsubscribe', 'List-Help'];
+// Suppress listing signed header fields in signature, defaults to true for debugging purpose
+$options->DKIM_copyHeaders = false;
+// enable signing
+$options->DKIM_sign        = true;
+
 // Usual setup
 $mail = new MailMailer($options);
 $mail->setFrom('from@example.com', 'First Last');
 $mail->addTO('whoto@example.com', 'John Doe');
 $mail->Subject = 'PHPMailer mail() test';
 $mail->messageFromHTML(file_get_contents('contents.html'), __DIR__);
-
-$mail->setDKIMCredentials(
-	'example.com',      // This should be the same as the domain of your From address
-	'phpmailer',        // Set this to your own selector
-	'dkim_private.pem', // Path to your private key (see: DKIM_gen_keys.phps)
-	'secret123',        // Put your private key's passphrase in here if it has one
-	$mail->From,        // The identity you're signing as - usually your From address
-	['List-Unsubscribe', 'List-Help'], // Optionally you can add extra headers for signing to meet special requirements
-	false               // Suppress listing signed header fields in signature, defaults to true for debugging purpose
-);
 
 // When you send, the DKIM settings will be used to sign the message
 if(!$mail->send()){

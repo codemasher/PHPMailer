@@ -194,66 +194,6 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	 */
 	protected $SingleToArray = [];
 
-	/** @todo
-	 * DKIM signing domain name.
-	 *
-	 * @example 'example.com'
-	 *
-	 * @var string
-	 */
-	protected $DKIM_domain;
-
-	/** @todo
-	 * DKIM selector.
-	 *
-	 * @var string
-	 */
-	protected $DKIM_selector;
-
-	/** @todo
-	 * DKIM private key file path or key string.
-	 *
-	 * @var string
-	 */
-	protected $DKIM_key;
-
-	/** @todo
-	 * DKIM passphrase.
-	 * Used if your key is encrypted.
-	 *
-	 * @var string
-	 */
-	protected $DKIM_passphrase;
-
-	/**
-	 * DKIM Identity.
-	 * Usually the email address used as the source of the email.
-	 *
-	 * @var string
-	 */
-	protected $DKIM_identity;
-
-	/**
-	 * DKIM Extra signing headers.
-	 *
-	 * @example ['List-Unsubscribe', 'List-Help']
-	 *
-	 * @var array
-	 */
-	protected $DKIM_headers = [];
-
-	/**
-	 * DKIM Copy header field values for diagnostic use.
-	 *
-	 * @var bool
-	 */
-	protected $DKIM_copyHeaders = true;
-
-	/**
-	 * @var bool
-	 */
-	protected $DKIMCredentials = false;
-
 	/**
 	 * The array of 'to' names and addresses.
 	 *
@@ -975,57 +915,6 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	}
 
 	/**
-	 * Sets the credentials for DKIM authentication
-	 *
-	 * @param string      $domain
-	 * @param string      $selector
-	 * @param string      $key
-	 * @param string|null $keyPassphrase
-	 * @param string|null $identity
-	 * @param array|null  $headers
-	 * @param bool|null   $copyHeaders
-	 *
-	 * @return \PHPMailer\PHPMailer\PHPMailer
-	 * @throws \PHPMailer\PHPMailer\PHPMailerException
-	 */
-	public function setDKIMCredentials(
-		string $domain,
-		string $selector,
-		string $key,
-		string $keyPassphrase = null,
-		string $identity = null,
-		array $headers = null,
-		bool $copyHeaders = null
-	):PHPMailer{
-
-		// @todo: miserable hinting
-		foreach(['domain', 'selector', 'key'] as $arg){
-			${$arg} = trim(${$arg});
-
-			if(empty(${$arg})){
-				throw new PHPMailerException(sprintf($this->lang->string('arg_empty'), $arg));
-			}
-
-			$this->{'DKIM_'.$arg} = ${$arg};
-		}
-
-		if(fileCheck($key) && !isPermittedPath($key)){
-			throw new PHPMailerException(sprintf($this->lang->string('dkim_key_file'), $key));
-		}
-
-		$this->DKIM_passphrase  = !empty($keyPassphrase) ? $keyPassphrase : null;
-		$this->DKIM_identity    = $identity;
-		$this->DKIM_headers     = $headers ?? [];
-		$this->DKIM_copyHeaders = $copyHeaders ?? true;
-
-		$this->DKIMCredentials   = true;
-		// enable signing as soon as we get credentials
-		$this->options->DKIMSign = true;
-
-		return $this;
-	}
-
-	/**
 	 * Return the Message-ID header of the last email.
 	 * Technically this is the value from the last time the headers were created,
 	 * but it's also the message ID of the last sent message except in
@@ -1137,7 +1026,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 		}
 
 		// Sign with DKIM if enabled
-		if($this->options->DKIMSign && $this->DKIMCredentials){
+		if($this->options->DKIM_sign){
 			$header_dkim = $this->DKIM_Add(
 				$this->MIMEHeader.$this->mailHeader,
 				$this->encodeHeader(secureHeader($this->Subject)),
@@ -2400,101 +2289,62 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	/**
 	 * Create the DKIM header and body in a new message header.
 	 *
-	 * @param string $headers_line Header lines
-	 * @param string $subject      Subject
-	 * @param string $body         Body
+	 * @param string $headers Header lines
+	 * @param string $subject Subject
+	 * @param string $body    Body
 	 *
 	 * @return string
+	 * @throws \PHPMailer\PHPMailer\PHPMailerException
 	 */
-	public function DKIM_Add(string $headers_line, string $subject, string $body):string{
-		$DKIMsignatureType    = 'rsa-sha256'; // Signature & hash algorithms
-		$DKIMcanonicalization = 'relaxed/simple'; // Canonicalization methods of header & body
-		$DKIMquery            = 'dns/txt'; // Query method
-		$DKIMtime             = time();
+	public function DKIM_Add(string $headers, string $subject, string $body):string{
 
-		//Always sign these headers without being asked
-		$autoSignHeaders = [
-			'From',
-			'To',
-			'CC',
-			'Date',
-			'Subject',
-			'Reply-To',
-			'Message-ID',
-			'Content-Type',
-			'Mime-Version',
-			'X-Mailer',
-		];
-
-		if(stripos($headers_line, 'Subject') === false){
-			$headers_line .= 'Subject: '.$subject.$this->LE;
+		if(!$this->options->DKIM_domain){
+			throw new PHPMailerException($this->lang->string('dkim_domain'));
 		}
 
-		$headerLines        = explode($this->LE, $headers_line);
-		$currentHeaderLabel = '';
-		$currentHeaderValue = '';
-		$parsedHeaders      = [];
-		$headerLineIndex    = 0;
-		$headerLineCount    = count($headerLines);
+		if(!$this->options->DKIM_selector){
+			throw new PHPMailerException($this->lang->string('dkim_selector'));
+		}
 
-		foreach($headerLines as $headerLine){
-			$matches = [];
-
-			if(preg_match('/^([^ \t]*?)(?::[ \t]*)(.*)$/', $headerLine, $matches)){
-
-				if($currentHeaderLabel !== ''){
-					//We were previously in another header; This is the start of a new header, so save the previous one
-					$parsedHeaders[] = ['label' => $currentHeaderLabel, 'value' => $currentHeaderValue];
-				}
-
-				$currentHeaderLabel = $matches[1];
-				$currentHeaderValue = $matches[2];
-			}
-			elseif(preg_match('/^[ \t]+(.*)$/', $headerLine, $matches)){
-				//This is a folded continuation of the current header, so unfold it
-				$currentHeaderValue .= ' '.$matches[1];
-			}
-
-			++$headerLineIndex;
-
-			if($headerLineIndex >= $headerLineCount){
-				//This was the last line, so finish off this header
-				$parsedHeaders[] = ['label' => $currentHeaderLabel, 'value' => $currentHeaderValue];
-			}
-
+		if(stripos($headers, 'Subject') === false){
+			$headers .= 'Subject: '.$subject.$this->LE;
 		}
 
 		$copiedHeaders     = [];
 		$headersToSignKeys = [];
 		$headersToSign     = [];
 
-		foreach($parsedHeaders as $header){
-			//Is this header one that must be included in the DKIM signature?
-			if(in_array($header['label'], $autoSignHeaders, true)){
-				$headersToSignKeys[] = $header['label'];
-				$headersToSign[]     = $header['label'].': '.$header['value'];
+		//Always sign these headers without being asked
+		$autoSignHeaders = [
+			'From', 'To', 'CC', 'Date', 'Subject', 'Reply-To', 'Message-ID', 'Content-Type', 'Mime-Version', 'X-Mailer',
+		];
 
-				if($this->DKIM_copyHeaders){
-					$copiedHeaders[] = $header['label'].':'. //Note no space after this, as per RFC
-					                   str_replace('|', '=7C', DKIM_QP($header['value']));
-				}
+		$addHeader = function(array $h) use (&$headersToSignKeys, &$headersToSign, &$copiedHeaders):void{
+			$headersToSignKeys[] = $h[0];
+			$headersToSign[]     = $h[0].': '.$h[1];
+
+			if($this->options->DKIM_copyHeaders){
+				// Note no space after this, as per RFC
+				$copiedHeaders[$h[0]] = $h[0].':'.str_replace('|', '=7C', DKIM_QP($h[1]));
+			}
+
+		};
+
+		foreach(DKIM_parseHeaders(explode($this->LE, $headers)) as $header){
+			//Is this header one that must be included in the DKIM signature?
+			if(in_array($header[0], $autoSignHeaders, true)){
+				$addHeader($header);
 
 				continue;
 			}
 
 			//Is this an extra custom header we've been asked to sign?
-			if(in_array($header['label'], $this->DKIM_headers, true)){
+			if(in_array($header[0], $this->options->DKIM_headers ?? [], true)){
 				//Find its value in custom headers
 				foreach($this->CustomHeader as $customHeader){
 
-					if($customHeader[0] === $header['label']){
-						$headersToSignKeys[] = $header['label'];
-						$headersToSign[]     = $header['label'].': '.$header['value'];
-
-						if($this->DKIM_copyHeaders){
-							$copiedHeaders[] = $header['label'].':'. //Note no space after this, as per RFC
-							                   str_replace('|', '=7C', DKIM_QP($header['value']));
-						}
+					if($customHeader[0] === $header[0]){
+						$addHeader($header);
 						//Skip straight to the next header
 						continue 2;
 					}
@@ -2502,66 +2352,42 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 			}
 		}
 
+		$body  = DKIM_BodyC($body);
+		$ident = '';
 		$copiedHeaderFields = '';
 
-		if($this->DKIM_copyHeaders && count($copiedHeaders) > 0){
-			//Assemble a DKIM 'z' tag
-			$copiedHeaderFields = ' z=';
-			$first              = true;
-
-			foreach($copiedHeaders as $copiedHeader){
-
-				if(!$first){
-					$copiedHeaderFields .= $this->LE.' |';
-				}
-				//Fold long values
-				if(strlen($copiedHeader) > self::LINE_LENGTH_STD - 3){
-					$copiedHeaderFields .= substr(
-						chunk_split($copiedHeader, self::LINE_LENGTH_STD - 3, $this->LE.' '),
-						0,
-						-strlen($this->LE.' ')
-					);
-				}
-				else{
-					$copiedHeaderFields .= $copiedHeader;
-				}
-
-				$first = false;
-			}
-			$copiedHeaderFields .= ';'.$this->LE;
+		if($this->options->DKIM_identity){
+			$ident = ' i='.$this->options->DKIM_identity.';'.$this->LE;
 		}
 
-		$headerKeys   = ' h='.implode(':', $headersToSignKeys).';'.$this->LE;
-		$headerValues = implode($this->LE, $headersToSign);
-		$body         = DKIM_BodyC($body);
-		$DKIMlen      = strlen($body); // Length of body
-		$DKIMb64      = base64_encode(pack('H*', hash('sha256', $body))); // Base64 of packed binary SHA-256 hash of body
-		$ident        = '';
-
-		if($this->DKIM_identity !== ''){
-			$ident = ' i='.$this->DKIM_identity.';'.$this->LE;
+		if($this->options->DKIM_copyHeaders){
+			$copiedHeaderFields = DKIM_copyHeaders($copiedHeaders, $this->LE);
 		}
 
 		//The DKIM-Signature header is included in the signature *except for* the value of the `b` tag
 		//which is appended after calculating the signature
 		//https://tools.ietf.org/html/rfc6376#section-3.5
 		$dkimSignatureHeader = 'DKIM-Signature: v=1;'.
-			' d='.$this->DKIM_domain.';'.
-			' s='.$this->DKIM_selector.';'.$this->LE.
-			' a='.$DKIMsignatureType.';'.
-			' q='.$DKIMquery.';'.
-			' l='.$DKIMlen.';'.
-			' t='.$DKIMtime.';'.
-			' c='.$DKIMcanonicalization.';'.$this->LE.
-			$headerKeys.
+			' d='.$this->options->DKIM_domain.';'.
+			' s='.$this->options->DKIM_selector.';'.
+			$this->LE.
+			' a=rsa-sha256;'.
+			' q=dns/txt;'.
+			' l='.strlen($body).';'.
+			' t='.time().';'.
+			' c=relaxed/simple;'.
+			$this->LE.
+			' h='.implode(':', $headersToSignKeys).';'.
+			$this->LE.
 			$ident.
 			$copiedHeaderFields.
-			' bh='.$DKIMb64.';'.$this->LE.
+			' bh='.base64_encode(pack('H*', hash('sha256', $body))).';'. // Base64 of packed binary SHA-256 hash of body
+			$this->LE.
 			' b=';
 
 		//Canonicalize the set of headers
-		$canonicalizedHeaders = DKIM_HeaderC($headerValues.$this->LE.$dkimSignatureHeader);
-		$signature            = DKIM_Sign($canonicalizedHeaders, $this->DKIM_key, $this->DKIM_passphrase);
+		$canonicalizedHeaders = DKIM_HeaderC(implode($this->LE, $headersToSign).$this->LE.$dkimSignatureHeader);
+		$signature            = DKIM_Sign($canonicalizedHeaders, $this->options->DKIM_key, $this->options->DKIM_passphrase);
 		$signature            = trim(chunk_split($signature, self::LINE_LENGTH_STD - 3, $this->LE.' '));
 
 		return normalizeBreaks($dkimSignatureHeader.$signature, $this->LE).$this->LE;

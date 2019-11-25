@@ -642,6 +642,88 @@ function encodeQ(string $str, string $position = 'text'):string{
 }
 
 /**
+ * @param array $headerLines
+ *
+ * @return array
+ */
+function DKIM_parseHeaders(array $headerLines):array{
+	$currentHeaderLabel = '';
+	$currentHeaderValue = '';
+	$parsedHeaders      = [];
+	$headerLineIndex    = 0;
+	$headerLineCount    = count($headerLines);
+
+	foreach($headerLines as $headerLine){
+		$matches = [];
+
+		if(preg_match('/^([^ \t]*?)(?::[ \t]*)(.*)$/', $headerLine, $matches)){
+
+			if($currentHeaderLabel !== ''){
+				//We were previously in another header; This is the start of a new header, so save the previous one
+				$parsedHeaders[] =  [$currentHeaderLabel, $currentHeaderValue];
+			}
+
+			$currentHeaderLabel = $matches[1];
+			$currentHeaderValue = $matches[2];
+		}
+		elseif(preg_match('/^[ \t]+(.*)$/', $headerLine, $matches)){
+			//This is a folded continuation of the current header, so unfold it
+			$currentHeaderValue .= ' '.$matches[1];
+		}
+
+		++$headerLineIndex;
+
+		if($headerLineIndex >= $headerLineCount){
+			//This was the last line, so finish off this header
+			$parsedHeaders[] = [$currentHeaderLabel, $currentHeaderValue];
+		}
+
+	}
+
+	return $parsedHeaders;
+}
+
+/**
+ * @param array  $copiedHeaders
+ * @param string $nl
+ *
+ * @return string
+ */
+function DKIM_copyHeaders(array $copiedHeaders, string $nl):string{
+
+	if(empty($copiedHeaders)){
+		return '';
+	}
+
+	//Assemble a DKIM 'z' tag
+	$copiedHeaderFields = ' z=';
+	$first              = true;
+
+	foreach($copiedHeaders as $copiedHeader){
+
+		if(!$first){
+			$copiedHeaderFields .= $nl.' |';
+		}
+
+		//Fold long values
+		if(strlen($copiedHeader) > PHPMailerInterface::LINE_LENGTH_STD - 3){
+			$copiedHeaderFields .= substr(
+				chunk_split($copiedHeader, PHPMailerInterface::LINE_LENGTH_STD - 3, $nl.' '),
+				0,
+				-strlen($nl.' ')
+			);
+		}
+		else{
+			$copiedHeaderFields .= $copiedHeader;
+		}
+
+		$first = false;
+	}
+
+	return $copiedHeaderFields.';'.$nl;
+}
+
+/**
  * Quoted-Printable-encode a DKIM header.
  *
  * @param string $str

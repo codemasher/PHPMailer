@@ -632,18 +632,27 @@ Czech text: Prázdné tělo zprávy';
 		$privatekeyfile = 'dkim_private.pem';
 		// Make a new key pair
 		// 2048 bits is the recommended minimum key length - gmail won't accept less than 1024 bits
-		$pk = openssl_pkey_new(
-			[
-				'private_key_bits' => 2048,
-				'private_key_type' => OPENSSL_KEYTYPE_RSA,
-			]
-		);
+		$pk = openssl_pkey_new([
+			'private_key_bits' => 2048,
+			'private_key_type' => OPENSSL_KEYTYPE_RSA,
+		]);
 
 		openssl_pkey_export_to_file($pk, $privatekeyfile);
 
-		$this->mailer->setDKIMCredentials('example.com', 'phpmailer', $privatekeyfile);
+		$this->options->DKIM_domain      = 'example.com';
+		$this->options->DKIM_selector    = 'phpmailer';
+		$this->options->DKIM_key         = $privatekeyfile;
+		$this->options->DKIM_copyHeaders = true;
+		$this->options->DKIM_sign        = true;
 
-		$this->setMessage('This message is DKIM signed.', __FUNCTION__)->assertSentMail();
+		$this->mailer->setOptions($this->options);
+
+		$this
+			->setMessage('This message is DKIM signed.', __FUNCTION__)
+			->assertSentMail(function(string $sent, array $received){
+				$this->assertStringContainsString('DKIM-Signature: v=1; d=example.com; s=phpmailer;', $sent);
+			});
+
 		unlink($privatekeyfile);
 	}
 

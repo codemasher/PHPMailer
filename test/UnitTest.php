@@ -363,7 +363,13 @@ class UnitTest extends TestAbstract{
 		$headerLines      = 'From:'.$from.$le.'To:'.$to.$le.'Date:'.$date.$le;
 		$copyHeaderFields = ' z=From:'.$from.$le.' |To:'.$to.$le.' |Date:'.$date.$le.' |Subject:'.$subject.';'.$le;
 
-		$this->mailer->setDKIMCredentials('example.com', 'phpmailer', 'dkim_private.pem', null, null, null, true);
+		$this->options->DKIM_domain      = 'example.com';
+		$this->options->DKIM_selector    = 'phpmailer';
+		$this->options->DKIM_key         = 'dkim_private.pem';
+		$this->options->DKIM_copyHeaders = true;
+		$this->options->DKIM_sign        = true;
+
+		$this->mailer->setOptions($this->options);
 
 		$this->assertStringContainsString(
 			$copyHeaderFields,
@@ -371,7 +377,9 @@ class UnitTest extends TestAbstract{
 			'DKIM header with copied header fields incorrect'
 		);
 
-		$this->mailer->setDKIMCredentials('example.com', 'phpmailer', 'dkim_private.pem', null, null, null, false);
+		$this->options->DKIM_copyHeaders = false;
+
+		$this->mailer->setOptions($this->options);
 
 		$this->assertStringNotContainsString(
 			$copyHeaderFields,
@@ -396,7 +404,13 @@ class UnitTest extends TestAbstract{
 
 		openssl_pkey_export_to_file($pk, $privatekeyfile);
 
-		$this->mailer->setDKIMCredentials('example.com', 'phpmailer', 'dkim_private.pem', null, null, ['Baz', 'List-Unsubscribe']);
+		$this->options->DKIM_domain   = 'example.com';
+		$this->options->DKIM_selector = 'phpmailer';
+		$this->options->DKIM_key      = 'dkim_private.pem';
+		$this->options->DKIM_headers  = ['Baz', 'List-Unsubscribe'];
+		$this->options->DKIM_sign     = true;
+
+		$this->mailer->setOptions($this->options);
 
 		//Example from https://tools.ietf.org/html/rfc6376#section-3.5
 		$from           = 'from@example.com';

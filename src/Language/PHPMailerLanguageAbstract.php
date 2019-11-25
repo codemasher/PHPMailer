@@ -118,7 +118,8 @@ abstract class PHPMailerLanguageAbstract implements PHPMailerLanguageInterface{
 	protected $sign_key_passphrase    = 'invalid sign key passphrase';
 	protected $extra_certs_file       = 'invalid extra certs file: %s';
 	protected $dkim_key_file          = 'invalid DKIM key file path: %s';
-	protected $arg_empty              = 'Argument %s must not be empty';
+	protected $dkim_domain            = 'invalid DKIM domain';
+	protected $dkim_selector          = 'invalid DKIM selector';
 	protected $sign_credentials       = 'no sign credentials set';
 	protected $invalid_recipient_type = 'Invalid recipient type: %s';
 
