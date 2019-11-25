@@ -20,9 +20,9 @@ class PHPMailerOptions extends SettingsContainerAbstract{
 	 * What to put in the X-Mailer header.
 	 * Options: An empty string for PHPMailer default, whitespace for none, or a string to use.
 	 *
-	 * @var string
+	 * @var string|null
 	 */
-	public $XMailer = '';
+	protected $XMailer = null;
 
 	/**
 	 * The hostname to use in the Message-ID header and as default HELO string.
@@ -32,7 +32,7 @@ class PHPMailerOptions extends SettingsContainerAbstract{
 	 *
 	 * @var string
 	 */
-	public $hostname = null;
+	protected $hostname = null;
 
 	/**
 	 * SMTP host(s).
@@ -46,28 +46,28 @@ class PHPMailerOptions extends SettingsContainerAbstract{
 	 *
 	 * @var string|null
 	 */
-	public $smtp_host = null;
+	protected $smtp_host = null;
 
 	/**
 	 * The SMTP server port.
 	 *
 	 * @var int
 	 */
-	public $smtp_port = SMTPMailer::DEFAULT_PORT_SMTP;
+	protected $smtp_port = SMTPMailer::DEFAULT_PORT_SMTP;
 
 	/**
 	 * SMTP/POP3 server username.
 	 *
-	 * @var string
+	 * @var string|null
 	 */
-	public $smtp_username = '';
+	protected $smtp_username = null;
 
 	/**
 	 * SMTP/POP3 server password.
 	 *
-	 * @var string
+	 * @var string|null
 	 */
-	public $smtp_password = '';
+	protected $smtp_password = null;
 
 	/**
 	 * The timeout value for connection, in seconds.
@@ -78,7 +78,7 @@ class PHPMailerOptions extends SettingsContainerAbstract{
 	 *
 	 * @var int
 	 */
-	public $smtp_timeout = 5;
+	protected $smtp_timeout = 5;
 
 	/**
 	 * Whether to keep SMTP connection open after each message.
@@ -87,7 +87,7 @@ class PHPMailerOptions extends SettingsContainerAbstract{
 	 *
 	 * @var bool
 	 */
-	public $smtp_keepalive = false;
+	protected $smtp_keepalive = false;
 
 	/**
 	 * Whether to use SMTP authentication.
@@ -98,15 +98,15 @@ class PHPMailerOptions extends SettingsContainerAbstract{
 	 *
 	 * @var bool
 	 */
-	public $smtp_auth = false;
+	protected $smtp_auth = false;
 
 	/**
 	 * SMTP auth type.
 	 * Options are CRAM-MD5, LOGIN, PLAIN, XOAUTH2, attempted in that order if not specified.
 	 *
-	 * @var string
+	 * @var string|null
 	 */
-	public $smtp_authtype = null;
+	protected $smtp_authtype = null;
 
 	/**
 	 * What kind of encryption to use on the SMTP connection.
@@ -114,7 +114,7 @@ class PHPMailerOptions extends SettingsContainerAbstract{
 	 *
 	 * @var string|null
 	 */
-	public $smtp_encryption = null;
+	protected $smtp_encryption = null;
 
 	/**
 	 * Whether to enable TLS encryption automatically if a server supports it,
@@ -123,14 +123,14 @@ class PHPMailerOptions extends SettingsContainerAbstract{
 	 *
 	 * @var bool
 	 */
-	public $smtp_auto_tls = true;
+	protected $smtp_auto_tls = true;
 
 	/**
 	 * Options array passed to stream_context_create when connecting via SMTP.
 	 *
 	 * @var array
 	 */
-	public $smtp_stream_context_options = [];
+	protected $smtp_stream_context_options = [];
 
 	/**
 	 * Comma separated list of DSN notifications
@@ -142,8 +142,10 @@ class PHPMailerOptions extends SettingsContainerAbstract{
 	 *           delivery's outcome (success or failure) is not yet decided.
 	 *
 	 * @see https://tools.ietf.org/html/rfc3461 See section 4.1 for more information about NOTIFY
+	 *
+	 * @var string|null
 	 */
-	public $smtp_dsn = null;
+	protected $smtp_dsn = null;
 
 	/**
 	 * Whether to generate VERP addresses on send.
@@ -154,7 +156,7 @@ class PHPMailerOptions extends SettingsContainerAbstract{
 	 *
 	 * @var bool
 	 */
-	public $smtp_verp = false;
+	protected $smtp_verp = false;
 
 	/**
 	 * POP3 host. (use this if the host differs from SMTP)
@@ -163,46 +165,46 @@ class PHPMailerOptions extends SettingsContainerAbstract{
 	 *
 	 * @var string|null
 	 */
-	public $pop3_host = null;
+	protected $pop3_host = null;
 
 	/**
 	 * POP3 port number.
 	 *
 	 * @var int
 	 */
-	public $pop3_port = POP3::DEFAULT_PORT_POP3;
+	protected $pop3_port = POP3::DEFAULT_PORT_POP3;
 
 	/**
 	 * POP3 timeout in seconds.
 	 *
 	 * @var int
 	 */
-	public $pop3_timeout = POP3::DEFAULT_TIMEOUT_POP3;
+	protected $pop3_timeout = POP3::DEFAULT_TIMEOUT_POP3;
 
 	/**
 	 * POP3 server username. (use this if the credentials differ from SMTP)
 	 *
 	 * precedence: function parameter, pop3 option, smtp option
 	 *
-	 * @var string
+	 * @var string|null
 	 */
-	public $pop3_username = null;
+	protected $pop3_username = null;
 
 	/**
 	 * SMTP server password. (use this if the credentials differ from SMTP)
 	 *
 	 * precedence: function parameter, pop3 option, smtp option
 	 *
-	 * @var string
+	 * @var string|null
 	 */
-	public $pop3_password = null;
+	protected $pop3_password = null;
 
 	/**
 	 * Whether to allow sending messages with an empty body.
 	 *
 	 * @var bool
 	 */
-	public $allowEmpty = false;
+	protected $allowEmpty = false;
 
 	/**
 	 * Word-wrap the message body to this number of chars.
@@ -212,7 +214,7 @@ class PHPMailerOptions extends SettingsContainerAbstract{
 	 *
 	 * @var int
 	 */
-	public $wordWrap = 0;
+	protected $wordWrap = 0;
 
 	/**
 	 * Whether mail() uses a fully sendmail-compatible MTA.
@@ -220,21 +222,21 @@ class PHPMailerOptions extends SettingsContainerAbstract{
 	 *
 	 * @var bool
 	 */
-	public $useSendmailOptions = true;
+	protected $useSendmailOptions = true;
 
 	/**
 	 * The path to the sendmail program.
 	 *
 	 * @var string
 	 */
-	public $sendmail_path = '/usr/sbin/sendmail';
+	protected $sendmail_path = '/usr/sbin/sendmail';
 
 	/**
 	 * The path to the qmail program.
 	 *
 	 * @var string
 	 */
-	public $qmail_path = '/var/qmail/bin/qmail-inject';
+	protected $qmail_path = '/var/qmail/bin/qmail-inject';
 
 	/**
 	 * Whether to split multiple to addresses into multiple messages
@@ -243,10 +245,10 @@ class PHPMailerOptions extends SettingsContainerAbstract{
 	 *
 	 * @var bool
 	 */
-	public $singleTo = false;
+	protected $singleTo = false;
 
 	/**
-	 * Wheter or not to pkcs sign a message
+	 * Wheter or not to s/mime sign a message
 	 *
 	 * @var bool
 	 */
@@ -296,10 +298,8 @@ class PHPMailerOptions extends SettingsContainerAbstract{
 	 *
 	 * @see validateAddress()
 	 *
-	 * @var string
+	 * @var string|null
 	 */
-	public $validator = null;
-
-
+	protected $validator = null;
 
 }
