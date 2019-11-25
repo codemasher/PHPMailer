@@ -272,7 +272,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	 *
 	 * @var array
 	 */
-	protected $CustomHeader = [];
+	protected $CustomHeaders = [];
 
 	/**
 	 * The most recent Message-ID (including angular brackets).
@@ -887,7 +887,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	 */
 	public function addCustomHeader(string $name, string $value = null):PHPMailer{
 
-		$this->CustomHeader[] = $value === null
+		$this->CustomHeaders[] = $value === null
 			? explode(':', $name, 2) // Value passed in as name:value
 			: [$name, $value];
 
@@ -900,7 +900,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	 * @return array
 	 */
 	public function getCustomHeaders():array{
-		return $this->CustomHeader;
+		return $this->CustomHeaders;
 	}
 
 	/**
@@ -909,7 +909,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	 * @return \PHPMailer\PHPMailer\PHPMailer
 	 */
 	public function clearCustomHeaders():PHPMailer{
-		$this->CustomHeader = [];
+		$this->CustomHeaders = [];
 
 		return $this;
 	}
@@ -1042,6 +1042,8 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	/**
 	 * Set the message type.
 	 * PHPMailer only supports some preset message types, not arbitrary MIME structures.
+	 *
+	 * @return void
 	 */
 	protected function setMessageType():void{
 		$type = [];
@@ -1137,18 +1139,17 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	}
 
 	/**
+	 * Word-wrap message.
+	 * For use with mailers that do not automatically perform wrapping
+	 * and for quoted-printable encoded messages.
+	 * Original written by philippe.
+	 *
 	 * @param string $message The message to wrap
 	 * @param int    $length  The line length to wrap to
 	 * @param bool   $qp_mode Whether to run in Quoted-Printable mode
 	 *
 	 * @return string
 	 * @todo: make protected
-	 *
-	 * Word-wrap message.
-	 * For use with mailers that do not automatically perform wrapping
-	 * and for quoted-printable encoded messages.
-	 * Original written by philippe.
-	 *
 	 */
 	public function wrapText(string $message, int $length, bool $qp_mode = false):string{
 
@@ -1336,7 +1337,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 		}
 
 		// Add custom headers
-		foreach($this->CustomHeader as $h){
+		foreach($this->CustomHeaders as $h){
 			$header .= $this->headerLine(trim($h[0]), $this->encodeHeader(trim($h[1])));
 		}
 
@@ -1406,14 +1407,13 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	}
 
 	/**
+	 * Assemble the message body.
+	 * Returns an empty string on failure.
+	 *
 	 * @param string $uniqueid
 	 *
 	 * @return string The assembled message body
 	 * @todo: make protected
-	 *
-	 * Assemble the message body.
-	 * Returns an empty string on failure.
-	 *
 	 */
 	public function createBody(string $uniqueid):string{
 		$boundary = generateBoundary($uniqueid);
@@ -1929,16 +1929,15 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	}
 
 	/**
+	 * Encode a string in requested format.
+	 * Returns an empty string on failure.
+	 *
 	 * @param string $str      The text to encode
 	 * @param string $encoding The encoding to use; one of 'base64', '7bit', '8bit', 'binary', 'quoted-printable'
 	 *
 	 * @return string
 	 * @throws \PHPMailer\PHPMailer\PHPMailerException
 	 * @todo: make protected
-	 *
-	 * Encode a string in requested format.
-	 * Returns an empty string on failure.
-	 *
 	 */
 	public function encodeString(string $str, string $encoding = self::ENCODING_BASE64):string{
 
@@ -1964,16 +1963,15 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	}
 
 	/**
+	 * Encode a header value (not including its label) optimally.
+	 * Picks shortest of Q, B, or none. Result includes folding if needed.
+	 * See RFC822 definitions for phrase, comment and text positions.
+	 *
 	 * @param string $str      The header value to encode
 	 * @param string $position What context the string will be used in
 	 *
 	 * @return string
 	 * @todo: make protected
-	 *
-	 * Encode a header value (not including its label) optimally.
-	 * Picks shortest of Q, B, or none. Result includes folding if needed.
-	 * See RFC822 definitions for phrase, comment and text positions.
-	 *
 	 */
 	public function encodeHeader(string $str, string $position = 'text'):string{
 		$matchcount = 0;
@@ -2341,7 +2339,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 			//Is this an extra custom header we've been asked to sign?
 			if(in_array($header[0], $this->options->DKIM_headers ?? [], true)){
 				//Find its value in custom headers
-				foreach($this->CustomHeader as $customHeader){
+				foreach($this->CustomHeaders as $customHeader){
 
 					if($customHeader[0] === $header[0]){
 						$addHeader($header);
@@ -2394,14 +2392,13 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	}
 
 	/**
+	 * Detect if a string contains a line longer than the maximum line length
+	 * allowed by RFC 2822 section 2.1.1.
+	 *
 	 * @param string $str
 	 *
 	 * @return bool
 	 * @todo: make protected
-	 *
-	 * Detect if a string contains a line longer than the maximum line length
-	 * allowed by RFC 2822 section 2.1.1.
-	 *
 	 */
 	public function hasLineLongerThanMax(string $str):bool{
 		return (bool)preg_match('/^(.{'.($this::LINE_LENGTH_MAX + strlen($this->LE)).',})/m', $str);
@@ -2418,8 +2415,19 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	 * @param string $body
 	 * @param string $from
 	 * @param array  $extra
+	 *
+	 * @return void
 	 */
-	protected function doCallback($isSent, $to, $cc, $bcc, $subject, $body, $from, $extra):void{
+	protected function doCallback(
+		bool $isSent,
+		array $to,
+		array $cc,
+		array $bcc,
+		string $subject,
+		string $body,
+		string $from,
+		array $extra
+	):void{
 		if($this->action_function instanceof Closure){
 			$this->action_function->call($this, $isSent, $to, $cc, $bcc, $subject, $body, $from, $extra);
 		}

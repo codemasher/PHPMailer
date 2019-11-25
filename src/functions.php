@@ -155,7 +155,8 @@ const MIMETYPES = [
  */
 function validateAddress(string $address, string $validator = null):bool{
 
-	//Reject line breaks in addresses; it's valid RFC5322, but not RFC5321
+	// Reject line breaks in addresses; it's valid RFC5322, but not RFC5321
+	// @todo: allow & filter line breaks
 	if(strpos($address, "\n") !== false || strpos($address, "\r") !== false){
 		return false;
 	}
