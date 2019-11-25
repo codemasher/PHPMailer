@@ -14,7 +14,7 @@ namespace PHPMailer\PHPMailer;
 use DirectoryIterator, ReflectionClass;
 use PHPMailer\PHPMailer\Language\PHPMailerLanguageInterface;
 
-use function array_key_exists, array_search, array_unique, array_unshift, base64_encode, call_user_func, ctype_alnum,
+use function array_key_exists, array_search, array_unique, array_unshift, base64_encode, call_user_func, ctype_alnum, count,
 	date, date_default_timezone_get, date_default_timezone_set, escapeshellarg, escapeshellcmd, explode, file_exists,
 	file_get_contents, filter_var, function_exists, hash, hexdec, idn_to_ascii, imap_rfc822_parse_adrlist, implode,
 	in_array, is_callable, is_file, is_link, is_numeric, is_readable, is_string, mb_check_encoding, mb_convert_encoding,

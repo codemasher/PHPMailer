@@ -967,7 +967,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 			call_user_func_array([$this, 'addAnAddress'], $params);
 		}
 
-		if(count($this->to) + count($this->cc) + count($this->bcc) < 1){
+		if(empty($this->to) && empty($this->cc) && empty($this->bcc)){
 			throw new PHPMailerException($this->lang->string('provide_address'));
 		}
 
@@ -1018,7 +1018,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 		// To capture the complete message when using mail(), create
 		// an extra header list which createHeader() doesn't fold in
 		if($this instanceof MailMailer){
-			$this->mailHeader .= count($this->to) > 0
+			$this->mailHeader .= !empty($this->to)
 				? $this->addrAppend('To', $this->to)
 				: $this->headerLine('To', 'undisclosed-recipients:;');
 
@@ -1283,10 +1283,10 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 			}
 		}
 		else{
-			if(count($this->to) > 0 && !$this instanceof MailMailer){
+			if(!empty($this->to) && !$this instanceof MailMailer){
 				$header .= $this->addrAppend('To', $this->to);
 			}
-			elseif(count($this->cc) === 0){
+			elseif(empty($this->cc)){
 				$header .= $this->headerLine('To', 'undisclosed-recipients:;');
 			}
 		}
@@ -1294,16 +1294,16 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 		$header .= $this->addrAppend('From', [[trim($this->From), $this->FromName]]);
 
 		// sendmail and mail() extract Cc from the header before sending
-		if(count($this->cc) > 0){
+		if(!empty($this->cc)){
 			$header .= $this->addrAppend('Cc', $this->cc);
 		}
 
 		// sendmail and mail() extract Bcc from the header before sending
-		if(!$this instanceof SMTPMailer && count($this->bcc) > 0){
+		if(!$this instanceof SMTPMailer && !empty($this->bcc)){
 			$header .= $this->addrAppend('Bcc', $this->bcc);
 		}
 
-		if(count($this->ReplyTo) > 0){
+		if(!empty($this->ReplyTo)){
 			$header .= $this->addrAppend('Reply-To', $this->ReplyTo);
 		}
 

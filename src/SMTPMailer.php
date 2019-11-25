@@ -185,7 +185,7 @@ class SMTPMailer extends PHPMailer{
 		}
 
 		//Create error message for any bad addresses
-		if(count($bad_rcpt) > 0){
+		if(!empty($bad_rcpt)){
 			$this->logger->error(sprintf($this->lang->string('recipients_failed'), implode(', ', $bad_rcpt)));
 
 			return false;
