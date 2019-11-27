@@ -4,8 +4,6 @@
  */
 
 //Import PHPMailer classes into the global namespace
-use League\OAuth2\Client\Provider\Google;
-use PHPMailer\PHPMailer\OAuth;
 use PHPMailer\PHPMailer\SMTPMailer;
 
 require_once __DIR__.'/common.php';
