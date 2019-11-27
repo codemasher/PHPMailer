@@ -46,14 +46,14 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	 *
 	 * @var string
 	 */
-	protected $MIMEBody = '';
+	protected $mimeBody = '';
 
 	/**
 	 * The complete compiled MIME message headers.
 	 *
 	 * @var string
 	 */
-	protected $MIMEHeader = '';
+	protected $mimeHeader = '';
 
 	/**
 	 * Extra headers that createHeader() doesn't fold in.
@@ -67,7 +67,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	 *
 	 * @var array
 	 */
-	protected $SingleToArray = [];
+	protected $singleToArray = [];
 
 	/**
 	 * The array of 'to' names and addresses.
@@ -95,9 +95,10 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	 *
 	 * @var array
 	 */
-	protected $ReplyTo = [];
+	protected $replyTo = [];
 
 	/**
+	 * @todo: remove redundancy
 	 * An array of all kinds of addresses.
 	 * Includes all of $to, $cc, $bcc.
 	 *
@@ -107,7 +108,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	 *
 	 * @var array
 	 */
-	protected $all_recipients = [];
+	protected $allRecipients = [];
 
 	/**
 	 * An array of names and addresses queued for validation.
@@ -118,22 +119,22 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	 * @see PHPMailer::$to
 	 * @see PHPMailer::$cc
 	 * @see PHPMailer::$bcc
-	 * @see PHPMailer::$all_recipients
+	 * @see PHPMailer::$allRecipients
 	 *
 	 * @var array
 	 */
-	protected $RecipientsQueue = [];
+	protected $recipientsQueue = [];
 
 	/**
 	 * An array of reply-to names and addresses queued for validation.
 	 * In send(), valid and non duplicate entries are moved to $ReplyTo.
 	 * This array is used only for addresses with IDN.
 	 *
-	 * @see PHPMailer::$ReplyTo
+	 * @see PHPMailer::$replyTo
 	 *
 	 * @var array
 	 */
-	protected $ReplyToQueue = [];
+	protected $replyToQueue = [];
 
 	/**
 	 * The array of attachments.
@@ -147,7 +148,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	 *
 	 * @var array
 	 */
-	protected $CustomHeaders = [];
+	protected $customHeaders = [];
 
 	/**
 	 * The most recent Message-ID (including angular brackets).
@@ -161,7 +162,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	 *
 	 * @var string
 	 */
-	protected $message_type = '';
+	protected $messageType = '';
 
 	/**
 	 * Add a "To" address.
@@ -193,7 +194,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	public function clearTOs():PHPMailer{
 
 		foreach($this->to as $to){
-			unset($this->all_recipients[strtolower($to[0])]);
+			unset($this->allRecipients[strtolower($to[0])]);
 		}
 
 		$this->to = [];
@@ -232,7 +233,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	public function clearCCs():PHPMailer{
 
 		foreach($this->cc as $cc){
-			unset($this->all_recipients[strtolower($cc[0])]);
+			unset($this->allRecipients[strtolower($cc[0])]);
 		}
 
 		$this->cc = [];
@@ -271,7 +272,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	public function clearBCCs():PHPMailer{
 
 		foreach($this->bcc as $bcc){
-			unset($this->all_recipients[strtolower($bcc[0])]);
+			unset($this->allRecipients[strtolower($bcc[0])]);
 		}
 
 		$this->bcc = [];
@@ -299,7 +300,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	 * @return array
 	 */
 	public function getReplyTos():array{
-		return $this->ReplyTo;
+		return $this->replyTo;
 	}
 
 	/**
@@ -308,8 +309,8 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	 * @return \PHPMailer\PHPMailer\PHPMailer
 	 */
 	public function clearReplyTos():PHPMailer{
-		$this->ReplyTo      = [];
-		$this->ReplyToQueue = [];
+		$this->replyTo      = [];
+		$this->replyToQueue = [];
 
 		return $this;
 	}
@@ -321,7 +322,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	 * @return array
 	 */
 	public function getAllRecipients():array{
-		return $this->all_recipients;
+		return $this->allRecipients;
 	}
 
 	/**
@@ -333,8 +334,8 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 		$this->to              = [];
 		$this->cc              = [];
 		$this->bcc             = [];
-		$this->all_recipients  = [];
-		$this->RecipientsQueue = [];
+		$this->allRecipients   = [];
+		$this->recipientsQueue = [];
 
 		return $this;
 	}
@@ -348,8 +349,8 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	 */
 	public function clearQueuedAddresses(string $kind):PHPMailer{
 
-		$this->RecipientsQueue = array_filter(
-			$this->RecipientsQueue,
+		$this->recipientsQueue = array_filter(
+			$this->recipientsQueue,
 			function($params) use ($kind){
 				return $params[0] !== $kind;
 			}
@@ -364,38 +365,38 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	 * be modified after calling this function), addition of such addresses is delayed until send().
 	 * Addresses that have been added already return false, but do not throw exceptions.
 	 *
-	 * @param string      $kind    One of 'to', 'cc', 'bcc', or 'ReplyTo'
+	 * @param string      $type    One of 'to', 'cc', 'bcc', or 'ReplyTo'
 	 * @param string      $address The email address to send, resp. to reply to
 	 * @param string|null $name
 	 *
 	 * @return bool true on success, false if address already used or invalid in some way
 	 */
-	protected function addOrEnqueueAnAddress(string $kind, string $address, string $name = null):bool{
+	protected function addOrEnqueueAnAddress(string $type, string $address, string $name = null):bool{
 		$address = trim($address);
 		$name    = trim(preg_replace('/[\r\n]+/', '', $name ?? '')); //Strip breaks and trim
 		$pos     = strrpos($address, '@');
 
 		if($pos === false){
 			// At-sign is missing.
-			$this->logger->error(sprintf($this->lang->string('invalid_address'), $kind, $address));
+			$this->logger->error(sprintf($this->lang->string('invalid_address'), $type, $address));
 
 			return false;
 		}
 
-		$params = [$kind, $address, $name];
+		$params = [$type, $address, $name];
 		// Enqueue addresses with IDN until we know the PHPMailer::$CharSet.
 		if(has8bitChars(substr($address, ++$pos)) && idnSupported()){
 
-			if($kind !== 'Reply-To'){
-				if(!array_key_exists($address, $this->RecipientsQueue)){
-					$this->RecipientsQueue[$address] = $params;
+			if($type !== 'Reply-To'){
+				if(!array_key_exists($address, $this->recipientsQueue)){
+					$this->recipientsQueue[$address] = $params;
 
 					return true;
 				}
 			}
 			else{
-				if(!array_key_exists($address, $this->ReplyToQueue)){
-					$this->ReplyToQueue[$address] = $params;
+				if(!array_key_exists($address, $this->replyToQueue)){
+					$this->replyToQueue[$address] = $params;
 
 					return true;
 				}
@@ -412,37 +413,37 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	 * Add an address to one of the recipient arrays or to the ReplyTo array.
 	 * Addresses that have been added already return false, but do not throw exceptions.
 	 *
-	 * @param string      $kind    One of 'to', 'cc', 'bcc', or 'ReplyTo'
+	 * @param string      $type    One of 'to', 'cc', 'bcc', or 'ReplyTo'
 	 * @param string      $address The email address to send, resp. to reply to
 	 * @param string|null $name
 	 *
 	 * @return bool true on success, false if address already used or invalid in some way
 	 */
-	protected function addAnAddress(string $kind, string $address, string $name = null):bool{
+	protected function addAnAddress(string $type, string $address, string $name = null):bool{
 
-		if(!in_array($kind, ['to', 'cc', 'bcc', 'Reply-To'])){
-			$this->logger->error(sprintf($this->lang->string('invalid_recipient_type'), $kind));
+		if(!in_array($type, ['to', 'cc', 'bcc', 'Reply-To'])){
+			$this->logger->error(sprintf($this->lang->string('invalid_recipient_type'), $type));
 
 			return false;
 		}
 
 		if(!validateAddress($address, $this->options->validator)){
-			$this->logger->error(sprintf($this->lang->string('invalid_address'), $kind, $address));
+			$this->logger->error(sprintf($this->lang->string('invalid_address'), $type, $address));
 
 			return false;
 		}
 
-		if($kind !== 'Reply-To'){
-			if(!array_key_exists(strtolower($address), $this->all_recipients)){
-				$this->{$kind}[]                            = [$address, $name ?? ''];
-				$this->all_recipients[strtolower($address)] = true;
+		if($type !== 'Reply-To'){
+			if(!array_key_exists(strtolower($address), $this->allRecipients)){
+				$this->{$type}[]                           = [$address, $name ?? ''];
+				$this->allRecipients[strtolower($address)] = true;
 
 				return true;
 			}
 		}
 		else{
-			if(!array_key_exists(strtolower($address), $this->ReplyTo)){
-				$this->ReplyTo[strtolower($address)] = [$address, $name ?? ''];
+			if(!array_key_exists(strtolower($address), $this->replyTo)){
+				$this->replyTo[strtolower($address)] = [$address, $name ?? ''];
 
 				return true;
 			}
@@ -703,7 +704,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	 */
 	public function addCustomHeader(string $name, string $value = null):PHPMailer{
 
-		$this->CustomHeaders[] = $value === null
+		$this->customHeaders[] = $value === null
 			? explode(':', $name, 2) // Value passed in as name:value
 			: [$name, $value];
 
@@ -716,7 +717,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	 * @return array
 	 */
 	public function getCustomHeaders():array{
-		return $this->CustomHeaders;
+		return $this->customHeaders;
 	}
 
 	/**
@@ -725,7 +726,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	 * @return \PHPMailer\PHPMailer\PHPMailer
 	 */
 	public function clearCustomHeaders():PHPMailer{
-		$this->CustomHeaders = [];
+		$this->customHeaders = [];
 
 		return $this;
 	}
@@ -752,7 +753,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	 *
 	 */
 	public function getSentMIMEMessage():string{
-		return rtrim($this->MIMEHeader.$this->mailHeader, "\n\r").$this->LE.$this->LE.$this->MIMEBody;
+		return rtrim($this->mimeHeader.$this->mailHeader, "\n\r").$this->LE.$this->LE.$this->mimeBody;
 	}
 
 	/**
@@ -778,7 +779,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 		$this->mailHeader  = '';
 
 		// Dequeue recipient and Reply-To addresses with IDN
-		foreach(array_merge($this->RecipientsQueue, $this->ReplyToQueue) as $params){
+		foreach(array_merge($this->recipientsQueue, $this->replyToQueue) as $params){
 			$params[1] = punyencodeAddress($params[1], $this->options->charSet);
 			call_user_func_array([$this, 'addAnAddress'], $params);
 		}
@@ -819,15 +820,15 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 		$uniqueid = generateId();
 
 		// Create body before headers in case body makes changes to headers (e.g. altering transfer encoding)
-		$this->MIMEHeader = '';
-		$this->MIMEBody   = $this->createBody($uniqueid);
+		$this->mimeHeader = '';
+		$this->mimeBody   = $this->createBody($uniqueid);
 
 		if($this->options->smime_sign){
-			$this->MIMEBody = $this->pkcs7Sign($this->MIMEBody);
+			$this->mimeBody = $this->pkcs7Sign($this->mimeBody);
 		}
 
 		// createBody may have added some headers, so retain them
-		$this->MIMEHeader = $this->createHeader($uniqueid).$this->MIMEHeader;
+		$this->mimeHeader = $this->createHeader($uniqueid).$this->mimeHeader;
 
 		// To capture the complete message when using mail(), create
 		// an extra header list which createHeader() doesn't fold in
@@ -842,12 +843,12 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 		// Sign with DKIM if enabled
 		if($this->options->DKIM_sign){
 			$header_dkim = $this->DKIM_Add(
-				$this->MIMEHeader.$this->mailHeader,
+				$this->mimeHeader.$this->mailHeader,
 				$this->encodeHeader(secureHeader($this->subject)),
-				$this->MIMEBody
+				$this->mimeBody
 			);
 
-			$this->MIMEHeader = rtrim($this->MIMEHeader, "\r\n ").$this->LE.normalizeBreaks($header_dkim, $this->LE).$this->LE;
+			$this->mimeHeader = rtrim($this->mimeHeader, "\r\n ").$this->LE.normalizeBreaks($header_dkim, $this->LE).$this->LE;
 		}
 
 		return $this;
@@ -874,11 +875,11 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 			$type[] = 'attach';
 		}
 
-		$this->message_type = implode('_', $type);
+		$this->messageType = implode('_', $type);
 
-		if(empty($this->message_type)){
+		if(empty($this->messageType)){
 			//The 'plain' message_type refers to the message having a single body element, not that it is plain-text
-			$this->message_type = 'plain';
+			$this->messageType = 'plain';
 		}
 	}
 
@@ -1092,7 +1093,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 		if($this->options->singleTo){
 			if(!$this instanceof MailMailer){
 				foreach($this->to as $toaddr){
-					$this->SingleToArray[] = $this->addrFormat($toaddr);
+					$this->singleToArray[] = $this->addrFormat($toaddr);
 				}
 			}
 		}
@@ -1117,8 +1118,8 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 			$header .= $this->addrAppend('Bcc', $this->bcc);
 		}
 
-		if(!empty($this->ReplyTo)){
-			$header .= $this->addrAppend('Reply-To', $this->ReplyTo);
+		if(!empty($this->replyTo)){
+			$header .= $this->addrAppend('Reply-To', $this->replyTo);
 		}
 
 		// mail() sets the subject itself
@@ -1151,7 +1152,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 		}
 
 		// Add custom headers
-		foreach($this->CustomHeaders as $h){
+		foreach($this->customHeaders as $h){
 			$header .= $this->headerLine(trim($h[0]), $this->encodeHeader(trim($h[1])));
 		}
 
@@ -1175,7 +1176,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 		$mime        = '';
 		$ismultipart = true;
 
-		switch($this->message_type){
+		switch($this->messageType){
 			case 'inline':
 				$mime .= $this->headerLine('Content-Type', $this::CONTENT_TYPE_MULTIPART_RELATED.';');
 				$mime .= $this->textLine(' boundary="'.$boundary[1].'"');
@@ -1259,14 +1260,14 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 		//Use this as a preamble in all multipart message types
 		$mimepre = 'This is a multi-part message in MIME format.'.$this->LE;
 
-		if(in_array($this->message_type, ['inline', 'attach', 'inline_attach'])){
+		if(in_array($this->messageType, ['inline', 'attach', 'inline_attach'])){
 			$body .= $mimepre;
 			$body .= call_user_func_array(
-				[$this, 'body_'.$this->message_type],
+				[$this, 'body_'.$this->messageType],
 				[$this->body, $boundary, $bodyCharSet, $bodyEncoding]
 			);
 		}
-		elseif(in_array($this->message_type, ['alt', 'alt_inline', 'alt_attach', 'alt_inline_attach'])){
+		elseif(in_array($this->messageType, ['alt', 'alt_inline', 'alt_attach', 'alt_inline_attach'])){
 
 			$this->altBody = $this->wrapText($this->altBody, $this->options->wordWrap);
 
@@ -1288,7 +1289,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 
 			$body .= $mimepre;
 			$body .= call_user_func_array(
-				[$this, 'body_'.$this->message_type],
+				[$this, 'body_'.$this->messageType],
 				[$this->body, $boundary, $bodyCharSet, $bodyEncoding, $altBodyCharSet, $altBodyEncoding]
 			);
 		}
@@ -1527,7 +1528,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 
 		//The message returned by openssl contains both headers and body, so need to split them up
 		$parts            = explode("\n\n", $message, 2);
-		$this->MIMEHeader .= $parts[0].$this->LE.$this->LE;
+		$this->mimeHeader .= $parts[0].$this->LE.$this->LE;
 
 		return $parts[1];
 	}
@@ -2153,7 +2154,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 			//Is this an extra custom header we've been asked to sign?
 			if(in_array($header[0], $this->options->DKIM_headers ?? [], true)){
 				//Find its value in custom headers
-				foreach($this->CustomHeaders as $customHeader){
+				foreach($this->customHeaders as $customHeader){
 
 					if($customHeader[0] === $header[0]){
 						$addHeader($header);

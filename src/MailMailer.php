@@ -39,7 +39,7 @@ class MailMailer extends PHPMailer{
 	 * @return bool
 	 */
 	protected function postSend():bool{
-		return $this->mailSend($this->MIMEHeader, $this->MIMEBody);
+		return $this->mailSend($this->mimeHeader, $this->mimeBody);
 	}
 
 	/**

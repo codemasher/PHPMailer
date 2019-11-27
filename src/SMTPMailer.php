@@ -100,7 +100,7 @@ class SMTPMailer extends PHPMailer{
 	 * @return bool
 	 */
 	protected function postSend():bool{
-		return $this->smtpSend($this->MIMEHeader, $this->MIMEBody);
+		return $this->smtpSend($this->mimeHeader, $this->mimeBody);
 	}
 
 	/**
@@ -159,7 +159,7 @@ class SMTPMailer extends PHPMailer{
 		}
 
 		// Only send the DATA command if we have viable recipients
-		if((count($this->all_recipients) > count($bad_rcpt)) && !$this->data($header.$body)){
+		if((count($this->allRecipients) > count($bad_rcpt)) && !$this->data($header.$body)){
 			throw new PHPMailerException($this->lang->string('data_not_accepted'));
 		}
 

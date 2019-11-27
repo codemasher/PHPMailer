@@ -45,7 +45,7 @@ class SendmailMailer extends PHPMailer{
 	 * @return bool
 	 */
 	protected function postSend():bool{
-		return $this->sendmailSend($this->MIMEHeader, $this->MIMEBody);
+		return $this->sendmailSend($this->mimeHeader, $this->mimeBody);
 	}
 
 	/**
@@ -73,7 +73,7 @@ class SendmailMailer extends PHPMailer{
 
 		if($this->options->singleTo){
 
-			foreach($this->SingleToArray as $toAddr){
+			foreach($this->singleToArray as $toAddr){
 				$mail = @popen($sendmail, 'w');
 
 				if(!$mail){

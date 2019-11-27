@@ -120,7 +120,7 @@ class UnitTest extends TestAbstract{
 	 * @param string $messageType
 	 */
 	public function testCreateBody(string $messageType){
-		$this->setProperty($this->mailer, 'message_type', $messageType);
+		$this->setProperty($this->mailer, 'messageType', $messageType);
 
 		$uid  = generateId();
 		$body = $this->mailer->createBody($uid);
