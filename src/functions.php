@@ -16,11 +16,11 @@ use PHPMailer\PHPMailer\Language\PHPMailerLanguageInterface;
 
 use function array_key_exists, array_search, array_unique, array_unshift, base64_encode, call_user_func, ctype_alnum, count,
 	date, date_default_timezone_get, date_default_timezone_set, escapeshellarg, escapeshellcmd, explode, file_exists,
-	file_get_contents, filter_var, function_exists, hash, hexdec, idn_to_ascii, imap_rfc822_parse_adrlist, implode,
+	file_get_contents, filter_var, floor, function_exists, hash, hexdec, idn_to_ascii, imap_rfc822_parse_adrlist, implode,
 	in_array, is_callable, is_file, is_link, is_numeric, is_readable, is_string, mb_check_encoding, mb_convert_encoding,
-	openssl_pkey_free, openssl_pkey_get_private, openssl_sign, ord, preg_match, preg_match_all, preg_replace,
-	property_exists, random_bytes, readlink, sprintf, str_replace, strlen, strpos, strrpos, strtolower, substr, trim,
-	html_entity_decode, strip_tags;
+	mb_strlen, mb_substr, openssl_pkey_free, openssl_pkey_get_private, openssl_sign, ord, preg_match, preg_match_all,
+	preg_replace, property_exists, random_bytes, readlink, sprintf, str_replace, strlen, strpos, strrpos, strtolower, substr,
+	trim, html_entity_decode, strip_tags;
 
 use const DIRECTORY_SEPARATOR, FILTER_FLAG_IPV4, FILTER_FLAG_IPV6, FILTER_VALIDATE_EMAIL, FILTER_VALIDATE_IP, FILTER_VALIDATE_URL,
 	INTL_IDNA_VARIANT_UTS46, PATHINFO_BASENAME, PATHINFO_DIRNAME, PATHINFO_EXTENSION, PATHINFO_FILENAME, ENT_QUOTES;
@@ -978,3 +978,187 @@ function getLanguages():array{
 
 	return $languages;
 }
+
+/**
+ * Encode and wrap long multibyte strings for mail headers
+ * without breaking lines within a character.
+ * Adapted from a function by paravoid.
+ *
+ * @see http://www.php.net/manual/en/function.mb-encode-mimeheader.php#60283
+ *
+ * @param string $str       multi-byte text to wrap encode
+ * @param string $charset
+ * @param string $linebreak string to use as linefeed/end-of-line
+ *
+ * @return string
+ */
+function base64EncodeWrapMB(string $str, string $charset, string $linebreak):string{
+	$start     = '=?'.$charset.'?B?';
+	$end       = '?=';
+	$encoded   = '';
+
+	$mb_length = mb_strlen($str, $charset);
+	// Each line must have length <= 75, including $start and $end
+	$length = 75 - strlen($start) - strlen($end);
+	// Average multi-byte ratio
+	$ratio = $mb_length / strlen($str);
+	// Base64 has a 4:3 ratio
+	$avgLength = floor($length * $ratio * .75);
+
+	for($i = 0; $i < $mb_length; $i += $offset){
+		$lookBack = 0;
+
+		do{
+			$offset = $avgLength - $lookBack;
+			$chunk  = mb_substr($str, $i, $offset, $charset);
+			$chunk  = base64_encode($chunk);
+			++$lookBack;
+		}
+		while(strlen($chunk) > $length);
+
+		$encoded .= $chunk.$linebreak;
+	}
+
+	// Chomp the last linefeed
+	return substr($encoded, 0, -strlen($linebreak));
+}
+
+/**
+ * Check if a string contains multi-byte characters.
+ *
+ * @param string $str multi-byte text to wrap encode
+ * @param string $charset
+ *
+ * @return bool
+ */
+function hasMultiBytes(string $str, string $charset):bool{
+	return strlen($str) > mb_strlen($str, $charset);
+}
+
+/**
+ * Word-wrap message.
+ * For use with mailers that do not automatically perform wrapping
+ * and for quoted-printable encoded messages.
+ * Original written by philippe.
+ *
+ * @param string $message The message to wrap
+ * @param int    $length  The line length to wrap to
+ * @param string $charset
+ * @param string $nl
+ * @param bool   $qp_mode Whether to run in Quoted-Printable mode
+ *
+ * @return string
+ */
+function wrapText(string $message, int $length, string $charset, string $nl, bool $qp_mode = false):string{
+
+	if($length < 1){
+		return $message;
+	}
+
+	$soft_break = $qp_mode ? sprintf(' =%s', $nl) : $nl;
+
+	// If utf-8 encoding is used, we will need to make sure we don't
+	// split multibyte characters when we wrap
+	$is_utf8 = strtolower($charset) === PHPMailerInterface::CHARSET_UTF8;
+	$lelen   = strlen($nl);
+
+	$message = normalizeBreaks($message, $nl);
+	//Remove a trailing line break
+	if(substr($message, -$lelen) == $nl){
+		$message = substr($message, 0, -$lelen);
+	}
+
+	//Split message into lines
+	$lines = explode($nl, $message);
+	//Message will be rebuilt in here
+	$message = '';
+	foreach($lines as $line){
+		$words     = explode(' ', $line);
+		$buf       = '';
+		$firstword = true;
+
+		foreach($words as $word){
+
+			if($qp_mode && (strlen($word) > $length)){
+				$space_left = $length - strlen($buf) - $lelen;
+
+				if(!$firstword){
+					if($space_left > 20){
+						$len = $space_left;
+
+						if($is_utf8){
+							$len = utf8CharBoundary($word, $len);
+						}
+						elseif(substr($word, $len - 1, 1) === '='){
+							--$len;
+						}
+						elseif(substr($word, $len - 2, 1) === '='){
+							$len -= 2;
+						}
+
+						$part    = substr($word, 0, $len);
+						$word    = substr($word, $len);
+						$buf     .= ' '.$part;
+						$message .= $buf.sprintf('=%s', $nl);
+					}
+					else{
+						$message .= $buf.$soft_break;
+					}
+
+					$buf = '';
+				}
+
+				while(strlen($word) > 0){
+
+					if($length <= 0){
+						break;
+					}
+
+					$len = $length;
+
+					if($is_utf8){
+						$len = utf8CharBoundary($word, $len);
+					}
+					elseif(substr($word, $len - 1, 1) === '='){
+						--$len;
+					}
+					elseif(substr($word, $len - 2, 1) === '='){
+						$len -= 2;
+					}
+
+					$part = substr($word, 0, $len);
+					$word = substr($word, $len);
+
+					if(strlen($word) > 0){
+						$message .= $part.sprintf('=%s', $nl);
+					}
+					else{
+						$buf = $part;
+					}
+
+				}
+			}
+			else{
+				$buf_o = $buf;
+
+				if(!$firstword){
+					$buf .= ' ';
+				}
+
+				$buf .= $word;
+
+				if(strlen($buf) > $length && $buf_o !== ''){
+					$message .= $buf_o.$soft_break;
+					$buf     = $word;
+				}
+			}
+
+			$firstword = false;
+		}
+
+		$message .= $buf.$nl;
+	}
+
+	return $message;
+}
+

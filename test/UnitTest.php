@@ -14,7 +14,7 @@ namespace PHPMailer\Test;
 
 use PHPMailer\PHPMailer\{PHPMailer, PHPMailerException};
 
-use function PHPMailer\PHPMailer\{generateId, normalizeBreaks, punyencodeAddress};
+use function PHPMailer\PHPMailer\{generateId, normalizeBreaks, punyencodeAddress, wrapText};
 use function file_get_contents, hash, mb_convert_encoding, openssl_pkey_export_to_file,
 	openssl_pkey_new, quoted_printable_decode, realpath, str_repeat, str_replace, strlen, unlink;
 
@@ -210,7 +210,7 @@ class UnitTest extends TestAbstract{
 		//Encoding name longer than 68 chars
 		$this->mailer->setEncoding('1234567890123456789012345678901234567890123456789012345678901234567890');
 		//Call wrapText with a zero length value
-		$this->mailer->wrapText(str_repeat('This should no longer cause a denial of service. ', 30), 0);
+		wrapText(str_repeat('This should no longer cause a denial of service. ', 30), 0, $this->options->charSet, $this->mailer->getLE());
 
 		$this->markTestIncomplete('According to the ticket, this should get stuck in a loop, though I can\'t make it happen.');
 	}

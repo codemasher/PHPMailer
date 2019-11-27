@@ -23,8 +23,8 @@ namespace PHPMailer\PHPMailer;
 use Closure;
 
 use function addcslashes, array_filter, array_key_exists, array_merge, base64_decode, base64_encode,
-	call_user_func_array, chunk_split, count, dirname, explode, file_get_contents, file_put_contents, floor,
-	function_exists, gethostname, hash, implode, in_array, is_file, mb_strlen, mb_substr, openssl_error_string,
+	call_user_func_array, chunk_split, count, dirname, explode, file_get_contents, file_put_contents,
+	function_exists, gethostname, hash, implode, in_array, is_file, openssl_error_string,
 	openssl_pkcs7_sign, pack, php_uname, preg_match, preg_match_all, preg_quote, preg_replace, quoted_printable_encode,
 	rawurldecode, realpath, rtrim, serialize, sprintf, str_replace, strlen, strpos, strrpos, strtolower, substr,
 	sys_get_temp_dir, tempnam, time, trim, unlink;
@@ -954,132 +954,6 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	}
 
 	/**
-	 * Word-wrap message.
-	 * For use with mailers that do not automatically perform wrapping
-	 * and for quoted-printable encoded messages.
-	 * Original written by philippe.
-	 *
-	 * @param string $message The message to wrap
-	 * @param int    $length  The line length to wrap to
-	 * @param bool   $qp_mode Whether to run in Quoted-Printable mode
-	 *
-	 * @return string
-	 * @todo: make protected
-	 */
-	public function wrapText(string $message, int $length, bool $qp_mode = false):string{
-
-		if($length < 1){
-			return $message;
-		}
-
-		$soft_break = $qp_mode ? sprintf(' =%s', $this->LE) : $this->LE;
-
-		// If utf-8 encoding is used, we will need to make sure we don't
-		// split multibyte characters when we wrap
-		$is_utf8 = strtolower($this->options->charSet) === $this::CHARSET_UTF8;
-		$lelen   = strlen($this->LE);
-
-		$message = normalizeBreaks($message, $this->LE);
-		//Remove a trailing line break
-		if(substr($message, -$lelen) == $this->LE){
-			$message = substr($message, 0, -$lelen);
-		}
-
-		//Split message into lines
-		$lines = explode($this->LE, $message);
-		//Message will be rebuilt in here
-		$message = '';
-		foreach($lines as $line){
-			$words     = explode(' ', $line);
-			$buf       = '';
-			$firstword = true;
-
-			foreach($words as $word){
-
-				if($qp_mode && (strlen($word) > $length)){
-					$space_left = $length - strlen($buf) - $lelen;
-
-					if(!$firstword){
-						if($space_left > 20){
-							$len = $space_left;
-
-							if($is_utf8){
-								$len = utf8CharBoundary($word, $len);
-							}
-							elseif(substr($word, $len - 1, 1) === '='){
-								--$len;
-							}
-							elseif(substr($word, $len - 2, 1) === '='){
-								$len -= 2;
-							}
-
-							$part    = substr($word, 0, $len);
-							$word    = substr($word, $len);
-							$buf     .= ' '.$part;
-							$message .= $buf.sprintf('=%s', $this->LE);
-						}
-						else{
-							$message .= $buf.$soft_break;
-						}
-
-						$buf = '';
-					}
-
-					while(strlen($word) > 0){
-
-						if($length <= 0){
-							break;
-						}
-
-						$len = $length;
-
-						if($is_utf8){
-							$len = utf8CharBoundary($word, $len);
-						}
-						elseif(substr($word, $len - 1, 1) === '='){
-							--$len;
-						}
-						elseif(substr($word, $len - 2, 1) === '='){
-							$len -= 2;
-						}
-
-						$part = substr($word, 0, $len);
-						$word = substr($word, $len);
-
-						if(strlen($word) > 0){
-							$message .= $part.sprintf('=%s', $this->LE);
-						}
-						else{
-							$buf = $part;
-						}
-
-					}
-				}
-				else{
-					$buf_o = $buf;
-
-					if(!$firstword){
-						$buf .= ' ';
-					}
-
-					$buf .= $word;
-
-					if(strlen($buf) > $length && $buf_o !== ''){
-						$message .= $buf_o.$soft_break;
-						$buf     = $word;
-					}
-				}
-
-				$firstword = false;
-			}
-
-			$message .= $buf.$this->LE;
-		}
-
-		return $message;
-	}
-
-	/**
 	 * Assemble message headers.
 	 *
 	 * @param string $uniqueid
@@ -1239,7 +1113,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 			$body .= $this->getMailMIME($uniqueid).$this->LE;
 		}
 
-		$this->body = $this->wrapText($this->body, $this->options->wordWrap);
+		$this->body = wrapText($this->body, $this->options->wordWrap, $this->options->charSet, $this->LE);
 
 		$bodyEncoding = $this->encoding;
 		$bodyCharSet  = $this->options->charSet;
@@ -1269,7 +1143,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 		}
 		elseif(in_array($this->messageType, ['alt', 'alt_inline', 'alt_attach', 'alt_inline_attach'])){
 
-			$this->altBody = $this->wrapText($this->altBody, $this->options->wordWrap);
+			$this->altBody = wrapText($this->altBody, $this->options->wordWrap, $this->options->charSet, $this->LE);
 
 			$altBodyEncoding = $this->encoding;
 			$altBodyCharSet  = $this->options->charSet;
@@ -1846,10 +1720,10 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 
 		switch($encoding){
 			case 'B':
-				if($this->hasMultiBytes($str)){
+				if(hasMultiBytes($str, $this->options->charSet)){
 					// Use a custom function which correctly encodes and wraps long
 					// multibyte strings without breaking lines within a character
-					$encoded = $this->base64EncodeWrapMB($str, "\n");
+					$encoded = base64EncodeWrapMB($str, $this->options->charSet, "\n");
 				}
 				else{
 					$encoded = base64_encode($str);
@@ -1859,7 +1733,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 				$encoded = preg_replace('/^(.*)$/m', ' =?'.$charset."?$encoding?\\1?=", $encoded);
 				break;
 			case 'Q':
-				$encoded = $this->wrapText(encodeQ($str, $position), $maxlen, true);
+				$encoded = wrapText(encodeQ($str, $position), $maxlen, $this->options->charSet, $this->LE, true);
 				$encoded = str_replace('='.$this->LE, "\n", trim($encoded));
 				$encoded = preg_replace('/^(.*)$/m', ' =?'.$charset."?$encoding?\\1?=", $encoded);
 				break;
@@ -1868,61 +1742,6 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 		}
 
 		return trim(normalizeBreaks($encoded, $this->LE));
-	}
-
-	/**
-	 * Check if a string contains multi-byte characters.
-	 *
-	 * @param string $str multi-byte text to wrap encode
-	 *
-	 * @return bool
-	 */
-	protected function hasMultiBytes(string $str):bool{
-		return strlen($str) > mb_strlen($str, $this->options->charSet);
-	}
-
-	/**
-	 * Encode and wrap long multibyte strings for mail headers
-	 * without breaking lines within a character.
-	 * Adapted from a function by paravoid.
-	 *
-	 * @see http://www.php.net/manual/en/function.mb-encode-mimeheader.php#60283
-	 *
-	 * @param string $str       multi-byte text to wrap encode
-	 * @param string $linebreak string to use as linefeed/end-of-line
-	 *
-	 * @return string
-	 */
-	protected function base64EncodeWrapMB(string $str, string $linebreak = null):string{
-		$linebreak = $linebreak ?? $this->LE;
-		$start     = '=?'.$this->options->charSet.'?B?';
-		$end       = '?=';
-		$encoded   = '';
-
-		$mb_length = mb_strlen($str, $this->options->charSet);
-		// Each line must have length <= 75, including $start and $end
-		$length = 75 - strlen($start) - strlen($end);
-		// Average multi-byte ratio
-		$ratio = $mb_length / strlen($str);
-		// Base64 has a 4:3 ratio
-		$avgLength = floor($length * $ratio * .75);
-
-		for($i = 0; $i < $mb_length; $i += $offset){
-			$lookBack = 0;
-
-			do{
-				$offset = $avgLength - $lookBack;
-				$chunk  = mb_substr($str, $i, $offset, $this->options->charSet);
-				$chunk  = base64_encode($chunk);
-				++$lookBack;
-			}
-			while(strlen($chunk) > $length);
-
-			$encoded .= $chunk.$linebreak;
-		}
-
-		// Chomp the last linefeed
-		return substr($encoded, 0, -strlen($linebreak));
 	}
 
 	/**
