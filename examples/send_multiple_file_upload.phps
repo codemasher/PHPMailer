@@ -15,8 +15,8 @@ if(array_key_exists('userfile', $_FILES)){
 	$mail = new MailMailer($options);
 	$mail->setFrom('from@example.com', 'First Last');
 	$mail->addTO('whoto@example.com', 'John Doe');
-	$mail->Subject = 'PHPMailer file sender';
-	$mail->Body    = 'My message body';
+	$mail->setSubject('PHPMailer file sender');
+	$mail->setMessageBody('My message body');
 	//Attach multiple files one by one
 	for($ct = 0; $ct < count($_FILES['userfile']['tmp_name']); $ct++){
 		$uploadfile = tempnam(sys_get_temp_dir(), hash('sha256', $_FILES['userfile']['name'][$ct]));

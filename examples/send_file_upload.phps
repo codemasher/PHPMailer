@@ -21,8 +21,8 @@ if(array_key_exists('userfile', $_FILES)){
 		$mail = new MailMailer($options);
 		$mail->setFrom('from@example.com', 'First Last');
 		$mail->addTO('whoto@example.com', 'John Doe');
-		$mail->Subject = 'PHPMailer file sender';
-		$mail->Body    = 'My message body';
+		$mail->setSubject('PHPMailer file sender');
+		$mail->setMessageBody('My message body');
 		// Attach the uploaded file
 		$mail->addAttachment($uploadfile, 'My uploaded file');
 		if(!$mail->send()){

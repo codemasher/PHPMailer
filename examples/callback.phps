@@ -46,10 +46,10 @@ try{
 	$mail->setFrom('you@example.com', 'Your Name');
 	$mail->addTO('jane@example.com', 'Jane Doe');
 	$mail->addCC('john@example.com', 'John Doe');
-	$mail->Subject = 'PHPMailer Test Subject';
+	$mail->setSubject('PHPMailer Test Subject');
 	$mail->messageFromHTML(file_get_contents('../examples/contents.html'));
 	// optional - messageFromHTML will create an alternate automatically
-	$mail->AltBody = 'To view the message, please use an HTML compatible email viewer!';
+	$mail->setAltBody('To view the message, please use an HTML compatible email viewer!');
 	$mail->addAttachment('images/phpmailer_mini.png'); // attachment
 	$mail->setSendCallback($callbackAction);
 	$mail->send();

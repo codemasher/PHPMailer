@@ -55,8 +55,6 @@ class UnitTest extends TestAbstract{
 	 * Test header encoding & folding.
 	 */
 	public function testHeaderEncodingB(){
-		$this->mailer->CharSet = 'UTF-8';
-
 		// This should select B-encoding automatically and should not fold
 		$exp = '=?UTF-8?B?w6nDqcOpw6nDqcOpw6nDqcOpw6k=?=';
 		$act = str_repeat('é', 10);
@@ -64,8 +62,6 @@ class UnitTest extends TestAbstract{
 	}
 
 	public function testHeaderEncodingFoldedB(){
-		$this->mailer->CharSet = 'UTF-8';
-
 		// This should select B-encoding automatically and should fold
 		$exp = '=?UTF-8?B?w6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6k=?='.
 		       $this->mailer->getLE().
@@ -79,8 +75,6 @@ class UnitTest extends TestAbstract{
 	}
 
 	public function testHeaderEncodingQ(){
-		$this->mailer->CharSet = 'UTF-8';
-
 		// This should select Q-encoding automatically and should not fold
 		$exp = '=?UTF-8?Q?eeeeeeeee=C3=A9?=';
 		$act = str_repeat('e', 9).'é';
@@ -88,8 +82,6 @@ class UnitTest extends TestAbstract{
 	}
 
 	public function testHeaderEncodingUnencoded(){
-		$this->mailer->CharSet = 'UTF-8';
-
 		// This should not change
 		$exp = 'eeeeeeeeee';
 		$act = 'eeeeeeeeee';
@@ -97,8 +89,6 @@ class UnitTest extends TestAbstract{
 	}
 
 	public function testHeaderEncodingFoldedQUtf8(){
-		$this->mailer->CharSet = 'UTF-8';
-
 		//This should Q-encode as UTF-8 and fold
 		$act = str_repeat('é', $this->mailer::LINE_LENGTH_STD + 10);
 		$exp = '=?UTF-8?B?w6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6k=?='.
@@ -145,9 +135,8 @@ class UnitTest extends TestAbstract{
 	 * Test constructing a multipart message that contains lines that are too long for RFC compliance.
 	 */
 	public function testLongBody(){
-
-		$this->mailer->ContentType = $this->mailer::CONTENT_TYPE_PLAINTEXT;
-		$this->mailer->Encoding    = $this->mailer::ENCODING_8BIT;
+		$this->mailer->setContentType($this->mailer::CONTENT_TYPE_PLAINTEXT);
+		$this->mailer->setEncoding($this->mailer::ENCODING_8BIT);
 
 		$oklen  = str_repeat(str_repeat('0', $this->mailer::LINE_LENGTH_MAX).$this->mailer->getLE(), 2);
 		// Use +2 to ensure line length is over limit - LE may only be 1 char
@@ -164,8 +153,8 @@ class UnitTest extends TestAbstract{
 
 		$this->setMessage($body, __FUNCTION__);
 
-		$this->mailer->Body     = $body;
-		$this->mailer->AltBody  = $body;
+		$this->mailer->setMessageBody($body);
+		$this->mailer->setAltBody($body);
 
 		$this->mailer->preSend();
 
@@ -190,13 +179,13 @@ class UnitTest extends TestAbstract{
 	 * Test constructing a message that does NOT contain lines that are too long for RFC compliance.
 	 */
 	public function testShortBody(){
-		$this->mailer->Encoding = $this->mailer::ENCODING_8BIT;
+		$this->mailer->setEncoding($this->mailer::ENCODING_8BIT);
 
 		$oklen = str_repeat(str_repeat('0', $this->mailer::LINE_LENGTH_MAX).$this->mailer->getLE(), 10);
 		$body  = 'This message does not contain lines that are too long.'.$this->mailer->getLE().$oklen;
 
 		$this->assertFalse(
-			$this->mailer->hasLineLongerThanMax($this->mailer->Body),
+			$this->mailer->hasLineLongerThanMax($this->getPropertyValue('body')),
 			'Test content contains long lines!'
 		);
 
@@ -219,7 +208,7 @@ class UnitTest extends TestAbstract{
 	 */
 	public function testCVE_2010_2423(){
 		//Encoding name longer than 68 chars
-		$this->mailer->Encoding = '1234567890123456789012345678901234567890123456789012345678901234567890';
+		$this->mailer->setEncoding('1234567890123456789012345678901234567890123456789012345678901234567890');
 		//Call wrapText with a zero length value
 		$this->mailer->wrapText(str_repeat('This should no longer cause a denial of service. ', 30), 0);
 
@@ -243,28 +232,31 @@ class UnitTest extends TestAbstract{
 		$this->assertFalse($this->mailer->addBCC('a@example.com'), 'BCC duplicate addressing failed (2)');
 		$this->assertTrue($this->mailer->addReplyTo('a@example.com'), 'Replyto Addressing failed');
 		$this->assertFalse($this->mailer->addReplyTo('a@example..com'), 'Invalid Replyto address accepted');
-		$this->assertTrue($this->mailer->setFrom('a@example.com', 'some name'), 'setFrom failed');
-		$this->assertFalse($this->mailer->setFrom('a@example.com.', 'some name'), 'setFrom accepted invalid address');
 
-		$this->mailer->Sender = '';
-		$this->mailer->setFrom('a@example.com', 'some name', true);
-		$this->assertSame($this->mailer->Sender, 'a@example.com', 'setFrom failed to set sender');
-		$this->mailer->Sender = '';
-		$this->mailer->setFrom('a@example.com', 'some name', false);
-		$this->assertSame($this->mailer->Sender, '', 'setFrom should not have set sender');
 		$this->mailer->clearCCs();
 		$this->mailer->clearBCCs();
 		$this->mailer->clearReplyTos();
 	}
 
-	/**
-	 * Test addressing.
-	 */
-	public function testAddressingDoubleQuotesInFromName(){
+	public function testSetFrom(){
+		// @todo
+		$this->mailer->setFrom('a@example.com', 'some name', true);
+		$this->assertSame($this->getPropertyValue('sender'), 'a@example.com', 'setFrom failed to set sender');
+		$this->mailer->setSender('');
+		$this->mailer->setFrom('a@example.com', 'some name', false);
+		$this->assertNull($this->getPropertyValue('sender'), 'setFrom should not have set sender');
+
+		// test double quotes in from name
 		$this->mailer->setFrom('bob@example.com', '"Bob\'s Burgers" (Bob\'s "Burgers")', true);
-		$this->assertSame($this->mailer->From, 'bob@example.com');
-		$this->assertSame($this->mailer->FromName, '"Bob\'s Burgers" (Bob\'s "Burgers")');
+		$this->assertSame($this->getPropertyValue('from'), 'bob@example.com');
+		$this->assertSame($this->getPropertyValue('fromName'), '"Bob\'s Burgers" (Bob\'s "Burgers")');
 	}
+
+	public function testSetFromInvalidAddressException(){
+		$this->expectException(PHPMailerException::class);
+		$this->mailer->setFrom('a@example.com.', 'some name');
+	}
+
 
 	/**
 	 * Tests removal of duplicate recipients and reply-tos.
@@ -272,8 +264,6 @@ class UnitTest extends TestAbstract{
 	 * @group network
 	 */
 	public function testDuplicateIDNAddressRemoved(){
-		$this->mailer->CharSet = $this->mailer::CHARSET_UTF8;
-
 		$this->assertTrue($this->mailer->addTO('test@françois.ch'));
 		$this->assertFalse($this->mailer->addTO('test@françois.ch'));
 		$this->assertTrue($this->mailer->addTO('test@FRANÇOIS.CH'));
@@ -290,7 +280,7 @@ class UnitTest extends TestAbstract{
 		$this->assertFalse($this->mailer->addReplyTo('test+replyto@xn--franois-xxa.ch'));
 		$this->assertFalse($this->mailer->addReplyTo('test+replyto@XN--FRANOIS-XXA.CH'));
 
-		$this->mailer->Body = 'IDN duplicate remove';
+		$this->mailer->setMessageBody('IDN duplicate remove');
 		$this->mailer->preSend();
 
 		// There should be only one "To" address and one "Reply-To" address.
@@ -302,20 +292,20 @@ class UnitTest extends TestAbstract{
 	 * Test address escaping.
 	 */
 	public function testAddressEscaping(){
-		$this->mailer->Subject .= ': Address escaping';
+		$this->mailer->setSubject('Address escaping');
 		$this->mailer->clearTOs();
 		$this->mailer->addTO('foo@example.com', 'Tim "The Book" O\'Reilly');
-		$this->mailer->Body = $this->buildBody('Test correct escaping of quotes in addresses.');
+		$this->mailer->setMessageBody($this->buildBody('Test correct escaping of quotes in addresses.'));
 
 		$this->mailer->preSend();
 		$b = $this->mailer->getSentMIMEMessage();
 		$this->assertStringContainsString('To: "Tim \"The Book\" O\'Reilly" <foo@example.com>', $b);
 
-		$this->mailer->Subject .= ': Address escaping invalid';
+		$this->mailer->setSubject('Address escaping invalid');
 		$this->mailer->clearTOs();
 		$this->mailer->addTO('foo@example.com', 'Tim "The Book" O\'Reilly');
 		$this->mailer->addTO('invalidaddressexample.com', 'invalidaddress');
-		$this->mailer->Body = $this->buildBody('invalid address');
+		$this->mailer->setMessageBody($this->buildBody('invalid address'));
 
 		$this->mailer->preSend();
 
@@ -465,28 +455,28 @@ class UnitTest extends TestAbstract{
 	public function testMessageFromHTMLIgnorePaths(){
 		// Test that local paths without a basedir are ignored
 		$this->mailer->messageFromHTML('<img src="/etc/hostname">test');
-		$this->assertStringContainsString('src="/etc/hostname"', $this->mailer->Body);
+		$this->assertStringContainsString('src="/etc/hostname"', $this->getPropertyValue('body'));
 
 		// Test that local paths with a basedir are not ignored
 		$this->mailer->messageFromHTML('<img src="composer.json">test', realpath($this->INCLUDE_DIR));
-		$this->assertStringNotContainsString('src="composer.json"', $this->mailer->Body);
+		$this->assertStringNotContainsString('src="composer.json"', $this->getPropertyValue('body'));
 
 		// Test that local paths with parent traversal are ignored
 		$this->mailer->messageFromHTML('<img src="../composer.json">test', realpath($this->INCLUDE_DIR));
-		$this->assertStringNotContainsString('src="composer.json"', $this->mailer->Body);
+		$this->assertStringNotContainsString('src="composer.json"', $this->getPropertyValue('body'));
 
 		// Test that existing embedded URLs are ignored
 		$this->mailer->messageFromHTML('<img src="cid:5d41402abc4b2a76b9719d911017c592">test');
-		$this->assertStringContainsString('src="cid:5d41402abc4b2a76b9719d911017c592"', $this->mailer->Body);
+		$this->assertStringContainsString('src="cid:5d41402abc4b2a76b9719d911017c592"', $this->getPropertyValue('body'));
 
 		// Test that absolute URLs are ignored
 		$this->mailer->messageFromHTML('<img src="https://github.com/PHPMailer/PHPMailer/blob/master/composer.json">test');
-		$this->assertStringContainsString('src="https://github.com/PHPMailer/PHPMailer/blob/master/composer.json"', $this->mailer->Body);
+		$this->assertStringContainsString('src="https://github.com/PHPMailer/PHPMailer/blob/master/composer.json"', $this->getPropertyValue('body'));
 
 		// Test that absolute URLs with anonymous/relative protocol are ignored
 		// Note that such URLs will not work in email anyway because they have no protocol to be relative to
 		$this->mailer->messageFromHTML('<img src="//github.com/PHPMailer/PHPMailer/blob/master/composer.json">test');
-		$this->assertStringContainsString('src="//github.com/PHPMailer/PHPMailer/blob/master/composer.json"', $this->mailer->Body);
+		$this->assertStringContainsString('src="//github.com/PHPMailer/PHPMailer/blob/master/composer.json"', $this->getPropertyValue('body'));
 	}
 
 	public function testQuotedPrintableEncode(){
@@ -554,21 +544,21 @@ class UnitTest extends TestAbstract{
 		$this->mailer->addTO('user@example.com');
 
 		$id = hash('sha256', 12345);
-		$this->mailer->Body      = 'Test message ID.';
-		$this->mailer->MessageID = $id;
-		$this->mailer->Body = $this->buildBody('');
+		$this->mailer->setMessageBody('Test message ID.');
+		$this->mailer->setMessageID($id);
+		$this->mailer->setMessageBody($this->buildBody(''));
 		$this->mailer->preSend();
 
 		$this->assertNotSame($this->mailer->getLastMessageID(), $id, 'Invalid Message ID allowed');
 
 		$id = '<'.hash('sha256', 12345).'@example.com>';
-		$this->mailer->MessageID = $id;
-		$this->mailer->Body = $this->buildBody('');
+		$this->mailer->setMessageID($id);
+		$this->mailer->setMessageBody($this->buildBody(''));
 		$this->mailer->preSend();
 		$this->assertSame( $this->mailer->getLastMessageID(), $id, 'Custom Message ID not used');
 
-		$this->mailer->MessageID = '';
-		$this->mailer->Body = $this->buildBody('');
+		$this->mailer->setMessageID('');
+		$this->mailer->setMessageBody($this->buildBody(''));
 		$this->mailer->preSend();
 		$this->assertRegExp('/^<.*@.*>$/', $this->mailer->getLastMessageID(), 'Invalid default Message ID');
 	}
@@ -581,7 +571,7 @@ class UnitTest extends TestAbstract{
 
 
 		$this->setMessage('<h3>MIME structure test.</h3>', __FUNCTION__.': MIME structure');
-		$this->mailer->AltBody = 'MIME structure test.';
+		$this->mailer->setAltBody('MIME structure test.');
 
 		$this->mailer->preSend();
 		$this->assertRegExp(
@@ -596,6 +586,8 @@ class UnitTest extends TestAbstract{
 	 * Tests CharSet and Unicode -> ASCII conversions for addresses with IDN.
 	 */
 	public function testAddressConvertEncoding(){
+		$this->options->charSet = $this->mailer::CHARSET_ISO88591;
+		$this->mailer->setOptions($this->options);
 
 		// This file is UTF-8 encoded. Create a domain encoded in "iso-8859-1".
 		$domain = '@'.mb_convert_encoding('françois.ch', 'ISO-8859-1', 'UTF-8');
@@ -614,7 +606,7 @@ class UnitTest extends TestAbstract{
 		// Clear queued BCC recipient.
 		$this->mailer->clearBCCs();
 
-		$this->mailer->Body = 'address convert encoding test';
+		$this->mailer->setMessageBody('address convert encoding test');
 		$this->mailer->preSend();
 
 		// Addresses with IDN are returned by get*Addresses() after send() call.

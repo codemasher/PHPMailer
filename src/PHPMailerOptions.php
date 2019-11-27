@@ -35,6 +35,13 @@ class PHPMailerOptions extends SettingsContainerAbstract{
 	protected $hostname = null;
 
 	/**
+	 * The character set of the message.
+	 *
+	 * @var string
+	 */
+	protected $charSet = PHPMailerInterface::CHARSET_UTF8;
+
+	/**
 	 * SMTP host(s).
 	 * Either a single hostname or multiple semicolon-delimited fallback hostnames.
 	 * You can also specify a different port
@@ -356,5 +363,15 @@ class PHPMailerOptions extends SettingsContainerAbstract{
 	 * @var string|null
 	 */
 	protected $validator = null;
+
+
+	protected function set_charSet(string $charSet):void{
+		$charSet = strtoupper($charSet);
+
+		if(in_array($charSet, PHPMailerInterface::CHARSETS, true)){
+			$this->charSet = $charSet;
+		}
+
+	}
 
 }

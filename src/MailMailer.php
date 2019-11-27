@@ -66,7 +66,7 @@ class MailMailer extends PHPMailer{
 
 		$params = null;
 		//This sets the SMTP envelope sender which gets turned into a return-path header by the receiver
-		if(!empty($this->Sender) && validateAddress($this->Sender, $this->options->validator)){
+		if(!empty($this->sender) && validateAddress($this->sender, $this->options->validator)){
 			// A space after `-f` is optional, but there is a long history of its presence
 			// causing problems, so we don't use one
 			// Exim docs: http://www.exim.org/exim-html-current/doc/html/spec_html/ch-the_exim_command_line.html
@@ -74,27 +74,27 @@ class MailMailer extends PHPMailer{
 			// Qmail docs: http://www.qmail.org/man/man8/qmail-inject.html
 			// Example problem: https://www.drupal.org/node/1057954
 			// CVE-2016-10033, CVE-2016-10045: Don't pass -f if characters will be escaped.
-			if(isShellSafe($this->Sender)){
-				$params = sprintf('-f%s', $this->Sender);
+			if(isShellSafe($this->sender)){
+				$params = sprintf('-f%s', $this->sender);
 			}
 		}
 
-		if(!empty($this->Sender) && validateAddress($this->Sender, $this->options->validator)){
+		if(!empty($this->sender) && validateAddress($this->sender, $this->options->validator)){
 			$old_from = ini_get('sendmail_from');
-			ini_set('sendmail_from', $this->Sender);
+			ini_set('sendmail_from', $this->sender);
 		}
 
 		$result = false;
 
 		if($this->options->singleTo && count($toArr) > 1){
 			foreach($toArr as $toAddr){
-				$result = $this->mailPassthru($toAddr, $this->Subject, $body, $header, $params);
-				$this->doCallback($result, [$toAddr], $this->cc, $this->bcc, $this->Subject, $body, $this->From, []);
+				$result = $this->mailPassthru($toAddr, $this->subject, $body, $header, $params);
+				$this->doCallback($result, [$toAddr], $this->cc, $this->bcc, $this->subject, $body, $this->from, []);
 			}
 		}
 		else{
-			$result = $this->mailPassthru($to, $this->Subject, $body, $header, $params);
-			$this->doCallback($result, $this->to, $this->cc, $this->bcc, $this->Subject, $body, $this->From, []);
+			$result = $this->mailPassthru($to, $this->subject, $body, $header, $params);
+			$this->doCallback($result, $this->to, $this->cc, $this->bcc, $this->subject, $body, $this->from, []);
 		}
 
 		if(isset($old_from)){

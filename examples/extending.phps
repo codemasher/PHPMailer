@@ -40,9 +40,9 @@ class myPHPMailer extends SMTPMailer{
 
 	//Extend the send function
 	public function send():bool{
-		$this->Subject = '[Yay for me!] '.$this->Subject;
+		$this->subject = '[Yay for me!] '.$this->subject;
 		$r             = parent::send();
-		echo "I sent a message with subject ".$this->Subject;
+		echo "I sent a message with subject ".$this->subject;
 
 		return $r;
 	}
@@ -54,7 +54,7 @@ try{
 	$mail = new myPHPMailer('<strong>This is the message body</strong>', $options);
 	// Now you only need to set things that are different from the defaults you defined
 	$mail->addTO('jane@example.com', 'Jane User');
-	$mail->Subject = 'Here is the subject';
+	$mail->setSubject('Here is the subject');
 	$mail->addAttachment(__FILE__, 'myPHPMailer.php');
 	$mail->send(); //no need to check for errors - the exception handler will do it
 }

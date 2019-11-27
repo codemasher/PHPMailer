@@ -65,8 +65,8 @@ abstract class MailerTestAbstract extends TestAbstract{
 		$this->mailer->setOptions($this->options);
 
 		$this->mailer->addTO('user@example.com');
-		$this->mailer->Body       = '';
-		$this->mailer->Subject    = $this->FQCN.'::'.__FUNCTION__;
+		$this->mailer->setMessageBody('');
+		$this->mailer->setSubject($this->FQCN.'::'.__FUNCTION__);
 
 		$this->assertSentMail();
 	}
@@ -79,7 +79,7 @@ abstract class MailerTestAbstract extends TestAbstract{
 		$this->expectExceptionMessage('Message body empty');
 
 		$this->mailer->addTO('user@example.com');
-		$this->mailer->Body       = '';
+		$this->mailer->setMessageBody('');
 		$this->mailer->send();
 	}
 
@@ -87,7 +87,7 @@ abstract class MailerTestAbstract extends TestAbstract{
 	 * Test low priority.
 	 */
 	public function testLowPriority(){
-		$this->mailer->Priority = 5;
+		$this->mailer->setPriority(5);
 		$this->mailer->addReplyTo('nobody@nobody.com', 'Nobody (Unit Test)');
 
 		$body = 'Here is the main body. There should be a reply to address in this message.';
@@ -156,8 +156,6 @@ abstract class MailerTestAbstract extends TestAbstract{
 	 * Send a message containing multilingual UTF-8 text.
 	 */
 	public function testPlainUtf8(){
-		$this->mailer->CharSet = $this->mailer::CHARSET_UTF8;
-
 		$body = '
 Chinese text: 郵件內容為空
 Russian text: Пустое тело сообщения
@@ -183,7 +181,7 @@ Czech text: Prázdné tělo zprávy';
 	 * Simple HTML and attachment test.
 	 */
 	public function testHTMLAttachment(){
-		$this->mailer->ContentType = $this->mailer::CONTENT_TYPE_TEXT_HTML;
+		$this->mailer->setContentType($this->mailer::CONTENT_TYPE_TEXT_HTML);
 
 		$this->mailer->addAttachment(realpath($this->INCLUDE_DIR.'/examples/images/phpmailer_mini.png'), 'phpmailer_mini.png');
 
@@ -194,7 +192,7 @@ Czech text: Prázdné tělo zprávy';
 	 * Simple HTML and multiple attachment test.
 	 */
 	public function testHTMLMultiAttachment(){
-		$this->mailer->ContentType = $this->mailer::CONTENT_TYPE_TEXT_HTML;
+		$this->mailer->setContentType($this->mailer::CONTENT_TYPE_TEXT_HTML);
 
 		$this->mailer->addAttachment(realpath($this->INCLUDE_DIR.'/examples/images/phpmailer_mini.png'), 'phpmailer_mini.png');
 		$this->mailer->addAttachment(realpath($this->INCLUDE_DIR.'/examples/images/phpmailer.png'), 'phpmailer.png');
@@ -206,8 +204,8 @@ Czech text: Prázdné tělo zprávy';
 	 * Simple HTML and attachment test.
 	 */
 	public function testAltBodyAttachment(){
-		$this->mailer->ContentType = $this->mailer::CONTENT_TYPE_TEXT_HTML;
-		$this->mailer->AltBody     = 'This is the text part of the email.';
+		$this->mailer->setContentType($this->mailer::CONTENT_TYPE_TEXT_HTML);
+		$this->mailer->setAltBody('This is the text part of the email.');
 
 		$this->mailer->addAttachment($this->INCLUDE_DIR.'/README.md', 'test.txt');
 
@@ -220,7 +218,7 @@ Czech text: Prázdné tělo zprávy';
 	 * Test embedded image without a name.
 	 */
 	public function testHTMLStringEmbedNoName(){
-		$this->mailer->ContentType = $this->mailer::CONTENT_TYPE_TEXT_HTML;
+		$this->mailer->setContentType($this->mailer::CONTENT_TYPE_TEXT_HTML);
 
 		$this->mailer->addStringEmbeddedImage(
 			file_get_contents(realpath($this->INCLUDE_DIR.'/examples/images/phpmailer_mini.png')),
@@ -238,7 +236,7 @@ Czech text: Prázdné tělo zprávy';
 	 * An embedded attachment test.
 	 */
 	public function testHTMLEmbeddedImage(){
-		$this->mailer->ContentType = $this->mailer::CONTENT_TYPE_TEXT_HTML;
+		$this->mailer->setContentType($this->mailer::CONTENT_TYPE_TEXT_HTML);
 
 		$this->mailer->addEmbeddedImage(
 			realpath($this->INCLUDE_DIR.'/examples/images/phpmailer.png'),
@@ -254,7 +252,8 @@ Czech text: Prázdné tělo zprávy';
 	}
 
 	public function testHTMLCidHeaderFormatting(){
-		$this->mailer->messageFromHTML('<!DOCTYPE html>
+
+		$body = '<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
@@ -263,9 +262,11 @@ Czech text: Prázdné tělo zprávy';
   <body>
     <p><img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="></p>
   </body>
-</html>');
+</html>';
 
-		$this->setMessage($this->mailer->Body, __FUNCTION__)->assertSentMail(
+		$this->mailer->messageFromHTML($body);
+
+		$this->setMessage($this->getPropertyValue('body'), __FUNCTION__)->assertSentMail(
 			function(string $sent, array $received){
 				$cid = 'Content-ID: <bb229a48bee31f5d54ca12dc9bd960c6@phpmailer.0>';
 				$this->assertStringContainsString($cid, $sent);
@@ -278,7 +279,7 @@ Czech text: Prázdné tělo zprávy';
 	 * An embedded attachment test.
 	 */
 	public function testHTMLMultiEmbeddedImage(){
-		$this->mailer->ContentType = $this->mailer::CONTENT_TYPE_TEXT_HTML;
+		$this->mailer->setContentType($this->mailer::CONTENT_TYPE_TEXT_HTML);
 
 		$this->mailer->addEmbeddedImage(
 			realpath($this->INCLUDE_DIR.'/examples/images/phpmailer.png'),
@@ -299,7 +300,6 @@ Czech text: Prázdné tělo zprávy';
 	 * Send an HTML message.
 	 */
 	public function testHtml(){
-		$this->mailer->ContentType = $this->mailer::CONTENT_TYPE_TEXT_HTML;
 
 		$body = '<!DOCTYPE html>
 <html lang="en">
@@ -315,6 +315,7 @@ Czech text: Prázdné tělo zprávy';
     </body>
 </html>';
 
+		$this->mailer->setContentType($this->mailer::CONTENT_TYPE_TEXT_HTML);
 		$this->setMessage($body, __FUNCTION__)->assertSentMail();
 
 		$msg = $this->mailer->getSentMIMEMessage();
@@ -325,8 +326,10 @@ Czech text: Prázdné tělo zprávy';
 	 * Send a message containing ISO-8859-1 text.
 	 */
 	public function testHtmlIso8859(){
-		$this->mailer->ContentType = $this->mailer::CONTENT_TYPE_TEXT_HTML;
-		$this->mailer->CharSet     = $this->mailer::CHARSET_ISO88591;
+		$this->options->charSet = $this->mailer::CHARSET_ISO88591;
+
+		$this->mailer->setOptions($this->options);
+		$this->mailer->setContentType($this->mailer::CONTENT_TYPE_TEXT_HTML);
 
 		//This file is in ISO-8859-1 charset
 		//Needs to be external because this file is in UTF-8
@@ -343,8 +346,8 @@ Czech text: Prázdné tělo zprávy';
 			realpath($this->INCLUDE_DIR.'/examples')
 		);
 
-		$this->setMessage($this->mailer->Body, __FUNCTION__);
-		$this->assertStringContainsString($check, $this->mailer->Body, 'ISO message body does not contain expected text');
+		$this->setMessage($this->getPropertyValue('body'), __FUNCTION__);
+		$this->assertStringContainsString($check, $this->getPropertyValue('body'), 'ISO message body does not contain expected text');
 		$this->assertSentMail();
 	}
 
@@ -352,8 +355,6 @@ Czech text: Prázdné tělo zprávy';
 	 * Send a message containing multilingual UTF-8 text.
 	 */
 	public function testHtmlUtf8(){
-		$this->mailer->ContentType = $this->mailer::CONTENT_TYPE_TEXT_HTML;
-		$this->mailer->CharSet     = $this->mailer::CHARSET_UTF8;
 
 		$body = '<!DOCTYPE html>
 <html lang="en">
@@ -369,6 +370,7 @@ Czech text: Prázdné tělo zprávy';
     </body>
 </html>';
 
+		$this->mailer->setContentType($this->mailer::CONTENT_TYPE_TEXT_HTML);
 		$this->setMessage($body, __FUNCTION__)->assertSentMail();
 		$msg = $this->mailer->getSentMIMEMessage();
 		$this->assertStringNotContainsString("\r\n\r\nMIME-Version:", $msg, 'Incorrect MIME headers');
@@ -378,8 +380,6 @@ Czech text: Prázdné tělo zprávy';
 	 * Send a message containing multilingual UTF-8 text with an embedded image.
 	 */
 	public function testHtmlUtf8WithEmbeddedImage(){
-		$this->mailer->ContentType = $this->mailer::CONTENT_TYPE_TEXT_HTML;
-		$this->mailer->CharSet     = $this->mailer::CHARSET_UTF8;
 
 		$body = '<!DOCTYPE html>
 <html lang="en">
@@ -395,6 +395,8 @@ Czech text: Prázdné tělo zprávy';
         Embedded Image: <img alt="phpmailer" src="cid:bäck">
     </body>
 </html>';
+
+		$this->mailer->setContentType($this->mailer::CONTENT_TYPE_TEXT_HTML);
 		$this->mailer->addEmbeddedImage(
 			realpath($this->INCLUDE_DIR.'/examples/images/phpmailer.png'),
 			'bäck',
@@ -410,26 +412,22 @@ Czech text: Prázdné tělo zprávy';
 	 * Test simple message builder
 	 */
 	public function testMessageFromHTML(){
-		$this->mailer->CharSet = $this->mailer::CHARSET_UTF8;
-
 		//Uses internal HTML to text conversion
 		$this->mailer->messageFromHTML(
 			file_get_contents(realpath($this->INCLUDE_DIR.'/examples/contentsutf8.html')),
 			realpath($this->INCLUDE_DIR.'/examples')
 		);
 
-		$this->assertNotEmpty($this->mailer->Body, 'Body not set by messageFromHTML');
-		$this->assertNotEmpty($this->mailer->AltBody, 'AltBody not set by messageFromHTML');
+		$this->assertNotEmpty($this->getPropertyValue('body'), 'Body not set by messageFromHTML');
+		$this->assertNotEmpty($this->getPropertyValue('altBody'), 'AltBody not set by messageFromHTML');
 
-		$this->setMessage($this->mailer->Body, __FUNCTION__)->assertSentMail();
+		$this->setMessage($this->getPropertyValue('body'), __FUNCTION__)->assertSentMail();
 	}
 
 	/**
 	 * Test custom html2text converter
 	 */
 	public function testMessageFromHTMLWithCustomConverter(){
-		$this->mailer->CharSet = $this->mailer::CHARSET_UTF8;
-
 		//Again, using a custom HTML to text converter
 		$this->mailer->messageFromHTML(
 			file_get_contents(realpath($this->INCLUDE_DIR.'/examples/contentsutf8.html')),
@@ -439,24 +437,26 @@ Czech text: Prázdné tělo zprávy';
 			}
 		);
 
-		$this->assertNotEmpty($this->mailer->Body, 'Body not set by messageFromHTML');
-		$this->assertNotEmpty($this->mailer->AltBody, 'AltBody not set by messageFromHTML');
+		$this->assertNotEmpty($this->getPropertyValue('body'), 'Body not set by messageFromHTML');
+		$this->assertNotEmpty($this->getPropertyValue('altBody'), 'AltBody not set by messageFromHTML');
 
-		$this->setMessage($this->mailer->Body, __FUNCTION__)->assertSentMail();
+		$this->setMessage($this->getPropertyValue('body'), __FUNCTION__)->assertSentMail();
 	}
 
 	/**
 	 * Simple multipart/alternative test.
 	 */
 	public function testAltBody(){
+		$altBody  = 'Here is the plain text body of this message. '.
+		            'It should be quite a few lines. It should be wrapped at '.
+		            '40 characters.  Make sure that it is.';
+
 		$this->options->wordWrap = 40;
 		$this->mailer->setOptions($this->options);
+		$this->mailer->setAltBody($altBody);
 
-		$this->mailer->AltBody  = 'Here is the plain text body of this message. '.
-		                          'It should be quite a few lines. It should be wrapped at '.
-		                          '40 characters.  Make sure that it is.';
 		$this->addNote('This is a multipart/alternative email');
-		$this->mailer->Subject .= ': AltBody + Word Wrap';
+		$this->mailer->setSubject('AltBody + Word Wrap');
 
 		$this->setMessage('This is the <strong>HTML</strong> part of the email.', __FUNCTION__)->assertSentMail();
 	}
@@ -465,22 +465,21 @@ Czech text: Prázdné tělo zprávy';
 	 * Plain quoted-printable message.
 	 */
 	public function testQuotedPrintable(){
-		$this->mailer->Encoding = $this->mailer::ENCODING_QUOTED_PRINTABLE;
+		$body = 'Hätten Hüte ein ß im Namen, wären sie Hüße.';
 
-		$body     = 'Hätten Hüte ein ß im Namen, wären sie Hüße.';
-		$expected = 'H=C3=A4tten H=C3=BCte ein =C3=9F im Namen, w=C3=A4ren sie H=C3=BC=C3=9Fe.';
-
+		$this->mailer->setEncoding($this->mailer::ENCODING_QUOTED_PRINTABLE);
 		$this->setMessage($body, __FUNCTION__)->assertSentMail();
 
 		$msg = $this->mailer->getSentMIMEMessage();
-		$this->assertStringContainsString($expected, $msg);
+		$this->assertStringContainsString(
+			'H=C3=A4tten H=C3=BCte ein =C3=9F im Namen, w=C3=A4ren sie H=C3=BC=C3=9Fe.', $msg
+		);
 	}
 
 	/**
 	 * Send an HTML message specifiying the DSN notifications we expect.
 	 */
 	public function testDsn(){
-		$this->mailer->ContentType = $this->mailer::CONTENT_TYPE_TEXT_HTML;
 
 		$body = '
 <!DOCTYPE html>
@@ -493,6 +492,7 @@ Czech text: Prázdné tělo zprávy';
     </body>
 </html>';
 
+		$this->mailer->setContentType($this->mailer::CONTENT_TYPE_TEXT_HTML);
 		$this->setMessage($body, __FUNCTION__.' DSN: SUCCESS,FAILURE');
 
 		$this->options->smtp_dsn = 'SUCCESS,FAILURE';
@@ -530,26 +530,24 @@ Czech text: Prázdné tělo zprávy';
 	 * @group network
 	 */
 	public function testConfirmReadingTo(){
-		$this->mailer->CharSet = $this->mailer::CHARSET_UTF8;
-
 		$this->setMessage('test confirm reading', __FUNCTION__.': Extra space to trim');
 
-		$this->mailer->ConfirmReadingTo = ' test@example.com';
+		$this->mailer->setConfirmReadingTo(' test@example.com');
 
 		$this->assertSentMail(
 			function(string $sent, array $received){
-				$this->assertSame('test@example.com', $this->mailer->ConfirmReadingTo, 'Unexpected read receipt address');
+				$this->assertSame('test@example.com', $this->getPropertyValue('confirmReadingTo'), 'Unexpected read receipt address');
 				$this->assertStringContainsString('Disposition-Notification-To: <test@example.com>', $received[0]);
 			}
 		);
 
 		$this->setMessage('test confirm reading', __FUNCTION__.': Address with IDN');
 
-		$this->mailer->ConfirmReadingTo = 'test@françois.ch';
+		$this->mailer->setConfirmReadingTo('test@françois.ch');
 
 		$this->assertSentMail(
 			function(string $sent, array $received){
-				$this->assertSame('test@xn--franois-xxa.ch', $this->mailer->ConfirmReadingTo, 'IDN address not converted to punycode');
+				$this->assertSame('test@xn--franois-xxa.ch', $this->getPropertyValue('confirmReadingTo'), 'IDN address not converted to punycode');
 				$this->assertStringContainsString('Disposition-Notification-To: <test@xn--franois-xxa.ch>', $received[0]);
 			}
 		);
@@ -564,7 +562,7 @@ Czech text: Prázdné tělo zprávy';
 
 		$this->setMessage('test confirm reading exception', __FUNCTION__);
 
-		$this->mailer->ConfirmReadingTo = 'test@example..com';  //Invalid address
+		$this->mailer->setConfirmReadingTo('test@example..com'); // Invalid address
 		$this->mailer->send();
 	}
 
@@ -577,21 +575,21 @@ Czech text: Prázdné tělo zprávy';
 		$subject = $this->FQCN.'::'.__FUNCTION__;
 
 		//To see accurate results when using postfix, set `sendmail_fix_line_endings = never` in main.cf
-		$this->mailer->Subject = $subject.' DOS line breaks';
-		$this->mailer->Body    = "This message\r\ncontains\r\nDOS-format\r\nCRLF line breaks.";
+		$this->mailer->setSubject($subject.' DOS line breaks');
+		$this->mailer->setMessageBody("This message\r\ncontains\r\nDOS-format\r\nCRLF line breaks.");
 		$this->assertSentMail();
 
-		$this->mailer->Subject = $subject.' UNIX line breaks';
-		$this->mailer->Body    = "This message\ncontains\nUNIX-format\nLF line breaks.";
+		$this->mailer->setSubject($subject.' UNIX line breaks');
+		$this->mailer->setMessageBody("This message\ncontains\nUNIX-format\nLF line breaks.");
 		$this->assertSentMail();
 
-		$this->mailer->Encoding = $this->mailer::ENCODING_QUOTED_PRINTABLE;
-		$this->mailer->Subject  = $subject.' DOS line breaks, QP';
-		$this->mailer->Body     = "This message\r\ncontains\r\nDOS-format\r\nCRLF line breaks.";
+		$this->mailer->setEncoding($this->mailer::ENCODING_QUOTED_PRINTABLE);
+		$this->mailer->setSubject($subject.' DOS line breaks, QP');
+		$this->mailer->setMessageBody("This message\r\ncontains\r\nDOS-format\r\nCRLF line breaks.");
 		$this->assertSentMail();
 
-		$this->mailer->Subject = $subject.' UNIX line breaks, QP';
-		$this->mailer->Body    = "This message\ncontains\nUNIX-format\nLF line breaks.";
+		$this->mailer->setSubject($subject.' UNIX line breaks, QP');
+		$this->mailer->setMessageBody("This message\ncontains\nUNIX-format\nLF line breaks.");
 		$this->assertSentMail();
 	}
 
@@ -610,16 +608,14 @@ Czech text: Prázdné tělo zprávy';
 			'Long line not detected (middle)'
 		);
 		$this->assertFalse($this->mailer->hasLineLongerThanMax($oklen), 'Long line false positive');
-		$this->mailer->ContentType = $this->mailer::CONTENT_TYPE_PLAINTEXT;
-		$this->mailer->Subject     .= ': Line length test';
-		$this->mailer->CharSet     = 'UTF-8';
-		$this->mailer->Encoding    = $this->mailer::ENCODING_8BIT;
+		$this->mailer->setContentType($this->mailer::CONTENT_TYPE_PLAINTEXT);
+		$this->mailer->setEncoding($this->mailer::ENCODING_8BIT);
 
-		$this->setMessage($oklen.$badlen.$oklen.$badlen, __FUNCTION__)->assertSentMail();
+		$this->setMessage($oklen.$badlen.$oklen.$badlen, __FUNCTION__.': Line length test')->assertSentMail();
 
 		$this->assertSame(
 			$this->mailer::ENCODING_QUOTED_PRINTABLE,
-			$this->mailer->Encoding,
+			$this->getPropertyValue('encoding'),
 			'Long line did not override transfer encoding'
 		);
 	}
@@ -805,8 +801,6 @@ Czech text: Prázdné tělo zprávy';
 	}
 
 	public function testHeaderEncodingFoldedQ(){
-		$this->mailer->CharSet = 'UTF-8';
-
 		// This should select Q-encoding automatically and should fold
 		$exp = '=?UTF-8?Q?eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee?='.
 		       $this->mailer->getLE().
@@ -816,11 +810,10 @@ Czech text: Prázdné tělo zprávy';
 	}
 
 	public function testHeaderEncodingFoldedQASCII(){
-		$this->mailer->CharSet = 'UTF-8';
 		//This should Q-encode as ASCII and fold (previously, this did not encode)
-		$exp = '=?us-ascii?Q?eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee?='.
+		$exp = '=?US-ASCII?Q?eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee?='.
 		       $this->mailer->getLE().
-		       ' =?us-ascii?Q?eeeeeeeeeeeeeeeeeeeeeeeeee?=';
+		       ' =?US-ASCII?Q?eeeeeeeeeeeeeeeeeeeeeeeeee?=';
 		$act = str_repeat('e', $this->mailer::LINE_LENGTH_STD + 10);
 
 		$this->assertSame($exp, $this->mailer->encodeHeader($act), 'Long header value incorrect');

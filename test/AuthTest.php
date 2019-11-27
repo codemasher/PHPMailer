@@ -53,10 +53,10 @@ class AuthTest extends TestAbstract{
 
 		$this->mailer->setOptions($this->options);
 
-		$this->mailer->Body            = 'Test body';
-		$this->mailer->Subject         .= ': Auth CRAM-MD5';
-		$this->mailer->From            = 'from@example.com';
-		$this->mailer->Sender          = 'from@example.com';
+		$this->mailer->setMessageBody('Test body');
+		$this->mailer->setSubject('Auth CRAM-MD5');
+		$this->mailer->setSender('from@example.com');
+		$this->mailer->setFrom('from@example.com');
 		$this->mailer->clearAllRecipients();
 		$this->mailer->addTO('user@example.com');
 

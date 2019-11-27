@@ -53,7 +53,7 @@ class SendmailMailer extends PHPMailer{
 	 */
 	protected function format():string{
 		// CVE-2016-10033, CVE-2016-10045: Don't pass -f if characters will be escaped.
-		return !empty($this->Sender) && isShellSafe($this->Sender)
+		return !empty($this->sender) && isShellSafe($this->sender)
 			? '%s -oi -f%s -t'
 			: '%s -oi -t';
 	}
@@ -69,7 +69,7 @@ class SendmailMailer extends PHPMailer{
 	 */
 	protected function sendmailSend(string $header, string $body):bool{
 		$header   = rtrim($header, "\r\n ").$this->LE.$this->LE;
-		$sendmail = sprintf($this->format(), escapeshellcmd($this->sendmail), $this->Sender);
+		$sendmail = sprintf($this->format(), escapeshellcmd($this->sendmail), $this->sender);
 
 		if($this->options->singleTo){
 
@@ -85,7 +85,7 @@ class SendmailMailer extends PHPMailer{
 				fwrite($mail, $body);
 				$result = pclose($mail);
 
-				$this->doCallback(($result === 0), [$toAddr], $this->cc, $this->bcc, $this->Subject, $body, $this->From, []);
+				$this->doCallback(($result === 0), [$toAddr], $this->cc, $this->bcc, $this->subject, $body, $this->from, []);
 
 				if($result !== 0){
 					throw new PHPMailerException(sprintf($this->lang->string('execute'), $this->sendmail));
@@ -103,7 +103,7 @@ class SendmailMailer extends PHPMailer{
 			fwrite($mail, $body);
 			$result = pclose($mail);
 
-			$this->doCallback(($result === 0), $this->to, $this->cc, $this->bcc, $this->Subject, $body, $this->From, []);
+			$this->doCallback(($result === 0), $this->to, $this->cc, $this->bcc, $this->subject, $body, $this->from, []);
 
 			if($result !== 0){
 				throw new PHPMailerException(sprintf($this->lang->string('execute'), $this->sendmail));

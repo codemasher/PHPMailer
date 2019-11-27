@@ -44,14 +44,14 @@ $mail->addReplyTo('replyto@example.com', 'First Last');
 $mail->addTO('whoto@example.com', 'John Doe');
 
 //Set the subject line
-$mail->Subject = 'PHPMailer GMail SMTP test';
+$mail->setSubject('PHPMailer GMail SMTP test');
 
 //Read an HTML message body from an external file, convert referenced images to embedded,
 //convert HTML into a basic plain-text alternative body
 $mail->messageFromHTML(file_get_contents('contents.html'), __DIR__);
 
 //Replace the plain text body with one created manually
-$mail->AltBody = 'This is a plain-text message body';
+$mail->setAltBody('This is a plain-text message body');
 
 //Attach an image file
 $mail->addAttachment('images/phpmailer_mini.png');

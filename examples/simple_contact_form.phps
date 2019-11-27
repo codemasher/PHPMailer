@@ -58,16 +58,15 @@ if(array_key_exists('to', $_POST)){
 	if(!$err){
 		$options->smtp_host = 'localhost';
 		$options->smtp_port = 2500;
-		$mail            = new SMTPMailer($options);
-		$mail->CharSet   = 'utf-8';
+		$mail               = new SMTPMailer($options);
 		//It's important not to use the submitter's address as the from address as it's forgery,
 		//which will cause your messages to fail SPF checks.
 		//Use an address in your own domain as the from address, put the submitter's address in a reply-to
 		$mail->setFrom('contact@example.com', (empty($name) ? 'Contact form' : $name));
 		$mail->addTO($to);
 		$mail->addReplyTo($email, $name);
-		$mail->Subject = 'Contact form: '.$subject;
-		$mail->Body    = "Contact form submission\n\n".$query;
+		$mail->setSubject('Contact form: '.$subject);
+		$mail->setMessageBody("Contact form submission\n\n".$query);
 		if(!$mail->send()){
 			$msg .= "Mailer Error: ";
 		}

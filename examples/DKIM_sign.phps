@@ -23,7 +23,7 @@ $options->DKIM_key         = 'dkim_private.pem';
 // Put your private key's passphrase in here if it has one
 $options->DKIM_passphrase  = 'secret123';
 // The identity you're signing as - usually your From address
-$options->DKIM_identity    = $mail->From;
+$options->DKIM_identity    = 'from@example.com';
 // Optionally you can add extra headers for signing to meet special requirements
 $options->DKIM_headers     = ['List-Unsubscribe', 'List-Help'];
 // Suppress listing signed header fields in signature, defaults to true for debugging purpose
@@ -35,7 +35,7 @@ $options->DKIM_sign        = true;
 $mail = new MailMailer($options);
 $mail->setFrom('from@example.com', 'First Last');
 $mail->addTO('whoto@example.com', 'John Doe');
-$mail->Subject = 'PHPMailer mail() test';
+$mail->setSubject('PHPMailer mail() test');
 $mail->messageFromHTML(file_get_contents('contents.html'), __DIR__);
 
 // When you send, the DKIM settings will be used to sign the message

@@ -137,7 +137,7 @@ class SMTPMailer extends PHPMailer{
 			throw new PHPMailerException($this->lang->string('smtp_connect_failed'));
 		}
 		//Sender already validated in preSend()
-		$smtp_from = empty($this->Sender) ? $this->From : $this->Sender;
+		$smtp_from = empty($this->sender) ? $this->from : $this->sender;
 
 		if(!$this->mail($smtp_from)){
 			throw new PHPMailerException(sprintf($this->lang->string('from_failed'), $smtp_from));
@@ -177,9 +177,9 @@ class SMTPMailer extends PHPMailer{
 				[$cb['to']],
 				[],
 				[],
-				$this->Subject,
+				$this->subject,
 				$body,
-				$this->From,
+				$this->from,
 				['smtp_transaction_id' => $this->last_smtp_transaction_id]
 			);
 		}

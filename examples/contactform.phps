@@ -30,13 +30,14 @@ if(array_key_exists('email', $_POST)){
 	//This will fail if the address provided is invalid,
 	//in which case we should ignore the whole request
 	if($mail->addReplyTo($_POST['email'], $_POST['name'])){
-		$mail->Subject = 'PHPMailer contact form';
+		$mail->setSubject('PHPMailer contact form');
 		//Build a simple message body
-		$mail->Body = <<<EOT
+		$body = <<<EOT
 Email: {$_POST['email']}
 Name: {$_POST['name']}
 Message: {$_POST['message']}
 EOT;
+		$mail->setMessageBody($body);
 		//Send the message, check for errors
 		if(!$mail->send()){
 			//The reason for failing to send will be in $mail->ErrorInfo

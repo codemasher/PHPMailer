@@ -71,15 +71,14 @@ $mail->setFrom($email, 'First Last');
 $mail->addTO('someone@gmail.com', 'John Doe');
 
 //Set the subject line
-$mail->Subject = 'PHPMailer GMail XOAUTH2 SMTP test';
+$mail->setSubject('PHPMailer GMail XOAUTH2 SMTP test');
 
 //Read an HTML message body from an external file, convert referenced images to embedded,
 //convert HTML into a basic plain-text alternative body
-$mail->CharSet = 'utf-8';
 $mail->messageFromHTML(file_get_contents('contentsutf8.html'), __DIR__);
 
 //Replace the plain text body with one created manually
-$mail->AltBody = 'This is a plain-text message body';
+$mail->setAltBody('This is a plain-text message body');
 
 //Attach an image file
 $mail->addAttachment('images/phpmailer_mini.png');

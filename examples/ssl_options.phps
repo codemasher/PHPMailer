@@ -40,9 +40,6 @@ $options->smtp_stream_context_options = [
 //Create a new PHPMailer instance
 $mail = new SMTPMailer($options);
 
-
-
-
 //Set who the message is to be sent from
 $mail->setFrom('from@example.com', 'First Last');
 
@@ -50,7 +47,7 @@ $mail->setFrom('from@example.com', 'First Last');
 $mail->addTO('whoto@example.com', 'John Doe');
 
 //Set the subject line
-$mail->Subject = 'PHPMailer SMTP options test';
+$mail->setSubject('PHPMailer SMTP options test');
 
 //Read an HTML message body from an external file, convert referenced images to embedded,
 //convert HTML into a basic plain-text alternative body

@@ -12,8 +12,7 @@
 
 namespace PHPMailer\PHPMailer;
 
-use Closure;
-use ErrorException;
+use Closure, ErrorException;
 use PHPMailer\PHPMailer\Language\LanguageTrait;
 use Psr\Log\{LoggerAwareInterface, LoggerAwareTrait, LoggerInterface, NullLogger};
 
@@ -22,20 +21,12 @@ use function extension_loaded, function_exists, sprintf;
 abstract class MailerAbstract implements PHPMailerInterface, LoggerAwareInterface{
 	use LoggerAwareTrait, LanguageTrait;
 
-	protected const ENCODINGS = [
-		self::ENCODING_7BIT,
-		self::ENCODING_8BIT,
-		self::ENCODING_BASE64,
-		self::ENCODING_BINARY,
-		self::ENCODING_QUOTED_PRINTABLE,
-	];
-
 	/**
 	 * The socket for the server connection.
 	 *
-	 * @var ?resource
+	 * @var resource|null
 	 */
-	protected $socket;
+	protected $socket = null;
 
 	/**
 	 * line endings
@@ -45,6 +36,117 @@ abstract class MailerAbstract implements PHPMailerInterface, LoggerAwareInterfac
 	 * @var string
 	 */
 	protected $LE = PHP_EOL;
+
+	/**
+	 * The MIME Content-type of the message.
+	 *
+	 * @var string
+	 */
+	protected $contentType = self::CONTENT_TYPE_PLAINTEXT;
+
+	/**
+	 * The message encoding.
+	 * Options: "8bit", "7bit", "binary", "base64", and "quoted-printable".
+	 *
+	 * @var string
+	 */
+	protected $encoding = self::ENCODING_8BIT;
+
+	/**
+	 * An ID to be used in the Message-ID header.
+	 * If empty, a unique id will be generated.
+	 * You can set your own, but it must be in the format "<id@domain>",
+	 * as defined in RFC5322 section 3.6.4 or it will be ignored.
+	 *
+	 * @see https://tools.ietf.org/html/rfc5322#section-3.6.4
+	 *
+	 * @var string|null
+	 */
+	protected $messageID = null;
+
+	/**
+	 * The message Date to be used in the Date header.
+	 * If empty, the current date will be added.
+	 *
+	 * @var string|null
+	 */
+	protected $messageDate = null;
+
+	/**
+	 * Email priority.
+	 * Options: 0 (default/none), 1 = High, 3 = Normal, 5 = low.
+	 * When 0, the header is not set at all.
+	 *
+	 * @var int|null
+	 */
+	protected $priority = null;
+
+	/**
+	 * The From email address for the message.
+	 *
+	 * @var string
+	 */
+	protected $from = 'root@localhost';
+
+	/**
+	 * The From name of the message.
+	 *
+	 * @var string
+	 */
+	protected $fromName = 'Root User';
+
+	/**
+	 * The envelope sender of the message.
+	 * This will usually be turned into a Return-Path header by the receiver,
+	 * and is the address that bounces will be sent to.
+	 * If not empty, will be passed via `-f` to sendmail or as the 'MAIL FROM' value over SMTP.
+	 *
+	 * @var string|null
+	 */
+	protected $sender = null;
+
+	/**
+	 * The email address that a reading confirmation should be sent to, also known as read receipt.
+	 *
+	 * @var string|null
+	 */
+	protected $confirmReadingTo = null;
+
+	/**
+	 * The Subject of the message.
+	 *
+	 * @var string
+	 */
+	protected $subject = '';
+
+	/**
+	 * An HTML or plain text message body.
+	 *
+	 * @var string
+	 */
+	protected $body = '';
+
+	/**
+	 * The plain-text message body.
+	 * This body can be read by mail clients that do not have HTML email
+	 * capability such as mutt & Eudora.
+	 * Clients that can read HTML will view the normal Body.
+	 *
+	 * @var string
+	 */
+	protected $altBody = '';
+
+	/**
+	 * An iCal message part body.
+	 * Only supported in simple alt or alt_inline message types
+	 * To generate iCal event structures, use classes like EasyPeasyICS or iCalcreator.
+	 *
+	 * @see http://sprain.ch/blog/downloads/php-class-easypeasyics-create-ical-files-with-php/
+	 * @see http://kigkonsult.se/iCalcreator/
+	 *
+	 * @var string
+	 */
+	protected $iCal = '';
 
 	/**
 	 * Callback Action function name.
@@ -65,17 +167,17 @@ abstract class MailerAbstract implements PHPMailerInterface, LoggerAwareInterfac
 	 *   string  $extra         extra information of possible use
 	 *                          "smtp_transaction_id' => last smtp transaction id
 	 *
-	 * @var string
+	 * @var \Closure|null
 	 */
-	protected $action_function;
+	protected $sendCallback = null;
 
 	/**
-	 * @var bool
+	 * @var bool|null
 	 */
 	protected $streamOK = null;
 
 	/**
-	 * @var \PHPMailer\PHPMailer\PHPMailerOptions|null
+	 * @var \PHPMailer\PHPMailer\PHPMailerOptions
 	 */
 	protected $options;
 
@@ -124,7 +226,7 @@ abstract class MailerAbstract implements PHPMailerInterface, LoggerAwareInterfac
 	 * @return \PHPMailer\PHPMailer\PHPMailerInterface
 	 */
 	public function setSendCallback(Closure $callback):PHPMailerInterface{
-		$this->action_function = $callback;
+		$this->sendCallback = $callback;
 
 		return $this;
 	}
@@ -136,6 +238,204 @@ abstract class MailerAbstract implements PHPMailerInterface, LoggerAwareInterfac
 	 */
 	public function getLE():string{
 		return $this->LE;
+	}
+
+	/**
+	 * @param string $contentType
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailerInterface
+	 */
+	public function setContentType(string $contentType):PHPMailerInterface{
+		$this->contentType = strtolower($contentType);
+
+		return $this;
+	}
+
+	/**
+	 * @param string $encoding
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailerInterface
+	 */
+	public function setEncoding(string $encoding):PHPMailerInterface{
+		$encoding = strtolower($encoding);
+
+		if(in_array($encoding, $this::ENCODINGS, true)){
+			$this->encoding = $encoding;
+		}
+
+		return $this;
+	}
+
+	/**
+	 * @param string $messageID
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailerInterface
+	 */
+	public function setMessageID(string $messageID):PHPMailerInterface{
+		$messageID = trim($messageID);
+
+		// allow clearing message ID
+		if(empty($messageID)){
+			$this->messageID = null;
+
+			return $this;
+		}
+
+		if(preg_match('/^<.*@.*>$/', $messageID)){
+			$this->messageID = $messageID;
+		}
+
+		return $this;
+	}
+
+	/**
+	 * @param string $messageDate
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailerInterface
+	 */
+	public function setMessageDate(string $messageDate):PHPMailerInterface{
+		$this->messageDate = $messageDate; // @todo: validate
+
+		return $this;
+	}
+
+	/**
+	 * @param int $priority
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailerInterface
+	 */
+	public function setPriority(int $priority):PHPMailerInterface{
+		$this->priority = $priority > 0 && $priority <= 5 ? $priority : null;
+
+		return $this;
+	}
+
+	/**
+	 * Set the From and FromName properties.
+	 *
+	 * @param string $address
+	 * @param string $name
+	 * @param bool   $autoSetSender Whether to also set the Sender address, defaults to true
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailerInterface
+	 * @throws \PHPMailer\PHPMailer\PHPMailerException
+	 */
+	public function setFrom(string $address, string $name = null, bool $autoSetSender = true):PHPMailerInterface{
+		$address = trim($address);
+		$name    = trim(preg_replace('/[\r\n]+/', '', $name ?? '')); //Strip breaks and trim
+
+		// Don't validate now addresses with IDN. Will be done in send().
+		$pos = strrpos($address, '@');
+		if( // @todo: clarify
+			$pos === false
+			|| (!has8bitChars(substr($address, ++$pos)) || !idnSupported())
+			   && !validateAddress($address, $this->options->validator)
+		){
+			throw new PHPMailerException(sprintf($this->lang->string('invalid_address'), 'From', $address));
+		}
+
+		$this->from     = $address;
+		$this->fromName = $name;
+
+		if($autoSetSender){
+			$this->setSender($address);
+		}
+
+		return $this;
+	}
+
+	/**
+	 * @param string $sender
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailerInterface
+	 */
+	public function setSender(string $sender):PHPMailerInterface{
+		$sender = trim($sender);
+
+		// allow clearing sender address
+		if(empty($sender)){
+			$this->sender = null;
+
+			return $this;
+		}
+
+		if(!empty($sender)){ // @todo: check valid address
+			$this->sender = $sender;
+		}
+
+		return $this;
+	}
+
+	/**
+	 * @param string $confirmReadingTo
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailerInterface
+	 */
+	public function setConfirmReadingTo(string $confirmReadingTo):PHPMailerInterface{
+		$confirmReadingTo = trim($confirmReadingTo);
+
+		// allow clearing sender address
+		if(empty($confirmReadingTo)){
+			$this->confirmReadingTo = null;
+
+			return $this;
+		}
+
+		if(!empty($confirmReadingTo)){ // @todo: check valid address
+			$this->confirmReadingTo = $confirmReadingTo;
+		}
+
+		return $this;
+	}
+
+	/**
+	 * @param string $subject
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailerInterface
+	 */
+	public function setSubject(string $subject):PHPMailerInterface{
+		$this->subject = trim($subject);
+
+		return $this;
+	}
+
+	/**
+	 * @param string      $content
+	 * @param string|null $contentType
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailerInterface
+	 */
+	public function setMessageBody(string $content, string $contentType = null):PHPMailerInterface{
+
+		if($contentType){
+			$this->setContentType($contentType);
+		}
+
+		$this->body = $content;
+
+		return $this;
+	}
+
+	/**
+	 * @param string $altBody
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailerInterface
+	 */
+	public function setAltBody(string $altBody):PHPMailerInterface{
+		$this->altBody = $altBody;
+
+		return $this;
+	}
+
+	/**
+	 * @param string $iCal
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailerInterface
+	 */
+	public function setIcal(string $iCal):PHPMailerInterface{
+		$this->iCal = $iCal;
+
+		return $this;
 	}
 
 	/**

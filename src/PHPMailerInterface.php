@@ -62,9 +62,15 @@ interface PHPMailerInterface{
 	 */
 	public const LINE_LENGTH_STD_MAIL = 63;
 
-	public const CHARSET_ASCII    = 'us-ascii';
-	public const CHARSET_ISO88591 = 'iso-8859-1';
-	public const CHARSET_UTF8     = 'utf-8';
+	public const CHARSET_ASCII    = 'US-ASCII';
+	public const CHARSET_ISO88591 = 'ISO-8859-1';
+	public const CHARSET_UTF8     = 'UTF-8';
+
+	public const CHARSETS = [ // @todo
+		self::CHARSET_ASCII,
+		self::CHARSET_ISO88591,
+		self::CHARSET_UTF8,
+	];
 
 	public const CONTENT_TYPE_PLAINTEXT             = 'text/plain';
 	public const CONTENT_TYPE_TEXT_CALENDAR         = 'text/calendar';
@@ -79,10 +85,30 @@ interface PHPMailerInterface{
 	public const ENCODING_BINARY           = 'binary';
 	public const ENCODING_QUOTED_PRINTABLE = 'quoted-printable';
 
+	public const ENCODINGS = [
+		self::ENCODING_7BIT,
+		self::ENCODING_8BIT,
+		self::ENCODING_BASE64,
+		self::ENCODING_BINARY,
+		self::ENCODING_QUOTED_PRINTABLE,
+	];
 
 	public function setLanguage(string $langcode):void;
 	public function setLanguageInterface(PHPMailerLanguageInterface $language):void;
 	public function setOptions(PHPMailerOptions $options):PHPMailerInterface;
 	public function setSendCallback(Closure $callback):PHPMailerInterface;
 	public function getLE():string;
+	public function setContentType(string $contentType):PHPMailerInterface;
+	public function setEncoding(string $encoding):PHPMailerInterface;
+	public function setMessageID(string $messageID):PHPMailerInterface;
+	public function setMessageDate(string $messageDate):PHPMailerInterface;
+	public function setPriority(int $priority):PHPMailerInterface;
+	public function setFrom(string $address, string $name = null, bool $autoSetSender = true):PHPMailerInterface;
+	public function setSender(string $sender):PHPMailerInterface;
+	public function setConfirmReadingTo(string $confirmReadingTo):PHPMailerInterface;
+	public function setSubject(string $subject):PHPMailerInterface;
+	public function setMessageBody(string $content, string $contentType = null):PHPMailerInterface;
+	public function setAltBody(string $altBody):PHPMailerInterface;
+	public function setIcal(string $iCal):PHPMailerInterface;
+
 }

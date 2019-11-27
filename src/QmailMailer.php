@@ -39,7 +39,7 @@ class QmailMailer extends SendmailMailer{
 	 */
 	protected function format():string{
 		// CVE-2016-10033, CVE-2016-10045: Don't pass -f if characters will be escaped.
-		return !empty($this->Sender) && isShellSafe($this->Sender)
+		return !empty($this->sender) && isShellSafe($this->sender)
 			? '%s -f%s'
 			: '%s';
 	}

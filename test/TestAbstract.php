@@ -116,11 +116,11 @@ abstract class TestAbstract extends TestCase{
 
 		$this->mailer = $this->reflection->newInstanceArgs([$this->options, $this->logger]);
 
-		$this->mailer->From     = $this->from;
-		$this->mailer->Sender   = 'unit_test@phpmailer.example.com';
-		$this->mailer->FromName = 'Unit Tester';
-		$this->mailer->Subject  = 'Unit Test';
-		$this->mailer->Priority = 3;
+		$this->mailer
+			->setFrom($this->from, 'Unit Tester')
+			->setSender('unit_test@phpmailer.example.com')
+			->setSubject('Unit Test')
+			->setPriority(3);
 
 		// for mail()
 		// @todo: PHPMailer should do this internally
@@ -160,16 +160,23 @@ abstract class TestAbstract extends TestCase{
 	}
 
 	/**
-	 * @param        $object
 	 * @param string $property
-	 * @param        $value
+	 *
+	 * @return mixed
+	 */
+	protected function getPropertyValue(string $property){
+		return $this->getProperty($property)->getValue($this->mailer);
+	}
+
+	/**
+	 * @param object $object
+	 * @param string $property
+	 * @param mixed  $value
 	 *
 	 * @return void
 	 */
 	protected function setProperty(object $object, string $property, $value):void{
-		$property = $this->getProperty($property);
-		$property->setAccessible(true);
-		$property->setValue($object, $value);
+		$this->getProperty($property)->setValue($object, $value);
 	}
 
 	/**
@@ -205,9 +212,10 @@ abstract class TestAbstract extends TestCase{
 	 * @return $this
 	 */
 	protected function setMessage(string $body, string $subject, string $to = 'user@example.com'){
-		$this->mailer->Subject = $this->FQCN.'::'.$subject;
-		$this->mailer->Body    = $this->buildBody($body);
-		$this->mailer->addTO($to);
+		$this->mailer
+			->setSubject($this->FQCN.'::'.$subject)
+			->setMessageBody($this->buildBody($body))
+			->addTO($to);
 
 		return $this;
 	}
@@ -255,22 +263,22 @@ abstract class TestAbstract extends TestCase{
 	 * @return string
 	 */
 	protected function buildBody(string $body):string{
-#		$this->checkChanges();
+		$this->checkChanges();
+		$contentType = $this->getPropertyValue('contentType');
 
 		// Determine line endings for message
-		if($this->mailer->ContentType === 'text/html' || strlen($this->mailer->AltBody) > 0){
+		$eol          = "\r\n";
+		$bullet_start = ' - ';
+		$bullet_end   = "\r\n";
+		$list_start   = '';
+		$list_end     = '';
+
+		if($contentType === 'text/html' || strlen($this->getPropertyValue('altBody')) > 0){
 			$eol          = "<br>\r\n";
 			$bullet_start = '<li>';
 			$bullet_end   = "</li>\r\n";
 			$list_start   = "<ul>\r\n";
 			$list_end     = "</ul>\r\n";
-		}
-		else{
-			$eol          = "\r\n";
-			$bullet_start = ' - ';
-			$bullet_end   = "\r\n";
-			$list_start   = '';
-			$list_end     = '';
 		}
 
 		$report = ''
@@ -279,8 +287,8 @@ abstract class TestAbstract extends TestCase{
 			.'-----------------------'.$eol.$eol
 			.'phpmailer version: '.$this->mailer::VERSION.$eol
 			.'php version: '.PHP_VERSION.$eol
-			.'Content Type: '.$this->mailer->ContentType.$eol
-			.'CharSet: '.$this->mailer->CharSet.$eol
+			.'Content Type: '.$contentType.$eol
+			.'CharSet: '.$this->options->charSet.$eol
 			.'above body length: '.strlen($body).' (multibyte: '.mb_strlen($body).')'.$eol
 		;
 
@@ -332,27 +340,37 @@ abstract class TestAbstract extends TestCase{
 	 * Check which default settings have been changed for the report.
 	 */
 	protected function checkChanges(){
-		if($this->mailer->Priority !== 3){
-			$this->addChange('Priority', $this->mailer->Priority);
+		$priority = $this->getPropertyValue('priority');
+		if($priority !== 3){
+			$this->addChange('Priority', $priority);
 		}
-		if($this->mailer->Encoding !== $this->mailer::ENCODING_8BIT){
-			$this->addChange('Encoding', $this->mailer->Encoding);
+
+		$encoding = $this->getPropertyValue('encoding');
+		if($encoding !== $this->mailer::ENCODING_8BIT){
+			$this->addChange('Encoding', $encoding);
 		}
-		if($this->mailer->CharSet !== $this->mailer::CHARSET_ISO88591){
-			$this->addChange('CharSet', $this->mailer->CharSet);
+
+		if($this->options->charSet !== $this->mailer::CHARSET_ISO88591){
+			$this->addChange('CharSet', $this->options->charSet);
 		}
-		if($this->mailer->Sender !== ''){
-			$this->addChange('Sender', $this->mailer->Sender);
+
+		$sender = $this->getPropertyValue('sender');
+		if(!empty($sender)){
+			$this->addChange('Sender', $sender);
 		}
+
 		if($this->options->wordWrap !== 0){
 			$this->addChange('WordWrap', $this->options->wordWrap);
 		}
+
 		if($this->options->smtp_port !== 25){
 			$this->addChange('Port', $this->options->smtp_port);
 		}
+
 		if($this->options->hostname !== 'localhost.localdomain'){
 			$this->addChange('Helo', $this->options->hostname);
 		}
+
 		if($this->options->smtp_auth){
 			$this->addChange('SMTPAuth', 'true');
 		}

@@ -42,124 +42,6 @@ use const PKCS7_DETACHED, PATHINFO_BASENAME;
 abstract class PHPMailer extends MailerAbstract{ // @todo
 
 	/**
-	 * Email priority.
-	 * Options: null (default), 1 = High, 3 = Normal, 5 = low.
-	 * When null, the header is not set at all.
-	 *
-	 * @var int
-	 */
-	public $Priority;
-
-	/**
-	 * The character set of the message.
-	 *
-	 * @var string
-	 */
-	public $CharSet = self::CHARSET_ISO88591;
-
-	/**
-	 * The MIME Content-type of the message.
-	 *
-	 * @var string
-	 */
-	public $ContentType = self::CONTENT_TYPE_PLAINTEXT;
-
-	/**
-	 * The message encoding.
-	 * Options: "8bit", "7bit", "binary", "base64", and "quoted-printable".
-	 *
-	 * @var string
-	 */
-	public $Encoding = self::ENCODING_8BIT;
-
-	/**
-	 * The From email address for the message.
-	 *
-	 * @var string
-	 */
-	public $From = 'root@localhost';
-
-	/**
-	 * The From name of the message.
-	 *
-	 * @var string
-	 */
-	public $FromName = 'Root User';
-
-	/**
-	 * The envelope sender of the message.
-	 * This will usually be turned into a Return-Path header by the receiver,
-	 * and is the address that bounces will be sent to.
-	 * If not empty, will be passed via `-f` to sendmail or as the 'MAIL FROM' value over SMTP.
-	 *
-	 * @var string
-	 */
-	public $Sender = '';
-
-	/**
-	 * The Subject of the message.
-	 *
-	 * @var string
-	 */
-	public $Subject = '';
-
-	/**
-	 * An HTML or plain text message body.
-	 *
-	 * @var string
-	 */
-	public $Body = '';
-
-	/**
-	 * The plain-text message body.
-	 * This body can be read by mail clients that do not have HTML email
-	 * capability such as mutt & Eudora.
-	 * Clients that can read HTML will view the normal Body.
-	 *
-	 * @var string
-	 */
-	public $AltBody = '';
-
-	/**
-	 * An iCal message part body.
-	 * Only supported in simple alt or alt_inline message types
-	 * To generate iCal event structures, use classes like EasyPeasyICS or iCalcreator.
-	 *
-	 * @see http://sprain.ch/blog/downloads/php-class-easypeasyics-create-ical-files-with-php/
-	 * @see http://kigkonsult.se/iCalcreator/
-	 *
-	 * @var string
-	 */
-	public $Ical = '';
-
-	/**
-	 * The email address that a reading confirmation should be sent to, also known as read receipt.
-	 *
-	 * @var string
-	 */
-	public $ConfirmReadingTo = '';
-
-	/**
-	 * An ID to be used in the Message-ID header.
-	 * If empty, a unique id will be generated.
-	 * You can set your own, but it must be in the format "<id@domain>",
-	 * as defined in RFC5322 section 3.6.4 or it will be ignored.
-	 *
-	 * @see https://tools.ietf.org/html/rfc5322#section-3.6.4
-	 *
-	 * @var string
-	 */
-	public $MessageID = '';
-
-	/**
-	 * The message Date to be used in the Date header.
-	 * If empty, the current date will be added.
-	 *
-	 * @var string
-	 */
-	public $MessageDate = '';
-
-	/**
 	 * The complete compiled MIME message body.
 	 *
 	 * @var string
@@ -503,43 +385,6 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 		);
 
 		return $this;
-	}
-
-	/**
-	 * Set the From and FromName properties.
-	 *
-	 * @param string $address
-	 * @param string $name
-	 * @param bool   $auto Whether to also set the Sender address, defaults to true
-	 *
-	 * @return bool
-	 */
-	public function setFrom(string $address, string $name = null, bool $auto = true):bool{
-		$address = trim($address);
-		$name    = trim(preg_replace('/[\r\n]+/', '', $name ?? '')); //Strip breaks and trim
-
-		// Don't validate now addresses with IDN. Will be done in send().
-		$pos = strrpos($address, '@');
-		if( // @todo: clarify
-			$pos === false
-			|| (!has8bitChars(substr($address, ++$pos)) || !idnSupported())
-			   && !validateAddress($address, $this->options->validator)
-		){
-			$this->logger->error(sprintf($this->lang->string('invalid_address'), 'From', $address));
-
-			return false;
-		}
-
-		$this->From     = $address;
-		$this->FromName = $name;
-
-		if($auto){
-			if(empty($this->Sender)){
-				$this->Sender = $address;
-			}
-		}
-
-		return true;
 	}
 
 	/**
@@ -963,7 +808,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 
 		// Dequeue recipient and Reply-To addresses with IDN
 		foreach(array_merge($this->RecipientsQueue, $this->ReplyToQueue) as $params){
-			$params[1] = punyencodeAddress($params[1], $this->CharSet);
+			$params[1] = punyencodeAddress($params[1], $this->options->charSet);
 			call_user_func_array([$this, 'addAnAddress'], $params);
 		}
 
@@ -971,15 +816,15 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 			throw new PHPMailerException($this->lang->string('provide_address'));
 		}
 
-		// Validate From, Sender, and ConfirmReadingTo addresses
-		foreach(['From', 'Sender', 'ConfirmReadingTo'] as $type){
+		// Validate From, Sender, and ConfirmReadingTo addresses @todo: move validation to setters
+		foreach(['from', 'sender', 'confirmReadingTo'] as $type){
 			$this->{$type} = trim($this->{$type});
 
 			if(empty($this->{$type})){
 				continue;
 			}
 
-			$this->{$type} = punyencodeAddress($this->{$type}, $this->CharSet);
+			$this->{$type} = punyencodeAddress($this->{$type}, $this->options->charSet);
 
 			if(!validateAddress($this->{$type}, $this->options->validator)){
 				$this->logger->error(sprintf($this->lang->string('invalid_address'), $type, $this->{$type}));
@@ -989,21 +834,19 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 		}
 
 		// Set whether the message is multipart/alternative
-		if(!empty($this->AltBody)){
-			$this->ContentType = $this::CONTENT_TYPE_MULTIPART_ALTERNATIVE;
+		if(!empty($this->altBody)){
+			$this->contentType = $this::CONTENT_TYPE_MULTIPART_ALTERNATIVE;
 		}
 
 		$this->setMessageType();
 		// Refuse to send an empty message unless we are specifically allowing it
-		if(!$this->options->allowEmpty && empty($this->Body)){
+		if(!$this->options->allowEmpty && empty($this->body)){
 			throw new PHPMailerException($this->lang->string('empty_message'));
 		}
 
 		//Create unique IDs and preset boundaries
 		$uniqueid = generateId();
 
-		//Trim subject consistently
-		$this->Subject = trim($this->Subject);
 		// Create body before headers in case body makes changes to headers (e.g. altering transfer encoding)
 		$this->MIMEHeader = '';
 		$this->MIMEBody   = $this->createBody($uniqueid);
@@ -1022,14 +865,14 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 				? $this->addrAppend('To', $this->to)
 				: $this->headerLine('To', 'undisclosed-recipients:;');
 
-			$this->mailHeader .= $this->headerLine('Subject', $this->encodeHeader(secureHeader($this->Subject)));
+			$this->mailHeader .= $this->headerLine('Subject', $this->encodeHeader(secureHeader($this->subject)));
 		}
 
 		// Sign with DKIM if enabled
 		if($this->options->DKIM_sign){
 			$header_dkim = $this->DKIM_Add(
 				$this->MIMEHeader.$this->mailHeader,
-				$this->encodeHeader(secureHeader($this->Subject)),
+				$this->encodeHeader(secureHeader($this->subject)),
 				$this->MIMEBody
 			);
 
@@ -1048,7 +891,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	protected function setMessageType():void{
 		$type = [];
 
-		if(!empty($this->AltBody)){
+		if(!empty($this->altBody)){
 			$type[] = 'alt';
 		}
 
@@ -1161,7 +1004,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 
 		// If utf-8 encoding is used, we will need to make sure we don't
 		// split multibyte characters when we wrap
-		$is_utf8 = strtolower($this->CharSet) === $this::CHARSET_UTF8;
+		$is_utf8 = strtolower($this->options->charSet) === $this::CHARSET_UTF8;
 		$lelen   = strlen($this->LE);
 
 		$message = normalizeBreaks($message, $this->LE);
@@ -1272,7 +1115,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	 * @return string The assembled headers
 	 */
 	protected function createHeader(string $uniqueid):string{
-		$header = $this->headerLine('Date', empty($this->MessageDate) ? rfcDate() : $this->MessageDate);
+		$header = $this->headerLine('Date', empty($this->messageDate) ? rfcDate() : $this->messageDate);
 
 		// To be created automatically by mail()
 		if($this->options->singleTo){
@@ -1291,7 +1134,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 			}
 		}
 
-		$header .= $this->addrAppend('From', [[trim($this->From), $this->FromName]]);
+		$header .= $this->addrAppend('From', [[$this->from, $this->fromName]]);
 
 		// sendmail and mail() extract Cc from the header before sending
 		if(!empty($this->cc)){
@@ -1309,19 +1152,19 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 
 		// mail() sets the subject itself
 		if(!$this instanceof MailMailer){
-			$header .= $this->headerLine('Subject', $this->encodeHeader(secureHeader($this->Subject)));
+			$header .= $this->headerLine('Subject', $this->encodeHeader(secureHeader($this->subject)));
 		}
 
 		// Only allow a custom message ID if it conforms to RFC 5322 section 3.6.4
 		// https://tools.ietf.org/html/rfc5322#section-3.6.4
-		$this->lastMessageID = !empty($this->MessageID) && preg_match('/^<.*@.*>$/', $this->MessageID)
-			? $this->MessageID
+		$this->lastMessageID = !empty($this->messageID)
+			? $this->messageID
 			: sprintf('<%s@%s>', $uniqueid, $this->serverHostname());
 
 		$header .= $this->headerLine('Message-ID', $this->lastMessageID);
 
-		if(!empty($this->Priority)){
-			$header .= $this->headerLine('X-Priority', $this->Priority);
+		if(!empty($this->priority)){
+			$header .= $this->headerLine('X-Priority', $this->priority);
 		}
 
 		$xmailer = trim($this->options->XMailer);
@@ -1332,8 +1175,8 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 
 		$header .= $this->headerLine('X-Mailer', $xmailer);
 
-		if(!empty($this->ConfirmReadingTo)){
-			$header .= $this->headerLine('Disposition-Notification-To', '<'.$this->ConfirmReadingTo.'>');
+		if(!empty($this->confirmReadingTo)){
+			$header .= $this->headerLine('Disposition-Notification-To', '<'.$this->confirmReadingTo.'>');
 		}
 
 		// Add custom headers
@@ -1380,22 +1223,22 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 				break;
 			default:
 				// Catches case 'plain': and case '':
-				$mime        .= $this->textLine('Content-Type: '.$this->ContentType.'; charset='.$this->CharSet);
+				$mime        .= $this->textLine('Content-Type: '.$this->contentType.'; charset='.$this->options->charSet);
 				$ismultipart = false;
 				break;
 		}
 
 		// RFC1341 part 5 says 7bit is assumed if not specified
-		if($this->Encoding !== $this::ENCODING_7BIT){
+		if($this->encoding !== $this::ENCODING_7BIT){
 			// RFC 2045 section 6.4 says multipart MIME parts may only use 7bit, 8bit or binary CTE
 			if($ismultipart){
-				if($this->Encoding === $this::ENCODING_8BIT){
+				if($this->encoding === $this::ENCODING_8BIT){
 					$mime .= $this->headerLine('Content-Transfer-Encoding', $this::ENCODING_8BIT);
 				}
 				// The only remaining alternatives are quoted-printable and base64, which are both 7bit compatible
 			}
 			else{
-				$mime .= $this->headerLine('Content-Transfer-Encoding', $this->Encoding);
+				$mime .= $this->headerLine('Content-Transfer-Encoding', $this->encoding);
 			}
 		}
 
@@ -1424,13 +1267,13 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 			$body .= $this->getMailMIME($uniqueid).$this->LE;
 		}
 
-		$this->Body = $this->wrapText($this->Body, $this->options->wordWrap);
+		$this->body = $this->wrapText($this->body, $this->options->wordWrap);
 
-		$bodyEncoding = $this->Encoding;
-		$bodyCharSet  = $this->CharSet;
+		$bodyEncoding = $this->encoding;
+		$bodyCharSet  = $this->options->charSet;
 
 		//Can we do a 7-bit downgrade?
-		if($bodyEncoding === $this::ENCODING_8BIT && !has8bitChars($this->Body)){
+		if($bodyEncoding === $this::ENCODING_8BIT && !has8bitChars($this->body)){
 			$bodyEncoding = $this::ENCODING_7BIT;
 			//All ISO 8859, Windows codepage and UTF-8 charsets are ascii compatible up to 7-bit
 			$bodyCharSet = $this::CHARSET_ASCII;
@@ -1438,7 +1281,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 
 		//If lines are too long, and we're not already using an encoding that will shorten them,
 		//change to quoted-printable transfer encoding for the body part only
-		if($this->Encoding !== $this::ENCODING_BASE64 && $this->hasLineLongerThanMax($this->Body)){
+		if($this->encoding !== $this::ENCODING_BASE64 && $this->hasLineLongerThanMax($this->body)){
 			$bodyEncoding = $this::ENCODING_QUOTED_PRINTABLE;
 		}
 
@@ -1449,18 +1292,18 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 			$body .= $mimepre;
 			$body .= call_user_func_array(
 				[$this, 'body_'.$this->message_type],
-				[$this->Body, $boundary, $bodyCharSet, $bodyEncoding]
+				[$this->body, $boundary, $bodyCharSet, $bodyEncoding]
 			);
 		}
 		elseif(in_array($this->message_type, ['alt', 'alt_inline', 'alt_attach', 'alt_inline_attach'])){
 
-			$this->AltBody = $this->wrapText($this->AltBody, $this->options->wordWrap);
+			$this->altBody = $this->wrapText($this->altBody, $this->options->wordWrap);
 
-			$altBodyEncoding = $this->Encoding;
-			$altBodyCharSet  = $this->CharSet;
+			$altBodyEncoding = $this->encoding;
+			$altBodyCharSet  = $this->options->charSet;
 
 			//Can we do a 7-bit downgrade?
-			if($altBodyEncoding === $this::ENCODING_8BIT && !has8bitChars($this->AltBody)){
+			if($altBodyEncoding === $this::ENCODING_8BIT && !has8bitChars($this->altBody)){
 				$altBodyEncoding = $this::ENCODING_7BIT;
 				//All ISO 8859, Windows codepage and UTF-8 charsets are ascii compatible up to 7-bit
 				$altBodyCharSet = $this::CHARSET_ASCII;
@@ -1468,21 +1311,21 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 
 			//If lines are too long, and we're not already using an encoding that will shorten them,
 			//change to quoted-printable transfer encoding for the alt body part only
-			if($altBodyEncoding !== $this::ENCODING_BASE64 && $this->hasLineLongerThanMax($this->AltBody)){
+			if($altBodyEncoding !== $this::ENCODING_BASE64 && $this->hasLineLongerThanMax($this->altBody)){
 				$altBodyEncoding = $this::ENCODING_QUOTED_PRINTABLE;
 			}
 
 			$body .= $mimepre;
 			$body .= call_user_func_array(
 				[$this, 'body_'.$this->message_type],
-				[$this->Body, $boundary, $bodyCharSet, $bodyEncoding, $altBodyCharSet, $altBodyEncoding]
+				[$this->body, $boundary, $bodyCharSet, $bodyEncoding, $altBodyCharSet, $altBodyEncoding]
 			);
 		}
 		else{
 			// Catch case 'plain' and case '', applies to simple `text/plain` and `text/html` body content types
 			//Reset the `Encoding` property in case we changed it for line length reasons
-			$this->Encoding = $bodyEncoding;
-			$body           .= $this->encodeString($this->Body, $this->Encoding);
+			$this->encoding = $bodyEncoding;
+			$body           .= $this->encodeString($this->body, $this->encoding);
 		}
 
 		return $body;
@@ -1552,15 +1395,15 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	 */
 	protected function body_alt(string $messageBody, array $boundary, string $bodyCharSet, string $bodyEncoding, string $altBodyCharSet, string $altBodyEncoding):string{
 		$body = $this->getBoundary($boundary[1], $altBodyCharSet, $this::CONTENT_TYPE_PLAINTEXT, $altBodyEncoding)
-			.$this->encodeString($this->AltBody, $altBodyEncoding)
+			.$this->encodeString($this->altBody, $altBodyEncoding)
 			.$this->LE
 			.$this->getBoundary($boundary[1], $bodyCharSet, $this::CONTENT_TYPE_TEXT_HTML, $bodyEncoding)
 			.$this->encodeString($messageBody, $bodyEncoding)
 			.$this->LE;
 
-		if(!empty($this->Ical)){
+		if(!empty($this->iCal)){
 			$body .= $this->getBoundary($boundary[1], '', $this::CONTENT_TYPE_TEXT_CALENDAR.'; method=REQUEST', '')
-				.$this->encodeString($this->Ical, $this->Encoding)
+				.$this->encodeString($this->iCal, $this->encoding)
 				.$this->LE;
 		}
 
@@ -1581,7 +1424,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	 */
 	protected function body_alt_inline(string $messageBody, array $boundary, string $bodyCharSet, string $bodyEncoding, string $altBodyCharSet, string $altBodyEncoding):string{
 		return $this->getBoundary($boundary[1], $altBodyCharSet, $this::CONTENT_TYPE_PLAINTEXT, $altBodyEncoding)
-			.$this->encodeString($this->AltBody, $altBodyEncoding)
+			.$this->encodeString($this->altBody, $altBodyEncoding)
 			.$this->LE
 			.$this->textLine('--'.$boundary[1])
 			.$this->headerLine('Content-Type', $this::CONTENT_TYPE_MULTIPART_RELATED.';')
@@ -1612,15 +1455,15 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 			.$this->textLine(' boundary="'.$boundary[2].'"')
 			.$this->LE
 			.$this->getBoundary($boundary[2], $altBodyCharSet, $this::CONTENT_TYPE_PLAINTEXT, $altBodyEncoding)
-			.$this->encodeString($this->AltBody, $altBodyEncoding)
+			.$this->encodeString($this->altBody, $altBodyEncoding)
 			.$this->LE
 			.$this->getBoundary($boundary[2], $bodyCharSet, $this::CONTENT_TYPE_TEXT_HTML, $bodyEncoding)
 			.$this->encodeString($messageBody, $bodyEncoding)
 			.$this->LE;
 
-		if(!empty($this->Ical)){
+		if(!empty($this->iCal)){
 			$body .= $this->getBoundary($boundary[2], '', $this::CONTENT_TYPE_TEXT_CALENDAR.'; method=REQUEST', '')
-				.$this->encodeString($this->Ical, $this->Encoding);
+				.$this->encodeString($this->iCal, $this->encoding);
 		}
 
 		$body .= $this->endBoundary($boundary[2])
@@ -1646,7 +1489,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 			.$this->textLine(' boundary="'.$boundary[2].'"')
 			.$this->LE
 			.$this->getBoundary($boundary[2], $altBodyCharSet, $this::CONTENT_TYPE_PLAINTEXT, $altBodyEncoding)
-			.$this->encodeString($this->AltBody, $altBodyEncoding)
+			.$this->encodeString($this->altBody, $altBodyEncoding)
 			.$this->LE
 			.$this->textLine('--'.$boundary[2])
 			.$this->headerLine('Content-Type', $this::CONTENT_TYPE_MULTIPART_RELATED.';')
@@ -1732,15 +1575,15 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 		$result = '';
 
 		if(empty($charSet)){
-			$charSet = $this->CharSet;
+			$charSet = $this->options->charSet;
 		}
 
 		if(empty($contentType)){
-			$contentType = $this->ContentType;
+			$contentType = $this->contentType;
 		}
 
 		if(empty($encoding)){
-			$encoding = $this->Encoding;
+			$encoding = $this->encoding;
 		}
 
 		$result .= $this->textLine('--'.$boundary);
@@ -2001,7 +1844,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 		}
 
 		$charset = has8bitChars($str)
-			? $this->CharSet
+			? $this->options->charSet
 			: $this::CHARSET_ASCII;
 
 		$maxlen = $this instanceof MailMailer
@@ -2063,7 +1906,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	 * @return bool
 	 */
 	protected function hasMultiBytes(string $str):bool{
-		return strlen($str) > mb_strlen($str, $this->CharSet);
+		return strlen($str) > mb_strlen($str, $this->options->charSet);
 	}
 
 	/**
@@ -2080,11 +1923,11 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	 */
 	protected function base64EncodeWrapMB(string $str, string $linebreak = null):string{
 		$linebreak = $linebreak ?? $this->LE;
-		$start     = '=?'.$this->CharSet.'?B?';
+		$start     = '=?'.$this->options->charSet.'?B?';
 		$end       = '?=';
 		$encoded   = '';
 
-		$mb_length = mb_strlen($str, $this->CharSet);
+		$mb_length = mb_strlen($str, $this->options->charSet);
 		// Each line must have length <= 75, including $start and $end
 		$length = 75 - strlen($start) - strlen($end);
 		// Average multi-byte ratio
@@ -2097,7 +1940,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 
 			do{
 				$offset = $avgLength - $lookBack;
-				$chunk  = mb_substr($str, $i, $offset, $this->CharSet);
+				$chunk  = mb_substr($str, $i, $offset, $this->options->charSet);
 				$chunk  = base64_encode($chunk);
 				++$lookBack;
 			}
@@ -2163,8 +2006,8 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	 * @return \PHPMailer\PHPMailer\PHPMailer
 	 */
 	public function messageFromPlaintext(string $message):PHPMailer{
-		$this->Body        = $message;
-		$this->ContentType = $this::CONTENT_TYPE_PLAINTEXT;
+		$this->body        = $message;
+		$this->contentType = $this::CONTENT_TYPE_PLAINTEXT;
 
 		return $this;
 	}
@@ -2272,13 +2115,13 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 			}
 		}
 
-		$this->ContentType = $this::CONTENT_TYPE_TEXT_HTML;
+		$this->contentType = $this::CONTENT_TYPE_TEXT_HTML;
 		// Convert all message body line breaks to LE, makes quoted-printable encoding work much better
-		$this->Body    = normalizeBreaks($message, $this->LE);
-		$this->AltBody = normalizeBreaks(html2text($message, $this->CharSet, $advanced), $this->LE);
+		$this->body    = normalizeBreaks($message, $this->LE);
+		$this->altBody = normalizeBreaks(html2text($message, $this->options->charSet, $advanced), $this->LE);
 
-		if(!empty($this->AltBody)){
-			$this->AltBody = 'This is an HTML-only message. To view it, activate HTML in your email application.'.$this->LE;
+		if(!empty($this->altBody)){
+			$this->altBody = 'This is an HTML-only message. To view it, activate HTML in your email application.'.$this->LE;
 		}
 
 		return $this;
@@ -2428,8 +2271,8 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 		string $from,
 		array $extra
 	):void{
-		if($this->action_function instanceof Closure){
-			$this->action_function->call($this, $isSent, $to, $cc, $bcc, $subject, $body, $from, $extra);
+		if($this->sendCallback instanceof Closure){
+			$this->sendCallback->call($this, $isSent, $to, $cc, $bcc, $subject, $body, $from, $extra);
 		}
 	}
 

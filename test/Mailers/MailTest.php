@@ -22,8 +22,6 @@ class MailTest extends MailerTestAbstract{
 	protected $FQCN = MailMailer::class;
 
 	public function testHeaderEncodingFoldedQ(){
-		$this->mailer->CharSet = 'UTF-8';
-
 		// This should select Q-encoding automatically and should fold
 		$exp = '=?UTF-8?Q?eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee?='.
 		       $this->mailer->getLE().
@@ -33,11 +31,10 @@ class MailTest extends MailerTestAbstract{
 	}
 
 	public function testHeaderEncodingFoldedQASCII(){
-		$this->mailer->CharSet = 'UTF-8';
 		//This should Q-encode as ASCII and fold (previously, this did not encode)
-		$exp = '=?us-ascii?Q?eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee?='.
+		$exp = '=?US-ASCII?Q?eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee?='.
 		       $this->mailer->getLE().
-		       ' =?us-ascii?Q?eeeeeeeeeeeeeeeeeeeeeeeeee?=';
+		       ' =?US-ASCII?Q?eeeeeeeeeeeeeeeeeeeeeeeeee?=';
 		$act = str_repeat('e', $this->mailer::LINE_LENGTH_STD_MAIL + 10);
 
 		$this->assertSame($exp, $this->mailer->encodeHeader($act), 'Long header value incorrect');

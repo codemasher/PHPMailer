@@ -26,14 +26,14 @@ $body = file_get_contents('contents.html');
 $mail->setFrom('list@example.com', 'List manager');
 $mail->addReplyTo('list@example.com', 'List manager');
 
-$mail->Subject = "PHPMailer Simple database mailing list test";
+$mail->setSubject('PHPMailer Simple database mailing list test');
 
 //Same body for all messages, so set this before the sending loop
 //If you generate a different body for each recipient (e.g. you're using a templating system),
 //set it inside the loop
 $mail->messageFromHTML($body);
 //messageFromHTML also sets AltBody, but if you want a custom one, set it afterwards
-$mail->AltBody = 'To view the message, please use an HTML compatible email viewer!';
+$mail->setAltBody('To view the message, please use an HTML compatible email viewer!');
 
 //Connect to the database and select the recipients from your mailing list that have not yet been sent to
 //You'll need to alter this to match your database
