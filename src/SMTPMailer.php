@@ -296,8 +296,7 @@ class SMTPMailer extends PHPMailer{
 						if(!$this->authenticate(
 							$this->options->smtp_username,
 							$this->options->smtp_password,
-							$this->options->smtp_authtype,
-							$this->oauth
+							$this->options->smtp_authtype
 						)){
 							throw new PHPMailerException($this->lang->string('authenticate'));
 						}
@@ -457,7 +456,6 @@ class SMTPMailer extends PHPMailer{
 	 * @param string                  $username The user name
 	 * @param string                  $password The password
 	 * @param string                  $authtype The auth type (CRAM-MD5, PLAIN, LOGIN, XOAUTH2)
-	 * @param PHPMailerOAuthInterface $OAuth    $OAuth    An optional OAuth instance for XOAUTH2 authentication
 	 *
 	 * @return bool True if successfully authenticated
 	 * @see    hello()
@@ -465,8 +463,7 @@ class SMTPMailer extends PHPMailer{
 	public function authenticate(
 		string $username,
 		string $password,
-		string $authtype = null,
-		PHPMailerOAuthInterface $OAuth = null
+		string $authtype = null
 	):bool{
 
 		if(!$this->server_caps){
@@ -568,13 +565,9 @@ class SMTPMailer extends PHPMailer{
 				return $this->sendCommand('Username', base64_encode($response), [235]);
 
 			case 'XOAUTH2':
-				//The OAuth instance must be set up prior to requesting auth.
-				if(!$OAuth instanceof PHPMailerOAuthInterface){
-					return false;
-				}
-
 				// Start authentication
-				if(!$this->sendCommand('AUTH', 'AUTH XOAUTH2 '.$OAuth->getAuthString(), [235])){
+				$auth = base64_encode(sprintf("user=%s\001auth=Bearer %s\001\001", $username, $password));
+				if(!$this->sendCommand('AUTH', 'AUTH XOAUTH2 '.$auth, [235])){
 					return false;
 				}
 

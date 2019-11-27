@@ -12,28 +12,13 @@
 
 namespace PHPMailer\Test;
 
-use PHPMailer\PHPMailer\OAuth;
-use PHPMailer\PHPMailer\PHPMailerOAuthInterface;
-
 class AuthTest extends TestAbstract{
 
 	/**
 	 * Test OAuth method
 	 */
 	public function testOAuth(){
-
-		$options = [
-			'provider'     => 'dummyprovider',
-			'userName'     => 'dummyusername',
-			'clientSecret' => 'dummyclientsecret',
-			'clientId'     => 'dummyclientid',
-			'refreshToken' => 'dummyrefreshtoken',
-		];
-
-		$oauth = new OAuth($options);
-		$this->assertInstanceOf(PHPMailerOAuthInterface::class, $oauth);
-		$this->mailer->setOAuth($oauth);
-		$this->assertInstanceOf(PHPMailerOAuthInterface::class, $this->mailer->getOAuth());
+		$this->markTestIncomplete();
 	}
 
 	/**

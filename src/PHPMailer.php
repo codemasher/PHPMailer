@@ -63,13 +63,6 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	protected $mailHeader = '';
 
 	/**
-	 * An instance of the PHPMailer OAuth class.
-	 *
-	 * @var \PHPMailer\PHPMailer\PHPMailerOAuthInterface
-	 */
-	protected $oauth;
-
-	/**
 	 * Storage for addresses when SingleTo is enabled.
 	 *
 	 * @var array
@@ -169,28 +162,6 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	 * @var string
 	 */
 	protected $message_type = '';
-
-	/**
-	 * Get the OAuth instance.
-	 *
-	 * @return \PHPMailer\PHPMailer\PHPMailerOAuthInterface
-	 */
-	public function getOAuth():PHPMailerOAuthInterface{
-		return $this->oauth;
-	}
-
-	/**
-	 * Set an OAuth instance.
-	 *
-	 * @param \PHPMailer\PHPMailer\PHPMailerOAuthInterface
-	 *
-	 * @return \PHPMailer\PHPMailer\PHPMailer
-	 */
-	public function setOAuth(PHPMailerOAuthInterface $oauth):PHPMailer{
-		$this->oauth = $oauth;
-
-		return $this;
-	}
 
 	/**
 	 * Add a "To" address.

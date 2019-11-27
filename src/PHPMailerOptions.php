@@ -108,12 +108,19 @@ class PHPMailerOptions extends SettingsContainerAbstract{
 	/**
 	 * SMTP/POP3 server username.
 	 *
+	 * In case of XOAUTH2 authentication, this should be the OAuth2 user that is associated with the bearer token.
+	 *
+	 * @link https://developers.google.com/gmail/imap/xoauth2-protocol
+	 *
 	 * @var string|null
 	 */
 	protected $smtp_username = null;
 
 	/**
 	 * SMTP/POP3 server password.
+	 * In case of XOAUTH2 authentication, this should be the OAuth2 token.
+	 *
+	 * @link https://developers.google.com/gmail/imap/xoauth2-protocol
 	 *
 	 * @var string|null
 	 */

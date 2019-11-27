@@ -20,52 +20,21 @@ date_default_timezone_set('Etc/UTC');
 $options->smtp_host = 'smtp.gmail.com';
 //Set the SMTP port number - 587 for authenticated TLS, a.k.a. RFC4409 SMTP submission
 $options->smtp_port = 587;
+//Set the encryption system to use - ssl (deprecated) or tls
+$options->smtp_encryption = SMTPMailer::ENCRYPTION_STARTTLS;
 //Whether to use SMTP authentication
 $options->smtp_auth = true;
 //Set AuthType to use XOAUTH2
 $options->smtp_authtype = 'XOAUTH2';
-//Set the encryption system to use - ssl (deprecated) or tls
-$options->smtp_encryption = SMTPMailer::ENCRYPTION_STARTTLS;
+$options->smtp_username = 'me@gmail.com';
+$options->smtp_password = '<GMAIL_OAUTH2_TOKEN>';
 
 //Create a new PHPMailer instance
 $mail = new SMTPMailer($options);
 
-
-
-//Fill in authentication details here
-//Either the gmail account owner, or the user that gave consent
-$email        = 'someone@gmail.com';
-$clientId     = 'RANDOMCHARS-----duv1n2.apps.googleusercontent.com';
-$clientSecret = 'RANDOMCHARS-----lGyjPcRtvP';
-
-//Obtained by configuring and running get_oauth_token.php
-//after setting up an app in Google Developer Console.
-$refreshToken = 'RANDOMCHARS-----DWxgOvPT003r-yFUV49TQYag7_Aod7y0';
-
-//Create a new OAuth2 provider instance
-$provider = new Google(
-	[
-		'clientId'     => $clientId,
-		'clientSecret' => $clientSecret,
-	]
-);
-
-//Pass the OAuth provider instance to PHPMailer
-$mail->setOAuth(
-	new OAuth(
-		[
-			'provider'     => $provider,
-			'clientId'     => $clientId,
-			'clientSecret' => $clientSecret,
-			'refreshToken' => $refreshToken,
-			'userName'     => $email,
-		]
-	)
-);
-
 //Set who the message is to be sent from
 //For gmail, this generally needs to be the same as the user you logged in as
-$mail->setFrom($email, 'First Last');
+$mail->setFrom('me@gmail.com', 'First Last');
 
 //Set who the message is to be sent to
 $mail->addTO('someone@gmail.com', 'John Doe');
