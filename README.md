@@ -118,9 +118,9 @@ try {
     $mail->addAttachment('/tmp/image.jpg', 'new.jpg');    // Optional name
 
     // Content
-    $mail->Subject = 'Here is the subject';
-    $mail->Body    = 'This is the HTML message body <b>in bold!</b>';
-    $mail->AltBody = 'This is the body in plain text for non-HTML mail clients';
+    $mail->setSubject('Here is the subject');
+    $mail->setMessageBody('This is the HTML message body <b>in bold!</b>');
+    $mail->setAltBody('This is the body in plain text for non-HTML mail clients');
 
     $mail->send();
     echo 'Message has been sent';

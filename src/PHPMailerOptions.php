@@ -14,6 +14,49 @@ namespace PHPMailer\PHPMailer;
 
 use chillerlan\Settings\SettingsContainerAbstract;
 
+/**
+ * @property string|null $XMailer
+ * @property string      $hostname
+ * @property string      $charSet
+ * @property string|null $smtp_host
+ * @property int         $smtp_port
+ * @property string|null $smtp_username
+ * @property string|null $smtp_password
+ * @property int         $smtp_timeout
+ * @property bool        $smtp_keepalive
+ * @property bool        $smtp_auth
+ * @property string|null $smtp_authtype
+ * @property string|null $smtp_encryption
+ * @property bool        $smtp_auto_tls
+ * @property array       $smtp_stream_context_options
+ * @property string|null $smtp_dsn
+ * @property bool        $smtp_verp
+ * @property string|null $pop3_host
+ * @property int         $pop3_port
+ * @property int         $pop3_timeout
+ * @property string|null $pop3_username
+ * @property string|null $pop3_password
+ * @property bool        $allowEmpty
+ * @property int         $wordWrap
+ * @property bool        $useSendmailOptions
+ * @property string      $sendmail_path
+ * @property string      $qmail_path
+ * @property bool        $singleTo
+ * @property bool        $smime_sign
+ * @property string|null $sign_cert_file
+ * @property string|null $sign_key_file
+ * @property string|null $sign_extracerts_file
+ * @property string      $sign_key_pass
+ * @property bool        $DKIM_sign
+ * @property string      $DKIM_domain
+ * @property string      $DKIM_selector
+ * @property string      $DKIM_key
+ * @property string|null $DKIM_passphrase
+ * @property string|null $DKIM_identity
+ * @property array|null  $DKIM_headers
+ * @property bool        $DKIM_copyHeaders
+ * @property string|null $validator
+ */
 class PHPMailerOptions extends SettingsContainerAbstract{
 
 	/**

@@ -867,9 +867,9 @@ function DKIM_Sign(string $signHeader, string $key, string $passphrase = null):s
  * @param string $charset
  *
  * @return string The encoded address in ASCII form
- * @see    PHPMailer::$CharSet
+ * @see    PHPMailerInterface::$charSet
  */
-function punyencodeAddress(string $address, string $charset = PHPMailer::CHARSET_ISO88591):string{
+function punyencodeAddress(string $address, string $charset = PHPMailerInterface::CHARSET_ISO88591):string{
 	// Verify we have required functions, CharSet, and at-sign.
 	$pos = strrpos($address, '@');
 	if(idnSupported() && !empty($charset) && $pos !== false){
