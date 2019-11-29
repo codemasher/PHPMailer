@@ -27,7 +27,7 @@ class MailTest extends MailerTestAbstract{
 		       $this->mailer->getLE().
 		       ' =?UTF-8?Q?eeeeeeeeeeeee=C3=A9?=';
 		$act = str_repeat('e', $this->mailer::LINE_LENGTH_STD_MAIL).'é';
-		$this->assertSame($exp, $this->mailer->encodeHeader($act), 'Folded Q-encoded header value incorrect');
+		$this->assertSame($exp, $this->callMethod('encodeHeader', [$act]), 'Folded Q-encoded header value incorrect');
 	}
 
 	public function testHeaderEncodingFoldedQASCII(){
@@ -37,7 +37,7 @@ class MailTest extends MailerTestAbstract{
 		       ' =?US-ASCII?Q?eeeeeeeeeeeeeeeeeeeeeeeeee?=';
 		$act = str_repeat('e', $this->mailer::LINE_LENGTH_STD_MAIL + 10);
 
-		$this->assertSame($exp, $this->mailer->encodeHeader($act), 'Long header value incorrect');
+		$this->assertSame($exp, $this->callMethod('encodeHeader', [$act]), 'Long header value incorrect');
 	}
 
 }

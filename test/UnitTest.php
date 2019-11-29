@@ -58,7 +58,7 @@ class UnitTest extends TestAbstract{
 		// This should select B-encoding automatically and should not fold
 		$exp = '=?UTF-8?B?w6nDqcOpw6nDqcOpw6nDqcOpw6k=?=';
 		$act = str_repeat('é', 10);
-		$this->assertSame($exp, $this->mailer->encodeHeader($act), 'B-encoded header value incorrect');
+		$this->assertSame($exp, $this->callMethod('encodeHeader', [$act]), 'B-encoded header value incorrect');
 	}
 
 	public function testHeaderEncodingFoldedB(){
@@ -71,21 +71,21 @@ class UnitTest extends TestAbstract{
 		       $this->mailer->getLE().
 		       ' =?UTF-8?B?w6nDqcOpw6nDqcOpw6nDqcOpw6nDqQ==?=';
 		$act = str_repeat('é', $this->mailer::LINE_LENGTH_STD + 1);
-		$this->assertSame($exp, $this->mailer->encodeHeader($act), 'Folded B-encoded header value incorrect');
+		$this->assertSame($exp, $this->callMethod('encodeHeader', [$act]), 'Folded B-encoded header value incorrect');
 	}
 
 	public function testHeaderEncodingQ(){
 		// This should select Q-encoding automatically and should not fold
 		$exp = '=?UTF-8?Q?eeeeeeeee=C3=A9?=';
 		$act = str_repeat('e', 9).'é';
-		$this->assertSame($exp, $this->mailer->encodeHeader($act), 'Q-encoded header value incorrect');
+		$this->assertSame($exp, $this->callMethod('encodeHeader', [$act]), 'Q-encoded header value incorrect');
 	}
 
 	public function testHeaderEncodingUnencoded(){
 		// This should not change
 		$exp = 'eeeeeeeeee';
 		$act = 'eeeeeeeeee';
-		$this->assertSame($exp, $this->mailer->encodeHeader($act), 'Unencoded header value incorrect');
+		$this->assertSame($exp, $this->callMethod('encodeHeader', [$act]), 'Unencoded header value incorrect');
 	}
 
 	public function testHeaderEncodingFoldedQUtf8(){
@@ -99,7 +99,7 @@ class UnitTest extends TestAbstract{
 		       $this->mailer->getLE().
 		       ' =?UTF-8?B?w6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6nDqcOpw6nDqQ==?=';
 
-		$this->assertEquals($exp, $this->mailer->encodeHeader($act), 'Long UTF-8 header value incorrect');
+		$this->assertEquals($exp, $this->callMethod('encodeHeader', [$act]), 'Long UTF-8 header value incorrect');
 	}
 
 	public function messageTypeDataprovider():array{
@@ -417,7 +417,7 @@ class UnitTest extends TestAbstract{
 
 		$headerLines = "From:$from\r\nTo:$to\r\nDate:$date\r\n";
 		$headerLines .= "X-AnyHeader:$anyHeader\r\nBaz:bar\r\n";
-		$headerLines .= 'List-Unsubscribe:'.$this->mailer->encodeHeader($unsubscribeUrl)."\r\n";
+		$headerLines .= 'List-Unsubscribe:'.$this->callMethod('encodeHeader', [$unsubscribeUrl])."\r\n";
 
 		$headerFields = 'h=From:To:Date:Baz:List-Unsubscribe:Subject';
 

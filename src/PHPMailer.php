@@ -1601,9 +1601,8 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	 * @param string $position What context the string will be used in
 	 *
 	 * @return string
-	 * @todo: make protected
 	 */
-	public function encodeHeader(string $str, string $position = 'text'):string{
+	protected function encodeHeader(string $str, string $position = 'text'):string{
 		$matchcount = 0;
 
 		switch(strtolower($position)){
