@@ -1567,9 +1567,8 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	 *
 	 * @return string
 	 * @throws \PHPMailer\PHPMailer\PHPMailerException
-	 * @todo: make protected
 	 */
-	public function encodeString(string $str, string $encoding = self::ENCODING_BASE64):string{
+	protected function encodeString(string $str, string $encoding = self::ENCODING_BASE64):string{
 
 		switch(strtolower($encoding)){
 			case $this::ENCODING_BASE64:

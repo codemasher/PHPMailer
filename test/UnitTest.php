@@ -317,14 +317,17 @@ class UnitTest extends TestAbstract{
 	 * Encoding and charset tests.
 	 */
 	public function testEncodings(){
-		$this->assertSame($this->mailer->encodeString('hello', PHPMailer::ENCODING_BINARY), 'hello', 'Binary encoding changed input');
+		$this->assertSame(
+			$this->callMethod('encodeString', ['hello', PHPMailer::ENCODING_BINARY]),
+			'hello', 'Binary encoding changed input'
+		);
 	}
 
 	public function testEncodingException(){
 		$this->expectException(PHPMailerException::class);
 		$this->expectExceptionMessage('Unknown encoding: asdfghjkl');
 
-		$this->mailer->encodeString('hello', 'asdfghjkl');
+		$this->callMethod('encodeString', ['hello', 'asdfghjkl']);
 	}
 
 	/**
@@ -486,7 +489,7 @@ class UnitTest extends TestAbstract{
 		$t = str_replace(["\r\n", "\r"], "\n", $t);
 		$this->assertSame(
 			$t,
-			quoted_printable_decode($this->mailer->encodeString($t, $this->mailer::ENCODING_QUOTED_PRINTABLE)),
+			quoted_printable_decode($this->callMethod('encodeString', [$t, $this->mailer::ENCODING_QUOTED_PRINTABLE])),
 			'Quoted-Printable encoding round-trip failed'
 		);
 		//Force line breaks to Windows-style
