@@ -16,7 +16,7 @@ use Closure, ErrorException;
 use PHPMailer\PHPMailer\Language\LanguageTrait;
 use Psr\Log\{LoggerAwareInterface, LoggerAwareTrait, LoggerInterface, NullLogger};
 
-use function extension_loaded, function_exists, sprintf;
+use function extension_loaded, function_exists, in_array, preg_match, preg_replace, sprintf, strtolower, substr, trim;
 
 abstract class MailerAbstract implements PHPMailerInterface, LoggerAwareInterface{
 	use LoggerAwareTrait, LanguageTrait;
