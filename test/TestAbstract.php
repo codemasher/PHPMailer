@@ -148,6 +148,16 @@ abstract class TestAbstract extends TestCase{
 	}
 
 	/**
+	 * @param string $method
+	 * @param array  $args
+	 *
+	 * @return mixed
+	 */
+	protected function callMethod(string $method, array $args){
+		return $this->getMethod($method)->invokeArgs($this->mailer, $args);
+	}
+
+	/**
 	 * @param string $property
 	 *
 	 * @return \ReflectionProperty

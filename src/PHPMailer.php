@@ -1973,9 +1973,8 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	 * @param string $str
 	 *
 	 * @return bool
-	 * @todo: make protected
 	 */
-	public function hasLineLongerThanMax(string $str):bool{
+	protected function hasLineLongerThanMax(string $str):bool{
 		return (bool)preg_match('/^(.{'.($this::LINE_LENGTH_MAX + strlen($this->LE)).',})/m', $str);
 	}
 

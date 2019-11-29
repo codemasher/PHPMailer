@@ -145,7 +145,7 @@ class UnitTest extends TestAbstract{
 		$body = 'This message contains lines that are too long.'.$this->mailer->getLE().$oklen.$badlen.$oklen;
 
 		$this->assertTrue(
-			$this->mailer->hasLineLongerThanMax($body),
+			$this->callMethod('hasLineLongerThanMax', [$body]),
 			'Test content does not contain long lines!'
 		);
 
@@ -161,7 +161,7 @@ class UnitTest extends TestAbstract{
 		$message = $this->mailer->getSentMIMEMessage();
 
 		$this->assertFalse(
-			$this->mailer->hasLineLongerThanMax($message),
+			$this->callMethod('hasLineLongerThanMax', [$message]),
 			'Long line not corrected (Max: '.($this->mailer::LINE_LENGTH_MAX + strlen($this->mailer->getLE())).' chars)'
 		);
 
@@ -185,7 +185,7 @@ class UnitTest extends TestAbstract{
 		$body  = 'This message does not contain lines that are too long.'.$this->mailer->getLE().$oklen;
 
 		$this->assertFalse(
-			$this->mailer->hasLineLongerThanMax($this->getPropertyValue('body')),
+			$this->callMethod('hasLineLongerThanMax', [$this->getPropertyValue('body')]),
 			'Test content contains long lines!'
 		);
 
@@ -195,7 +195,7 @@ class UnitTest extends TestAbstract{
 
 		$message = $this->mailer->getSentMIMEMessage();
 
-		$this->assertFalse($this->mailer->hasLineLongerThanMax($message), 'Long line not corrected.');
+		$this->assertFalse($this->callMethod('hasLineLongerThanMax', [$message]), 'Long line not corrected.');
 
 		// @todo: acts out on linux
 #		$this->assertStringNotContainsString('Content-Transfer-Encoding: quoted-printable', $message, 'Short line caused transfer encoding switch.');

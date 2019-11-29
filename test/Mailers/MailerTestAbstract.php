@@ -600,14 +600,14 @@ Czech text: Prázdné tělo zprávy';
 		$le     = $this->mailer->getLE();
 		$oklen  = str_repeat(str_repeat('0', $this->mailer::LINE_LENGTH_MAX).$le, 2);
 		$badlen = str_repeat(str_repeat('1', $this->mailer::LINE_LENGTH_MAX + 1).$le, 2);
-		$this->assertTrue($this->mailer->hasLineLongerThanMax($badlen), 'Long line not detected (only)');
-		$this->assertTrue($this->mailer->hasLineLongerThanMax($oklen.$badlen), 'Long line not detected (first)');
-		$this->assertTrue($this->mailer->hasLineLongerThanMax($badlen.$oklen), 'Long line not detected (last)');
+		$this->assertTrue($this->callMethod('hasLineLongerThanMax', [$badlen]), 'Long line not detected (only)');
+		$this->assertTrue($this->callMethod('hasLineLongerThanMax', [$oklen.$badlen]), 'Long line not detected (first)');
+		$this->assertTrue($this->callMethod('hasLineLongerThanMax', [$badlen.$oklen]), 'Long line not detected (last)');
 		$this->assertTrue(
-			$this->mailer->hasLineLongerThanMax($oklen.$badlen.$oklen),
+			$this->callMethod('hasLineLongerThanMax', [$oklen.$badlen.$oklen]),
 			'Long line not detected (middle)'
 		);
-		$this->assertFalse($this->mailer->hasLineLongerThanMax($oklen), 'Long line false positive');
+		$this->assertFalse($this->callMethod('hasLineLongerThanMax', [$oklen]), 'Long line false positive');
 		$this->mailer->setContentType($this->mailer::CONTENT_TYPE_PLAINTEXT);
 		$this->mailer->setEncoding($this->mailer::ENCODING_8BIT);
 
