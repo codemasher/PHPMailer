@@ -305,7 +305,7 @@ abstract class TestAbstract extends TestCase{
 			foreach($attachments as $attachment){
 				$report .= $bullet_start.'Name: '.$attachment->name.', '
 					.'Encoding: '.$attachment->encoding.', '
-					.'Type: '.$attachment->type.$bullet_end;
+					.'Type: '.$attachment->mimeType.$bullet_end;
 			}
 			$report .= $list_end.$eol;
 		}
