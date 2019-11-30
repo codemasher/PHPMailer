@@ -1054,9 +1054,8 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	 * @param string $uniqueid
 	 *
 	 * @return string The assembled message body
-	 * @todo: make protected
 	 */
-	public function createBody(string $uniqueid):string{
+	protected function createBody(string $uniqueid):string{
 		$boundary = generateBoundary($uniqueid);
 
 		$body = '';

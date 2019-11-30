@@ -123,7 +123,7 @@ class UnitTest extends TestAbstract{
 		$this->setProperty($this->mailer, 'messageType', $messageType);
 
 		$uid  = generateId();
-		$body = $this->mailer->createBody($uid);
+		$body = $this->callMethod('createBody', [$uid]);
 
 		$this->assertIsString($body);
 	}
