@@ -47,16 +47,15 @@ class SMTPTest extends MailerTestAbstract{
 	}
 
 	public function testBadCommand(){
-		$this->mailer->smtpConnect();
-		$this->assertFalse($this->mailer->mail("somewhere\nbad"), 'Bad SMTP command containing breaks accepted');
+		$this->callMethod('smtpConnect', []);
+		$this->assertFalse($this->callMethod('mail', ["somewhere\nbad"]), 'Bad SMTP command containing breaks accepted');
 	}
 
 	/**
 	 * @group slow
 	 */
 	public function testConnect(){
-		$this->assertTrue($this->mailer->smtpConnect(), 'SMTP single connect failed');
-		$this->mailer->closeSMTP();
+		$this->assertTrue($this->callMethod('smtpConnect', []), 'SMTP single connect failed');
 	}
 
 	/**
@@ -67,7 +66,7 @@ class SMTPTest extends MailerTestAbstract{
 		// All these hosts are expected to fail
 		$this->options->smtp_host = 'xyz://bogus:25;tls://[bogus]:25;ssl://localhost:12345;tls://localhost:587;10.10.10.10:54321;localhost:12345;10.10.10.10'.$this->host.' ';
 		$this->mailer->setOptions($this->options);
-		$this->assertFalse($this->mailer->smtpConnect());
+		$this->assertFalse($this->callMethod('smtpConnect', []));
 	}
 
 	/**
@@ -77,7 +76,7 @@ class SMTPTest extends MailerTestAbstract{
 		$this->expectException(PHPMailerException::class);
 		$this->options->smtp_host = '[::1]:'.$this->options->smtp_port.';'.$this->host;
 		$this->mailer->setOptions($this->options);
-		$this->assertTrue($this->mailer->smtpConnect(), 'SMTP IPv6 literal multi-connect failed');
+		$this->assertTrue($this->callMethod('smtpConnect', []), 'SMTP IPv6 literal multi-connect failed');
 	}
 
 	/**
@@ -87,7 +86,7 @@ class SMTPTest extends MailerTestAbstract{
 		$this->expectException(PHPMailerException::class);
 		$this->options->smtp_host = 'localhost:12345;10.10.10.10:54321;'.$this->host;
 		$this->mailer->setOptions($this->options);
-		$this->assertTrue($this->mailer->smtpConnect(), 'SMTP multi-connect failed');
+		$this->assertTrue($this->callMethod('smtpConnect', []), 'SMTP multi-connect failed');
 	}
 
 	/**
@@ -97,7 +96,7 @@ class SMTPTest extends MailerTestAbstract{
 		$this->expectException(PHPMailerException::class);
 		$this->options->smtp_host = ' localhost:12345 ; '.$this->host.' ';
 		$this->mailer->setOptions($this->options);
-		$this->assertTrue($this->mailer->smtpConnect(), 'SMTP hosts with stray spaces failed');
+		$this->assertTrue($this->callMethod('smtpConnect', []), 'SMTP hosts with stray spaces failed');
 	}
 
 	public function testConnectWithTLS(){
@@ -105,10 +104,9 @@ class SMTPTest extends MailerTestAbstract{
 		$this->options->smtp_host = $this->host;
 		$this->mailer->setOptions($this->options);
 
-		$this->assertTrue($this->mailer->smtpConnect(['ssl' => ['verify_depth' => 10]]));
-		$this->assertFalse($this->mailer->startTLS(), 'SMTP connect with options failed');
+		$this->assertTrue($this->callMethod('smtpConnect', [['ssl' => ['verify_depth' => 10]]]));
+		$this->assertFalse($this->callMethod('startTLS', []), 'SMTP connect with options failed');
 		$this->assertFalse($this->options->smtp_auth);
-		$this->mailer->closeSMTP();
 	}
 
 	/**
@@ -121,7 +119,6 @@ class SMTPTest extends MailerTestAbstract{
 		$this->assertSentMail();
 		$this->setMessage('SMTP keep-alive test.', __FUNCTION__.': SMTP keep-alive 2');
 		$this->assertSentMail();
-		$this->mailer->closeSMTP();
 	}
 
 	/**
@@ -132,7 +129,6 @@ class SMTPTest extends MailerTestAbstract{
 		$this->assertSentMail();
 		$this->setMessage('SMTP no-keep-alive test.', __FUNCTION__.': SMTP no-keep-alive 2');
 		$this->assertSentMail();
-		$this->mailer->closeSMTP();
 	}
 
 	/**

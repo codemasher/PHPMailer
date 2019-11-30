@@ -19,7 +19,7 @@ require_once __DIR__.'/common.php';
  */
 class PHPMailerLowMemory extends SMTPMailer{
 
-	public function data(string $msg_data):bool{
+	protected function data(string $msg_data):bool{
 		//This will use the standard timelimit
 		if(!$this->sendCommand('DATA', 'DATA', [354])){
 			return false;

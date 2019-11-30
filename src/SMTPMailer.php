@@ -108,7 +108,7 @@ class SMTPMailer extends PHPMailer{
 	 *
 	 * @return \PHPMailer\PHPMailer\PHPMailer
 	 */
-	public function closeSMTP():PHPMailer{
+	protected function closeSMTP():PHPMailer{
 
 		if($this->connected()){
 			$this->quit();
@@ -205,7 +205,7 @@ class SMTPMailer extends PHPMailer{
 	 * @return bool
 	 * @throws PHPMailerException
 	 */
-	public function smtpConnect(array $options = null):bool{
+	protected function smtpConnect(array $options = null):bool{
 		$this->setLogger($this->logger);
 
 		// Already connected?
@@ -334,7 +334,7 @@ class SMTPMailer extends PHPMailer{
 	 * @return bool
 	 * @throws \PHPMailer\PHPMailer\PHPMailerException
 	 */
-	public function connect(string $host, int $port = null, int $timeout = 30, array $stream_options = []):bool{
+	protected function connect(string $host, int $port = null, int $timeout = 30, array $stream_options = []):bool{
 
 		// Make sure we are __not__ connected
 		if($this->connected()){
@@ -417,7 +417,7 @@ class SMTPMailer extends PHPMailer{
 	 *
 	 * @return bool
 	 */
-	public function startTLS():bool{
+	protected function startTLS():bool{
 
 		if(!$this->sendCommand('STARTTLS', 'STARTTLS', [220])){
 			return false;
@@ -460,7 +460,7 @@ class SMTPMailer extends PHPMailer{
 	 * @return bool True if successfully authenticated
 	 * @see    hello()
 	 */
-	public function authenticate(
+	protected function authenticate(
 		string $username,
 		string $password,
 		string $authtype = null
@@ -626,7 +626,7 @@ class SMTPMailer extends PHPMailer{
 	 *
 	 * @return bool True if connected
 	 */
-	public function connected():bool{
+	protected function connected():bool{
 
 		if(!is_resource($this->socket)){
 			return false;
@@ -653,7 +653,7 @@ class SMTPMailer extends PHPMailer{
 	 * @see quit()
 	 *
 	 */
-	public function close():SMTPMailer{
+	protected function close():SMTPMailer{
 		$this->server_caps = null;
 
 		if(is_resource($this->socket)){
@@ -679,7 +679,7 @@ class SMTPMailer extends PHPMailer{
 	 *
 	 * @return bool
 	 */
-	public function data(string $msg_data):bool{
+	protected function data(string $msg_data):bool{
 
 		//This will use the standard timelimit
 		if(!$this->sendCommand('DATA', 'DATA', [354])){
@@ -777,7 +777,7 @@ class SMTPMailer extends PHPMailer{
 	 *
 	 * @return bool
 	 */
-	public function hello(string $host = ''):bool{
+	protected function hello(string $host = ''):bool{
 		//Try extended hello first (RFC 2821)
 		return $this->sendHello('EHLO', $host) || $this->sendHello('HELO', $host);
 	}
@@ -865,7 +865,7 @@ class SMTPMailer extends PHPMailer{
 	 *
 	 * @return bool
 	 */
-	public function mail(string $from):bool{
+	protected function mail(string $from):bool{
 		$useVerp = $this->options->smtp_verp ? ' XVERP' : '';
 
 		return $this->sendCommand('MAIL FROM', 'MAIL FROM:<'.$from.'>'.$useVerp, [250]);
@@ -880,7 +880,7 @@ class SMTPMailer extends PHPMailer{
 	 *
 	 * @return bool
 	 */
-	public function quit(bool $close_on_error = true):bool{
+	protected function quit(bool $close_on_error = true):bool{
 		$noerror = $this->sendCommand('QUIT', 'QUIT', [221]);
 		// @todo: simplify
 		if($noerror || $close_on_error){
@@ -902,7 +902,7 @@ class SMTPMailer extends PHPMailer{
 	 *
 	 * @return bool
 	 */
-	public function recipient(string $address, string $dsn = null):bool{
+	protected function recipient(string $address, string $dsn = null):bool{
 
 		if(empty($dsn)){
 			$rcpt = 'RCPT TO:<'.$address.'>';
@@ -935,7 +935,7 @@ class SMTPMailer extends PHPMailer{
 	 *
 	 * @return bool True on success
 	 */
-	public function reset():bool{
+	protected function reset():bool{
 		return $this->sendCommand('RSET', 'RSET', [250]);
 	}
 
@@ -1012,7 +1012,7 @@ class SMTPMailer extends PHPMailer{
 	 *
 	 * @return bool
 	 */
-	public function sendAndMail(string $from):bool{
+	protected function sendAndMail(string $from):bool{
 		return $this->sendCommand('SAML', "SAML FROM:$from", [250]);
 	}
 
@@ -1023,7 +1023,7 @@ class SMTPMailer extends PHPMailer{
 	 *
 	 * @return bool
 	 */
-	public function verify(string $name):bool{
+	protected function verify(string $name):bool{
 		return $this->sendCommand('VRFY', "VRFY $name", [250, 251]);
 	}
 
@@ -1033,7 +1033,7 @@ class SMTPMailer extends PHPMailer{
 	 *
 	 * @return bool
 	 */
-	public function noop():bool{
+	protected function noop():bool{
 		return $this->sendCommand('NOOP', 'NOOP', [250]);
 	}
 
@@ -1046,7 +1046,7 @@ class SMTPMailer extends PHPMailer{
 	 *
 	 * @return bool
 	 */
-	public function turn():bool{
+	protected function turn():bool{
 		$this->logger->error($this->lang->string('cmd_turn'));
 
 		return false;
@@ -1060,7 +1060,7 @@ class SMTPMailer extends PHPMailer{
 	 *
 	 * @return int The number of bytes sent to the server (@todo: return value unused)
 	 */
-	public function client_send(string $data, string $command = null):int{
+	protected function client_send(string $data, string $command = null):int{
 		//If SMTP transcripts are left enabled, or debug output is posted online
 		//it can leak credentials, so hide credentials in all but lowest level
 		in_array($command, ['User & Password', 'Username', 'Password'], true)
@@ -1082,15 +1082,6 @@ class SMTPMailer extends PHPMailer{
 	}
 
 	/**
-	 * Get SMTP extensions available on the server.
-	 *
-	 * @return array|null
-	 */
-	public function getServerExtList():?array{
-		return $this->server_caps;
-	}
-
-	/**
 	 * Get metadata about the SMTP server from its HELO/EHLO response.
 	 * The method works in three ways, dependent on argument value and current state:
 	 *   1. HELO/EHLO has not been sent - returns null and populates $this->error.
@@ -1107,7 +1098,7 @@ class SMTPMailer extends PHPMailer{
 	 *
 	 * @return string|null
 	 */
-	public function getServerExt(string $name):?string{
+	protected function getServerExt(string $name):?string{
 
 		if(!$this->server_caps){
 			$this->logger->error($this->lang->string('no_helo'));
@@ -1131,15 +1122,6 @@ class SMTPMailer extends PHPMailer{
 		}
 
 		return $this->server_caps[$name];
-	}
-
-	/**
-	 * Get the last reply from the server.
-	 *
-	 * @return string
-	 */
-	public function getLastReply():string{
-		return $this->last_reply;
 	}
 
 	/**
@@ -1214,10 +1196,9 @@ class SMTPMailer extends PHPMailer{
 	 * @return string|null
 	 */
 	protected function recordLastTransactionID():?string{
-		$reply = $this->getLastReply();
 
 		foreach($this::smtp_transaction_id_patterns as $smtp_transaction_id_pattern){
-			if(preg_match($smtp_transaction_id_pattern, $reply, $matches)){
+			if(preg_match($smtp_transaction_id_pattern, $this->last_reply, $matches)){
 				return trim($matches[1]);
 			}
 		}
