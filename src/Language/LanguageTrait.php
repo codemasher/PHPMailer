@@ -45,7 +45,7 @@ trait LanguageTrait{
 		$fqcn = __NAMESPACE__.'\\'.$class;
 
 		if(!class_exists($fqcn)){
-			throw new PHPMailerException(sprintf($this->lang->string('language_missing'), $class));
+			throw new PHPMailerException(sprintf('Language class does not exist: %s', $class));
 		}
 
 		$this->lang = new $fqcn;

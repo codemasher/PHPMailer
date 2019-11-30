@@ -53,7 +53,6 @@ abstract class PHPMailerLanguageAbstract implements PHPMailerLanguageInterface{
 	// @todo: sort/group/rename/cleanup
 
 	// common
-	protected $language_missing       = 'Language class does not exist: %s';
 	protected $server_client          = '[SRV > CLI] %s';
 	protected $client_server          = '[CLI > SRV] %s';
 
