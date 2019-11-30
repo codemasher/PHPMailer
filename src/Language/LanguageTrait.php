@@ -52,12 +52,23 @@ trait LanguageTrait{
 	}
 
 	/**
+	 * @codeCoverageIgnore
+	 *
 	 * @param \PHPMailer\PHPMailer\Language\PHPMailerLanguageInterface $language
 	 *
 	 * @return void
 	 */
 	public function setLanguageInterface(PHPMailerLanguageInterface $language):void{
 		$this->lang = $language;
+	}
+
+	/**
+	 * @codeCoverageIgnore
+	 *
+	 * @return \PHPMailer\PHPMailer\Language\PHPMailerLanguageInterface
+	 */
+	public function getLanguageInterface():PHPMailerLanguageInterface{
+		return $this->lang;
 	}
 
 }
