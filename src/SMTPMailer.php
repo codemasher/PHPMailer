@@ -97,40 +97,14 @@ class SMTPMailer extends PHPMailer{
 	}
 
 	/**
-	 * @return bool
-	 */
-	protected function postSend():bool{
-		return $this->smtpSend($this->mimeHeader, $this->mimeBody);
-	}
-
-	/**
-	 * Close the active SMTP session if one exists.
-	 *
-	 * @return \PHPMailer\PHPMailer\PHPMailer
-	 */
-	protected function closeSMTP():PHPMailer{
-
-		if($this->connected()){
-			$this->quit();
-			$this->close();
-		}
-
-
-		return $this;
-	}
-
-	/**
 	 * Send mail via SMTP.
 	 * Returns false if there is a bad MAIL FROM, RCPT, or DATA input.
 	 *
-	 * @param string $header The message headers
-	 * @param string $body   The message body
-	 *
 	 * @return bool
-	 * @throws PHPMailerException
+	 * @throws \PHPMailer\PHPMailer\PHPMailerException
 	 */
-	protected function smtpSend(string $header, string $body):bool{
-		$header   = rtrim($header, "\r\n ").$this->LE.$this->LE;
+	protected function postSend():bool{
+		$header   = rtrim($this->mimeHeader, "\r\n ").$this->LE.$this->LE;
 		$bad_rcpt = [];
 
 		if(!$this->smtpConnect($this->options->smtp_stream_context_options)){
@@ -159,7 +133,7 @@ class SMTPMailer extends PHPMailer{
 		}
 
 		// Only send the DATA command if we have viable recipients
-		if((count($this->allRecipients) > count($bad_rcpt)) && !$this->data($header.$body)){
+		if((count($this->allRecipients) > count($bad_rcpt)) && !$this->data($header.$this->mimeBody)){
 			throw new PHPMailerException($this->lang->string('data_not_accepted'));
 		}
 
@@ -178,7 +152,7 @@ class SMTPMailer extends PHPMailer{
 				[],
 				[],
 				$this->subject,
-				$body,
+				$this->mimeBody,
 				$this->from,
 				['smtp_transaction_id' => $this->last_smtp_transaction_id]
 			);
@@ -192,6 +166,22 @@ class SMTPMailer extends PHPMailer{
 		}
 
 		return true;
+	}
+
+	/**
+	 * Close the active SMTP session if one exists.
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailer
+	 */
+	protected function closeSMTP():PHPMailer{
+
+		if($this->connected()){
+			$this->quit();
+			$this->close();
+		}
+
+
+		return $this;
 	}
 
 	/**

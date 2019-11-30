@@ -36,26 +36,16 @@ class MailMailer extends PHPMailer{
 	}
 
 	/**
-	 * @return bool
-	 */
-	protected function postSend():bool{
-		return $this->mailSend($this->mimeHeader, $this->mimeBody);
-	}
-
-	/**
 	 * Send mail using the PHP mail() function.
 	 *
 	 * @see    http://www.php.net/manual/en/book.mail.php
 	 *
-	 * @param string $header The message headers
-	 * @param string $body   The message body
-	 *
-	 * @throws PHPMailerException
+	 * @throws \PHPMailer\PHPMailer\PHPMailerException
 	 *
 	 * @return bool
 	 */
-	protected function mailSend(string $header, string $body):bool{
-		$header = rtrim($header, "\r\n ").$this->LE.$this->LE;
+	protected function postSend():bool{
+		$header = rtrim($this->mimeHeader, "\r\n ").$this->LE.$this->LE;
 		$toArr  = [];
 
 		foreach($this->to as $toaddr){
@@ -88,13 +78,13 @@ class MailMailer extends PHPMailer{
 
 		if($this->options->singleTo && count($toArr) > 1){
 			foreach($toArr as $toAddr){
-				$result = $this->mailPassthru($toAddr, $this->subject, $body, $header, $params);
-				$this->doCallback($result, [$toAddr], $this->cc, $this->bcc, $this->subject, $body, $this->from, []);
+				$result = $this->mailPassthru($toAddr, $this->subject, $this->mimeBody, $header, $params);
+				$this->doCallback($result, [$toAddr], $this->cc, $this->bcc, $this->subject, $this->mimeBody, $this->from, []);
 			}
 		}
 		else{
-			$result = $this->mailPassthru($to, $this->subject, $body, $header, $params);
-			$this->doCallback($result, $this->to, $this->cc, $this->bcc, $this->subject, $body, $this->from, []);
+			$result = $this->mailPassthru($to, $this->subject, $this->mimeBody, $header, $params);
+			$this->doCallback($result, $this->to, $this->cc, $this->bcc, $this->subject, $this->mimeBody, $this->from, []);
 		}
 
 		if(isset($old_from)){
