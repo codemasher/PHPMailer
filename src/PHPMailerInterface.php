@@ -95,6 +95,7 @@ interface PHPMailerInterface{
 
 	public function setLanguage(string $langcode):void;
 	public function setLanguageInterface(PHPMailerLanguageInterface $language):void;
+	public function getLanguageInterface():PHPMailerLanguageInterface;
 	public function setOptions(PHPMailerOptions $options):PHPMailerInterface;
 	public function setSendCallback(Closure $callback):PHPMailerInterface;
 	public function getLE():string;
