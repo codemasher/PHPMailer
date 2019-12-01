@@ -21,7 +21,7 @@ trait LanguageTrait{
 	/**
 	 * The array of available languages.
 	 *
-	 * @var  \PHPMailer\PHPMailer\Language\PHPMailerLanguageInterface
+	 * @var \PHPMailer\PHPMailer\Language\PHPMailerLanguageInterface
 	 */
 	protected $lang;
 
@@ -42,7 +42,7 @@ trait LanguageTrait{
 		}
 
 		$class = 'Language'.strtoupper(str_replace('-', '_', $langcode));
-		$fqcn = __NAMESPACE__.'\\'.$class;
+		$fqcn  = __NAMESPACE__.'\\'.$class;
 
 		if(!class_exists($fqcn)){
 			throw new PHPMailerException(sprintf('Language class does not exist: %s', $class));

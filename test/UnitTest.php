@@ -207,8 +207,6 @@ class UnitTest extends TestAbstract{
 	 * @see https://sourceforge.net/p/phpmailer/bugs/383/
 	 */
 	public function testCVE_2010_2423(){
-		//Encoding name longer than 68 chars
-		$this->mailer->setEncoding('1234567890123456789012345678901234567890123456789012345678901234567890');
 		//Call wrapText with a zero length value
 		wrapText(str_repeat('This should no longer cause a denial of service. ', 30), 0, $this->options->charSet, $this->mailer->getLE());
 
@@ -542,14 +540,6 @@ class UnitTest extends TestAbstract{
 	public function testMessageID(){
 		$this->mailer->addTO('user@example.com');
 
-		$id = hash('sha256', 12345);
-		$this->mailer->setMessageBody('Test message ID.');
-		$this->mailer->setMessageID($id);
-		$this->mailer->setMessageBody($this->buildBody(''));
-		$this->mailer->preSend();
-
-		$this->assertNotSame($this->mailer->getLastMessageID(), $id, 'Invalid Message ID allowed');
-
 		$id = '<'.hash('sha256', 12345).'@example.com>';
 		$this->mailer->setMessageID($id);
 		$this->mailer->setMessageBody($this->buildBody(''));
@@ -595,12 +585,6 @@ class UnitTest extends TestAbstract{
 		$this->mailer->addCC('test+cc'.$domain);
 		$this->mailer->addBCC('test+bcc'.$domain);
 		$this->mailer->addReplyTo('test+replyto'.$domain);
-
-		// Queued addresses are not returned by get*Addresses() before send() call.
-		$this->assertEmpty($this->mailer->getTOs(), 'Bad "to" recipients');
-		$this->assertEmpty($this->mailer->getCCs(), 'Bad "cc" recipients');
-		$this->assertEmpty($this->mailer->getBCCs(), 'Bad "bcc" recipients');
-		$this->assertEmpty($this->mailer->getReplyTos(), 'Bad "reply-to" recipients');
 
 		// Clear queued BCC recipient.
 		$this->mailer->clearBCCs();

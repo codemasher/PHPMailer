@@ -967,10 +967,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 
 		if(in_array($this->messageType, ['inline', 'attach', 'inline_attach'])){
 			$body .= $mimepre;
-			$body .= call_user_func_array(
-				[$this, 'body_'.$this->messageType],
-				[$this->body, $boundary, $bodyCharSet, $bodyEncoding]
-			);
+			$body .= $this->{'body_'.$this->messageType}($this->body, $boundary, $bodyCharSet, $bodyEncoding);
 		}
 		elseif(in_array($this->messageType, ['alt', 'alt_inline', 'alt_attach', 'alt_inline_attach'])){
 
@@ -993,10 +990,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 			}
 
 			$body .= $mimepre;
-			$body .= call_user_func_array(
-				[$this, 'body_'.$this->messageType],
-				[$this->body, $boundary, $bodyCharSet, $bodyEncoding, $altBodyCharSet, $altBodyEncoding]
-			);
+			$body .= $this->{'body_'.$this->messageType}($this->body, $boundary, $bodyCharSet, $bodyEncoding, $altBodyCharSet, $altBodyEncoding);
 		}
 		else{
 			// Catch case 'plain' and case '', applies to simple `text/plain` and `text/html` body content types

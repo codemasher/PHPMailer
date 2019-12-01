@@ -15,6 +15,7 @@ namespace PHPMailer\PHPMailer;
 use chillerlan\Settings\SettingsContainerAbstract;
 
 /**
+ * @property string      $lang
  * @property string|null $XMailer
  * @property string      $hostname
  * @property string      $charSet
@@ -58,6 +59,13 @@ use chillerlan\Settings\SettingsContainerAbstract;
  * @property string|null $validator
  */
 class PHPMailerOptions extends SettingsContainerAbstract{
+
+	/**
+	 * The language to use
+	 *
+	 * @var string
+	 */
+	protected $lang = 'en';
 
 	/**
 	 * What to put in the X-Mailer header.

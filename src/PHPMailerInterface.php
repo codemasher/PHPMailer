@@ -99,7 +99,7 @@ interface PHPMailerInterface{
 	public function setOptions(PHPMailerOptions $options):PHPMailerInterface;
 	public function setSendCallback(Closure $callback):PHPMailerInterface;
 	public function getLE():string;
-	public function setContentType(string $contentType):PHPMailerInterface;
+	public function setContentType(string $mime):PHPMailerInterface;
 	public function setEncoding(string $encoding):PHPMailerInterface;
 	public function setMessageID(string $messageID):PHPMailerInterface;
 	public function setMessageDate(string $messageDate):PHPMailerInterface;

@@ -121,6 +121,8 @@ abstract class PHPMailerLanguageAbstract implements PHPMailerLanguageInterface{
 	protected $dkim_selector          = 'invalid DKIM selector';
 	protected $sign_credentials       = 'no sign credentials set';
 	protected $invalid_recipient_type = 'Invalid recipient type: %s';
+	protected $invalid_mimetype       = 'Invalid mime type: %s';
+	protected $invalid_message_id     = 'Invalid message id: %s';
 
 	/**
 	 * @inheritDoc

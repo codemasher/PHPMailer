@@ -16,7 +16,7 @@ use Closure, ErrorException;
 use PHPMailer\PHPMailer\Language\LanguageTrait;
 use Psr\Log\{LoggerAwareInterface, LoggerAwareTrait, LoggerInterface, NullLogger};
 
-use function extension_loaded, function_exists, in_array, preg_match, preg_replace, sprintf, strtolower, substr, trim;
+use function extension_loaded, function_exists, in_array, preg_match, preg_replace, sprintf, strpos, strrev, strtolower, trim;
 
 abstract class MailerAbstract implements PHPMailerInterface, LoggerAwareInterface{
 	use LoggerAwareTrait, LanguageTrait;
@@ -46,36 +46,27 @@ abstract class MailerAbstract implements PHPMailerInterface, LoggerAwareInterfac
 
 	/**
 	 * The message encoding.
-	 * Options: "8bit", "7bit", "binary", "base64", and "quoted-printable".
 	 *
 	 * @var string
 	 */
 	protected $encoding = self::ENCODING_8BIT;
 
 	/**
-	 * An ID to be used in the Message-ID header.
-	 * If empty, a unique id will be generated.
-	 * You can set your own, but it must be in the format "<id@domain>",
-	 * as defined in RFC5322 section 3.6.4 or it will be ignored.
-	 *
-	 * @see https://tools.ietf.org/html/rfc5322#section-3.6.4
+	 * An ID to be used in the Message-ID header
 	 *
 	 * @var string|null
 	 */
 	protected $messageID = null;
 
 	/**
-	 * The message Date to be used in the Date header.
-	 * If empty, the current date will be added.
+	 * The message Date to be used in the Date header
 	 *
 	 * @var string|null
 	 */
 	protected $messageDate = null;
 
 	/**
-	 * Email priority.
-	 * Options: 0 (default/none), 1 = High, 3 = Normal, 5 = low.
-	 * When 0, the header is not set at all.
+	 * Email priority
 	 *
 	 * @var int|null
 	 */
@@ -96,82 +87,57 @@ abstract class MailerAbstract implements PHPMailerInterface, LoggerAwareInterfac
 	protected $fromName = 'Root User';
 
 	/**
-	 * The envelope sender of the message.
-	 * This will usually be turned into a Return-Path header by the receiver,
-	 * and is the address that bounces will be sent to.
-	 * If not empty, will be passed via `-f` to sendmail or as the 'MAIL FROM' value over SMTP.
+	 * The envelope sender of the message
 	 *
 	 * @var string|null
 	 */
 	protected $sender = null;
 
 	/**
-	 * The email address that a reading confirmation should be sent to, also known as read receipt.
+	 * The email address that a reading confirmation should be sent to, also known as read receipt
 	 *
 	 * @var string|null
 	 */
 	protected $confirmReadingTo = null;
 
 	/**
-	 * The Subject of the message.
+	 * The subject of the message
 	 *
 	 * @var string
 	 */
 	protected $subject = '';
 
 	/**
-	 * An HTML or plain text message body.
+	 * The HTML or plain text message body
 	 *
 	 * @var string
 	 */
 	protected $body = '';
 
 	/**
-	 * The plain-text message body.
-	 * This body can be read by mail clients that do not have HTML email
-	 * capability such as mutt & Eudora.
-	 * Clients that can read HTML will view the normal Body.
+	 * The alternative plain-text message body
 	 *
 	 * @var string
 	 */
 	protected $altBody = '';
 
 	/**
-	 * An iCal message part body.
-	 * Only supported in simple alt or alt_inline message types
-	 * To generate iCal event structures, use classes like EasyPeasyICS or iCalcreator.
-	 *
-	 * @see http://sprain.ch/blog/downloads/php-class-easypeasyics-create-ical-files-with-php/
-	 * @see http://kigkonsult.se/iCalcreator/
+	 * An iCal message part body
 	 *
 	 * @var string
 	 */
 	protected $iCal = '';
 
 	/**
-	 * Callback Action function name.
-	 *
-	 * The function that handles the result of the send email action.
-	 * It is called out by send() for each email sent.
-	 *
-	 * Value can be any php callable: http://www.php.net/is_callable
-	 *
-	 * Parameters:
-	 *   bool $result        result of the send action
-	 *   array   $to            email addresses of the recipients
-	 *   array   $cc            cc email addresses
-	 *   array   $bcc           bcc email addresses
-	 *   string  $subject       the subject
-	 *   string  $body          the email body
-	 *   string  $from          email address of sender
-	 *   string  $extra         extra information of possible use
-	 *                          "smtp_transaction_id' => last smtp transaction id
+	 * Callback action function
 	 *
 	 * @var \Closure|null
 	 */
 	protected $sendCallback = null;
 
 	/**
+	 * Determines whether the stream_* functions are available
+	 *
 	 * @var bool|null
 	 */
 	protected $streamOK = null;
@@ -182,7 +148,7 @@ abstract class MailerAbstract implements PHPMailerInterface, LoggerAwareInterfac
 	protected $options;
 
 	/**
-	 * MailerAbstract constructor.
+	 * MailerAbstract constructor
 	 *
 	 * @param \PHPMailer\PHPMailer\PHPMailerOptions|null $options
 	 * @param \Psr\Log\LoggerInterface|null              $logger
@@ -190,26 +156,27 @@ abstract class MailerAbstract implements PHPMailerInterface, LoggerAwareInterfac
 	 * @throws \PHPMailer\PHPMailer\PHPMailerException
 	 */
 	public function __construct(PHPMailerOptions $options = null, LoggerInterface $logger = null){
-		$this->options = $options ?? new PHPMailerOptions;
-		$this->logger  = $logger ?? new NullLogger;
+		$this->setOptions($options ?? new PHPMailerOptions);
+		$this->setLogger($logger ?? new NullLogger);
+		$this->setLanguage($this->options->lang);
 
 		// check for missing extensions first (may occur if not installed via composer)
 		foreach(['filter', 'intl', 'mbstring', 'openssl'] as $ext){
 			if(!extension_loaded($ext)){
-				throw new PHPMailerException(sprintf($this->lang->string('extension_missing'), $ext));
+				throw new PHPMailerException(sprintf($this->lang->string('extension_missing'), $ext)); // @codeCoverageIgnore
 			}
 		}
 
-		// This is enabled by default since 5.0.0 but some providers disable it
-		// Check this once and cache the result
+		// This is enabled by default since PHP 5.0, but some providers disable it
 		if($this->streamOK === null){
 			$this->streamOK = function_exists('stream_socket_client');
 		}
 
-		$this->setLanguage('en');
 	}
 
 	/**
+	 * Sets the options instance
+	 *
 	 * @param \PHPMailer\PHPMailer\PHPMailerOptions $options
 	 *
 	 * @return \PHPMailer\PHPMailer\PHPMailerInterface
@@ -221,6 +188,21 @@ abstract class MailerAbstract implements PHPMailerInterface, LoggerAwareInterfac
 	}
 
 	/**
+	 * Sets the callback action function
+	 *
+	 * The function that handles the result of the send email action is called for each email sent.
+	 *
+	 * Parameters:
+	 *   bool    $result        result of the send action
+	 *   array   $to            email addresses of the recipients
+	 *   array   $cc            cc email addresses
+	 *   array   $bcc           bcc email addresses
+	 *   string  $subject       the subject
+	 *   string  $body          the email body
+	 *   string  $from          email address of sender
+	 *   string  $extra         extra information of possible use
+	 *                          "smtp_transaction_id' => last smtp transaction id
+	 *
 	 * @param \Closure $callback
 	 *
 	 * @return \PHPMailer\PHPMailer\PHPMailerInterface
@@ -232,7 +214,7 @@ abstract class MailerAbstract implements PHPMailerInterface, LoggerAwareInterfac
 	}
 
 	/**
-	 * Return the current line break format string.
+	 * Return the current line break format string
 	 *
 	 * @return string
 	 */
@@ -241,35 +223,64 @@ abstract class MailerAbstract implements PHPMailerInterface, LoggerAwareInterfac
 	}
 
 	/**
-	 * @param string $contentType
+	 * Sets the MIME Content-type of the message
+	 *
+	 * @param string $mime
 	 *
 	 * @return \PHPMailer\PHPMailer\PHPMailerInterface
+	 * @throws \PHPMailer\PHPMailer\PHPMailerException
 	 */
-	public function setContentType(string $contentType):PHPMailerInterface{
-		$this->contentType = strtolower($contentType);
+	public function setContentType(string $mime):PHPMailerInterface{
+		$mime = strtolower(trim($mime));
+
+		// purposefully not only checking for false as the slash also may not appear as first or last character
+		if(!strpos($mime, '/') || !strpos(strrev($mime), '/')){
+			throw new PHPMailerException(sprintf($this->lang->string('invalid_mimetype'), $mime));
+		}
+
+		// @todo: validate mime type?
+		$this->contentType = $mime;
 
 		return $this;
 	}
 
 	/**
+	 * Sets the message encoding.
+	 *
+	 * Options: "8bit", "7bit", "binary", "base64", and "quoted-printable".
+	 *
+	 * @see \PHPMailer\PHPMailer\PHPMailerInterface::ENCODINGS
+	 *
 	 * @param string $encoding
 	 *
 	 * @return \PHPMailer\PHPMailer\PHPMailerInterface
+	 * @throws \PHPMailer\PHPMailer\PHPMailerException
 	 */
 	public function setEncoding(string $encoding):PHPMailerInterface{
-		$encoding = strtolower($encoding);
+		$encoding = strtolower(trim($encoding));
 
-		if(in_array($encoding, $this::ENCODINGS, true)){
-			$this->encoding = $encoding;
+		if(!in_array($encoding, $this::ENCODINGS, true)){
+			throw new PHPMailerException(sprintf($this->lang->string('encoding'), $encoding));
 		}
+
+		$this->encoding = $encoding;
 
 		return $this;
 	}
 
 	/**
+	 * Sets an ID to be used in the Message-ID header
+	 *
+	 * If empty, a unique id will be generated.
+	 * You can set your own, but it must be in the format "<id@domain>",
+	 * as defined in RFC5322 section 3.6.4 or it will be ignored.
+	 *
+	 * @see https://tools.ietf.org/html/rfc5322#section-3.6.4
+	 *
 	 * @param string $messageID
 	 *
 	 * @return \PHPMailer\PHPMailer\PHPMailerInterface
+	 * @throws \PHPMailer\PHPMailer\PHPMailerException
 	 */
 	public function setMessageID(string $messageID):PHPMailerInterface{
 		$messageID = trim($messageID);
@@ -281,14 +292,21 @@ abstract class MailerAbstract implements PHPMailerInterface, LoggerAwareInterfac
 			return $this;
 		}
 
-		if(preg_match('/^<.*@.*>$/', $messageID)){
-			$this->messageID = $messageID;
+		// @todo: proper validation
+		if(!preg_match('/^<([^@<>]+)@([^@<>]+)>$/', $messageID)){
+			throw new PHPMailerException(sprintf($this->lang->string('invalid_message_id'), $messageID));
 		}
+
+		$this->messageID = $messageID;
 
 		return $this;
 	}
 
 	/**
+	 * Sets the message Date to be used in the Date header
+	 *
+	 * If empty, the current date will be added.
+	 *
 	 * @param string $messageDate
 	 *
 	 * @return \PHPMailer\PHPMailer\PHPMailerInterface
@@ -300,6 +318,11 @@ abstract class MailerAbstract implements PHPMailerInterface, LoggerAwareInterfac
 	}
 
 	/**
+	 * Sets the wmail priority
+	 *
+	 * Options: 0 (default/none), 1 = High, 3 = Normal, 5 = low.
+	 * When 0, the header is not set at all.
+	 *
 	 * @param int $priority
 	 *
 	 * @return \PHPMailer\PHPMailer\PHPMailerInterface
@@ -311,7 +334,7 @@ abstract class MailerAbstract implements PHPMailerInterface, LoggerAwareInterfac
 	}
 
 	/**
-	 * Set the From and FromName properties.
+	 * Sets the from and fromName properties, optionally also the sender
 	 *
 	 * @param string $address
 	 * @param string $name
@@ -338,6 +361,12 @@ abstract class MailerAbstract implements PHPMailerInterface, LoggerAwareInterfac
 	}
 
 	/**
+	 * Sets the envelope sender of the message
+	 *
+	 * This will usually be turned into a Return-Path header by the receiver,
+	 * and is the address that bounces will be sent to.
+	 * If not empty, will be passed via `-f` to sendmail or as the 'MAIL FROM' value over SMTP.
+	 *
 	 * @param string $sender
 	 *
 	 * @return \PHPMailer\PHPMailer\PHPMailerInterface
@@ -365,6 +394,8 @@ abstract class MailerAbstract implements PHPMailerInterface, LoggerAwareInterfac
 	}
 
 	/**
+	 * Sets the email address that a reading confirmation should be sent to, also known as read receipt
+	 *
 	 * @param string $confirmReadingTo
 	 *
 	 * @return \PHPMailer\PHPMailer\PHPMailerInterface
@@ -392,6 +423,8 @@ abstract class MailerAbstract implements PHPMailerInterface, LoggerAwareInterfac
 	}
 
 	/**
+	 * Sets the subject of the message
+	 *
 	 * @param string $subject
 	 *
 	 * @return \PHPMailer\PHPMailer\PHPMailerInterface
@@ -403,6 +436,8 @@ abstract class MailerAbstract implements PHPMailerInterface, LoggerAwareInterfac
 	}
 
 	/**
+	 * Sets the HTML or plain text (main) message body
+	 *
 	 * @param string      $content
 	 * @param string|null $contentType
 	 *
@@ -420,6 +455,11 @@ abstract class MailerAbstract implements PHPMailerInterface, LoggerAwareInterfac
 	}
 
 	/**
+	 * Sets the alternative plain-text message body
+	 *
+	 * This body can be read by mail clients that do not have HTML email capability such as mutt & Eudora.
+	 * Clients that can read HTML will view the normal Body.
+	 *
 	 * @param string $altBody
 	 *
 	 * @return \PHPMailer\PHPMailer\PHPMailerInterface
@@ -431,6 +471,14 @@ abstract class MailerAbstract implements PHPMailerInterface, LoggerAwareInterfac
 	}
 
 	/**
+	 * Sets an iCal message part body
+	 *
+	 * Only supported in simple alt or alt_inline message types
+	 * To generate iCal event structures, use classes like EasyPeasyICS or iCalcreator.
+	 *
+	 * @see http://sprain.ch/blog/downloads/php-class-easypeasyics-create-ical-files-with-php/
+	 * @see http://kigkonsult.se/iCalcreator/
+	 *
 	 * @param string $iCal
 	 *
 	 * @return \PHPMailer\PHPMailer\PHPMailerInterface
