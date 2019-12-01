@@ -203,7 +203,7 @@ function validateAddress(string $address, string $validator = null):bool{
 		return (bool)preg_match($pattern, $address);
 	}
 
-	return (bool)filter_var($address, FILTER_VALIDATE_EMAIL);
+	return (bool)filter_var($address, FILTER_VALIDATE_EMAIL, ['flags' => FILTER_FLAG_EMAIL_UNICODE]);
 }
 
 /**
@@ -274,16 +274,6 @@ function parseAddresses(string $addrstr, bool $useimap = true, string $validator
 	}
 
 	return $addresses;
-}
-
-/**
- * Tells whether IDNs (Internationalized Domain Names) are supported or not. This requires the
- * `intl` and `mbstring` PHP extensions.
- *
- * @return bool `true` if required functions for IDN support are present
- */
-function idnSupported():bool{
-	return function_exists('idn_to_ascii') && function_exists('mb_convert_encoding');
 }
 
 /**
@@ -872,15 +862,14 @@ function DKIM_Sign(string $signHeader, string $key, string $passphrase = null):s
 function punyencodeAddress(string $address, string $charset = PHPMailerInterface::CHARSET_ISO88591):string{
 	// Verify we have required functions, CharSet, and at-sign.
 	$pos = strrpos($address, '@');
-	if(idnSupported() && !empty($charset) && $pos !== false){
+	if(!empty($charset) && $pos !== false){
 		$domain = substr($address, ++$pos);
 		// Verify CharSet string is a valid one, and domain properly encoded in this CharSet.
 		if(has8bitChars($domain) && @mb_check_encoding($domain, $charset)){
 			$domain = mb_convert_encoding($domain, 'UTF-8', $charset);
 			//Ignore IDE complaints about this line - method signature changed in PHP 5.4
 			$errorcode = 0;
-			/** @noinspection PhpComposerExtensionStubsInspection */
-			$punycode = idn_to_ascii($domain, $errorcode, INTL_IDNA_VARIANT_UTS46);
+			$punycode  = idn_to_ascii($domain, $errorcode, INTL_IDNA_VARIANT_UTS46);
 
 			if($punycode !== false){
 				return substr($address, 0, $pos).$punycode;

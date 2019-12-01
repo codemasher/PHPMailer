@@ -266,17 +266,13 @@ class UnitTest extends TestAbstract{
 	public function testDuplicateIDNAddressRemoved(){
 		$this->assertTrue($this->mailer->addTO('test@françois.ch'));
 		$this->assertFalse($this->mailer->addTO('test@françois.ch'));
-		$this->assertTrue($this->mailer->addTO('test@FRANÇOIS.CH'));
 		$this->assertFalse($this->mailer->addTO('test@FRANÇOIS.CH'));
-		$this->assertTrue($this->mailer->addTO('test@xn--franois-xxa.ch'));
 		$this->assertFalse($this->mailer->addTO('test@xn--franois-xxa.ch'));
 		$this->assertFalse($this->mailer->addTO('test@XN--FRANOIS-XXA.CH'));
 
 		$this->assertTrue($this->mailer->addReplyTo('test+replyto@françois.ch'));
 		$this->assertFalse($this->mailer->addReplyTo('test+replyto@françois.ch'));
-		$this->assertTrue($this->mailer->addReplyTo('test+replyto@FRANÇOIS.CH'));
 		$this->assertFalse($this->mailer->addReplyTo('test+replyto@FRANÇOIS.CH'));
-		$this->assertTrue($this->mailer->addReplyTo('test+replyto@xn--franois-xxa.ch'));
 		$this->assertFalse($this->mailer->addReplyTo('test+replyto@xn--franois-xxa.ch'));
 		$this->assertFalse($this->mailer->addReplyTo('test+replyto@XN--FRANOIS-XXA.CH'));
 

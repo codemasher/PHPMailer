@@ -194,7 +194,7 @@ abstract class MailerAbstract implements PHPMailerInterface, LoggerAwareInterfac
 		$this->logger  = $logger ?? new NullLogger;
 
 		// check for missing extensions first (may occur if not installed via composer)
-		foreach(['filter', 'mbstring', 'openssl'] as $ext){
+		foreach(['filter', 'intl', 'mbstring', 'openssl'] as $ext){
 			if(!extension_loaded($ext)){
 				throw new PHPMailerException(sprintf($this->lang->string('extension_missing'), $ext));
 			}
@@ -321,21 +321,14 @@ abstract class MailerAbstract implements PHPMailerInterface, LoggerAwareInterfac
 	 * @throws \PHPMailer\PHPMailer\PHPMailerException
 	 */
 	public function setFrom(string $address, string $name = null, bool $autoSetSender = true):PHPMailerInterface{
-		$address = trim($address);
-		$name    = trim(preg_replace('/[\r\n]+/', '', $name ?? '')); //Strip breaks and trim
+		$address = $this->cleanAndValidateAddress($address);
 
-		// Don't validate now addresses with IDN. Will be done in send().
-		$pos = strrpos($address, '@');
-		if( // @todo: clarify
-			$pos === false
-			|| (!has8bitChars(substr($address, ++$pos)) || !idnSupported())
-			   && !validateAddress($address, $this->options->validator)
-		){
+		if($address === null){
 			throw new PHPMailerException(sprintf($this->lang->string('invalid_address'), 'From', $address));
 		}
 
 		$this->from     = $address;
-		$this->fromName = $name;
+		$this->fromName = trim(preg_replace('/[\r\n]+/', '', $name ?? '')); //Strip breaks and trim
 
 		if($autoSetSender){
 			$this->setSender($address);
@@ -348,20 +341,25 @@ abstract class MailerAbstract implements PHPMailerInterface, LoggerAwareInterfac
 	 * @param string $sender
 	 *
 	 * @return \PHPMailer\PHPMailer\PHPMailerInterface
+	 * @throws \PHPMailer\PHPMailer\PHPMailerException
 	 */
 	public function setSender(string $sender):PHPMailerInterface{
 		$sender = trim($sender);
 
-		// allow clearing sender address
+		// allow clearing address
 		if(empty($sender)){
 			$this->sender = null;
 
 			return $this;
 		}
 
-		if(!empty($sender)){ // @todo: check valid address
-			$this->sender = $sender;
+		$sender = $this->cleanAndValidateAddress($sender);
+
+		if($sender === null){
+			throw new PHPMailerException(sprintf($this->lang->string('invalid_address'), 'sender', $sender));
 		}
+
+		$this->sender = $sender;
 
 		return $this;
 	}
@@ -370,20 +368,25 @@ abstract class MailerAbstract implements PHPMailerInterface, LoggerAwareInterfac
 	 * @param string $confirmReadingTo
 	 *
 	 * @return \PHPMailer\PHPMailer\PHPMailerInterface
+	 * @throws \PHPMailer\PHPMailer\PHPMailerException
 	 */
 	public function setConfirmReadingTo(string $confirmReadingTo):PHPMailerInterface{
 		$confirmReadingTo = trim($confirmReadingTo);
 
-		// allow clearing sender address
+		// allow clearing address
 		if(empty($confirmReadingTo)){
 			$this->confirmReadingTo = null;
 
 			return $this;
 		}
 
-		if(!empty($confirmReadingTo)){ // @todo: check valid address
-			$this->confirmReadingTo = $confirmReadingTo;
+		$confirmReadingTo = $this->cleanAndValidateAddress($confirmReadingTo);
+
+		if($confirmReadingTo === null){
+			throw new PHPMailerException(sprintf($this->lang->string('invalid_address'), 'confirmReadingTo', $confirmReadingTo));
 		}
+
+		$this->confirmReadingTo = $confirmReadingTo;
 
 		return $this;
 	}
@@ -436,6 +439,26 @@ abstract class MailerAbstract implements PHPMailerInterface, LoggerAwareInterfac
 		$this->iCal = $iCal;
 
 		return $this;
+	}
+
+	/**
+	 * @param string $address
+	 *
+	 * @return string|null
+	 */
+	protected function cleanAndValidateAddress(string $address):?string{
+		$address = trim($address); // @todo: clean other stuff? egulias/email-validator
+
+		if(!validateAddress($address, $this->options->validator)){
+			// if we fail on the first try, check if punycode works
+			$address = punyencodeAddress($address, $this->options->charSet);
+
+			if(!validateAddress($address, $this->options->validator)){
+				return null;
+			}
+		}
+
+		return strtolower($address);
 	}
 
 	/**

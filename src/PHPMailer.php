@@ -22,11 +22,11 @@ namespace PHPMailer\PHPMailer;
 
 use Closure;
 
-use function addcslashes, array_filter, array_key_exists, array_merge, base64_decode, base64_encode,
-	call_user_func_array, chunk_split, count, dirname, explode, file_get_contents, file_put_contents,
+use function addcslashes, array_key_exists, base64_decode, base64_encode,
+	chunk_split, count, dirname, explode, file_get_contents, file_put_contents,
 	function_exists, gethostname, hash, implode, in_array, is_file, openssl_error_string,
 	openssl_pkcs7_sign, pack, php_uname, preg_match, preg_match_all, preg_quote, preg_replace, quoted_printable_encode,
-	rawurldecode, realpath, rtrim, serialize, sprintf, str_replace, strlen, strpos, strrpos, strtolower, substr,
+	rawurldecode, realpath, rtrim, serialize, sprintf, str_replace, strlen, strpos, strtolower, substr,
 	sys_get_temp_dir, tempnam, time, trim, unlink;
 
 use const PKCS7_DETACHED, PATHINFO_BASENAME;
@@ -111,32 +111,6 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	protected $allRecipients = [];
 
 	/**
-	 * An array of names and addresses queued for validation.
-	 * In send(), valid and non duplicate entries are moved to $all_recipients
-	 * and one of $to, $cc, or $bcc.
-	 * This array is used only for addresses with IDN.
-	 *
-	 * @see PHPMailer::$to
-	 * @see PHPMailer::$cc
-	 * @see PHPMailer::$bcc
-	 * @see PHPMailer::$allRecipients
-	 *
-	 * @var array
-	 */
-	protected $recipientsQueue = [];
-
-	/**
-	 * An array of reply-to names and addresses queued for validation.
-	 * In send(), valid and non duplicate entries are moved to $ReplyTo.
-	 * This array is used only for addresses with IDN.
-	 *
-	 * @see PHPMailer::$replyTo
-	 *
-	 * @var array
-	 */
-	protected $replyToQueue = [];
-
-	/**
 	 * The array of attachments.
 	 *
 	 * @var \PHPMailer\PHPMailer\Attachment[]
@@ -173,7 +147,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	 * @return bool true on success, false if address already used or invalid in some way
 	 */
 	public function addTO(string $address, string $name = null):bool{
-		return $this->addOrEnqueueAnAddress('to', $address, $name);
+		return $this->addAnAddress('to', $address, $name);
 	}
 
 	/**
@@ -198,7 +172,6 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 		}
 
 		$this->to = [];
-		$this->clearQueuedAddresses('to');
 
 		return $this;
 	}
@@ -212,7 +185,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	 * @return bool true on success, false if address already used or invalid in some way
 	 */
 	public function addCC(string $address, string $name = null):bool{
-		return $this->addOrEnqueueAnAddress('cc', $address, $name);
+		return $this->addAnAddress('cc', $address, $name);
 	}
 
 	/**
@@ -237,7 +210,6 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 		}
 
 		$this->cc = [];
-		$this->clearQueuedAddresses('cc');
 
 		return $this;
 	}
@@ -251,7 +223,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	 * @return bool true on success, false if address already used or invalid in some way
 	 */
 	public function addBCC(string $address, string $name = null):bool{
-		return $this->addOrEnqueueAnAddress('bcc', $address, $name);
+		return $this->addAnAddress('bcc', $address, $name);
 	}
 
 	/**
@@ -276,7 +248,6 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 		}
 
 		$this->bcc = [];
-		$this->clearQueuedAddresses('bcc');
 
 		return $this;
 	}
@@ -290,7 +261,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	 * @return bool true on success, false if address already used or invalid in some way
 	 */
 	public function addReplyTo(string $address, string $name = null):bool{
-		return $this->addOrEnqueueAnAddress('Reply-To', $address, $name);
+		return $this->addAnAddress('Reply-To', $address, $name);
 	}
 
 	/**
@@ -309,8 +280,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	 * @return \PHPMailer\PHPMailer\PHPMailer
 	 */
 	public function clearReplyTos():PHPMailer{
-		$this->replyTo      = [];
-		$this->replyToQueue = [];
+		$this->replyTo = [];
 
 		return $this;
 	}
@@ -335,78 +305,8 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 		$this->cc              = [];
 		$this->bcc             = [];
 		$this->allRecipients   = [];
-		$this->recipientsQueue = [];
 
 		return $this;
-	}
-
-	/**
-	 * Clear queued addresses of given kind.
-	 *
-	 * @param string $kind 'to', 'cc', or 'bcc'
-	 *
-	 * @return \PHPMailer\PHPMailer\PHPMailer
-	 */
-	public function clearQueuedAddresses(string $kind):PHPMailer{
-
-		$this->recipientsQueue = array_filter(
-			$this->recipientsQueue,
-			function($params) use ($kind){
-				return $params[0] !== $kind;
-			}
-		);
-
-		return $this;
-	}
-
-	/**
-	 * Add an address to one of the recipient arrays or to the ReplyTo array. Because PHPMailer
-	 * can't validate addresses with an IDN without knowing the PHPMailer::$CharSet (that can still
-	 * be modified after calling this function), addition of such addresses is delayed until send().
-	 * Addresses that have been added already return false, but do not throw exceptions.
-	 *
-	 * @param string      $type    One of 'to', 'cc', 'bcc', or 'ReplyTo'
-	 * @param string      $address The email address to send, resp. to reply to
-	 * @param string|null $name
-	 *
-	 * @return bool true on success, false if address already used or invalid in some way
-	 */
-	protected function addOrEnqueueAnAddress(string $type, string $address, string $name = null):bool{
-		$address = trim($address);
-		$name    = trim(preg_replace('/[\r\n]+/', '', $name ?? '')); //Strip breaks and trim
-		$pos     = strrpos($address, '@');
-
-		if($pos === false){
-			// At-sign is missing.
-			$this->logger->error(sprintf($this->lang->string('invalid_address'), $type, $address));
-
-			return false;
-		}
-
-		$params = [$type, $address, $name];
-		// Enqueue addresses with IDN until we know the PHPMailer::$CharSet.
-		if(has8bitChars(substr($address, ++$pos)) && idnSupported()){
-
-			if($type !== 'Reply-To'){
-				if(!array_key_exists($address, $this->recipientsQueue)){
-					$this->recipientsQueue[$address] = $params;
-
-					return true;
-				}
-			}
-			else{
-				if(!array_key_exists($address, $this->replyToQueue)){
-					$this->replyToQueue[$address] = $params;
-
-					return true;
-				}
-			}
-
-			return false;
-		}
-
-		// Immediately add standard addresses without IDN.
-		return call_user_func_array([$this, 'addAnAddress'], $params);
 	}
 
 	/**
@@ -427,7 +327,10 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 			return false;
 		}
 
-		if(!validateAddress($address, $this->options->validator)){
+		$address = $this->cleanAndValidateAddress($address);
+		$name    = trim(preg_replace('/[\r\n]+/', '', $name ?? '')); //Strip breaks and trim
+
+		if($address === null){
 			$this->logger->error(sprintf($this->lang->string('invalid_address'), $type, $address));
 
 			return false;
@@ -435,7 +338,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 
 		if($type !== 'Reply-To'){
 			if(!array_key_exists(strtolower($address), $this->allRecipients)){
-				$this->{$type}[]                           = [$address, $name ?? ''];
+				$this->{$type}[]                           = [$address, $name];
 				$this->allRecipients[strtolower($address)] = true;
 
 				return true;
@@ -443,7 +346,7 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 		}
 		else{
 			if(!array_key_exists(strtolower($address), $this->replyTo)){
-				$this->replyTo[strtolower($address)] = [$address, $name ?? ''];
+				$this->replyTo[strtolower($address)] = [$address, $name];
 
 				return true;
 			}
@@ -730,31 +633,8 @@ abstract class PHPMailer extends MailerAbstract{ // @todo
 	public function preSend():PHPMailer{
 		$this->mailHeader  = '';
 
-		// Dequeue recipient and Reply-To addresses with IDN
-		foreach(array_merge($this->recipientsQueue, $this->replyToQueue) as $params){
-			$params[1] = punyencodeAddress($params[1], $this->options->charSet);
-			call_user_func_array([$this, 'addAnAddress'], $params);
-		}
-
 		if(empty($this->to) && empty($this->cc) && empty($this->bcc)){
 			throw new PHPMailerException($this->lang->string('provide_address'));
-		}
-
-		// Validate From, Sender, and ConfirmReadingTo addresses @todo: move validation to setters
-		foreach(['from', 'sender', 'confirmReadingTo'] as $type){
-			$this->{$type} = trim($this->{$type});
-
-			if(empty($this->{$type})){
-				continue;
-			}
-
-			$this->{$type} = punyencodeAddress($this->{$type}, $this->options->charSet);
-
-			if(!validateAddress($this->{$type}, $this->options->validator)){
-				$this->logger->error(sprintf($this->lang->string('invalid_address'), $type, $this->{$type}));
-				// clear the invalid address
-				unset($this->{$type});
-			}
 		}
 
 		// Set whether the message is multipart/alternative
