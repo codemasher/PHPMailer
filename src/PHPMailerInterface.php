@@ -111,5 +111,18 @@ interface PHPMailerInterface{
 	public function setMessageBody(string $content, string $contentType = null):PHPMailerInterface;
 	public function setAltBody(string $altBody):PHPMailerInterface;
 	public function setIcal(string $iCal):PHPMailerInterface;
-
+	public function addTO(string $address, string $name = null):bool;
+	public function addCC(string $address, string $name = null):bool;
+	public function addBCC(string $address, string $name = null):bool;
+	public function addReplyTo(string $address, string $name = null):bool;
+	public function getTOs():array;
+	public function getCCs():array;
+	public function getBCCs():array;
+	public function getReplyTos():array;
+	public function clearTOs():PHPMailerInterface;
+	public function clearCCs():PHPMailerInterface;
+	public function clearBCCs():PHPMailerInterface;
+	public function clearReplyTos():PHPMailerInterface;
+	public function getAllRecipients():array;
+	public function clearAllRecipients():PHPMailerInterface;
 }

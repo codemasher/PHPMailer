@@ -16,7 +16,8 @@ use Closure, ErrorException;
 use PHPMailer\PHPMailer\Language\LanguageTrait;
 use Psr\Log\{LoggerAwareInterface, LoggerAwareTrait, LoggerInterface, NullLogger};
 
-use function extension_loaded, function_exists, in_array, preg_match, preg_replace, sprintf, strpos, strrev, strtolower, trim;
+use function array_key_exists, extension_loaded, function_exists, in_array, mb_strtolower, preg_match, preg_replace,
+	sprintf, strpos, strrev, strtolower, trim;
 
 abstract class MailerAbstract implements PHPMailerInterface, LoggerAwareInterface{
 	use LoggerAwareTrait, LanguageTrait;
@@ -127,6 +128,42 @@ abstract class MailerAbstract implements PHPMailerInterface, LoggerAwareInterfac
 	 * @var string
 	 */
 	protected $iCal = '';
+
+	/**
+	 * The array of 'to' names and addresses.
+	 *
+	 * @var array
+	 */
+	protected $to = [];
+
+	/**
+	 * The array of 'cc' names and addresses.
+	 *
+	 * @var array
+	 */
+	protected $cc = [];
+
+	/**
+	 * The array of 'bcc' names and addresses.
+	 *
+	 * @var array
+	 */
+	protected $bcc = [];
+
+	/**
+	 * The array of reply-to names and addresses.
+	 *
+	 * @var array
+	 */
+	protected $replyTo = [];
+
+	/**
+	 * An array of all types of addresses.
+	 * Includes all of $to, $cc, $bcc.
+	 *
+	 * @var array
+	 */
+	protected $allRecipients = [];
 
 	/**
 	 * Callback action function
@@ -490,12 +527,224 @@ abstract class MailerAbstract implements PHPMailerInterface, LoggerAwareInterfac
 	}
 
 	/**
+	 * Add a "To" address.
+	 *
+	 * @param string      $address The email address to send to
+	 * @param string|null $name
+	 *
+	 * @return bool true on success, false if address already used or invalid in some way
+	 */
+	public function addTO(string $address, string $name = null):bool{
+		return $this->addAnAddress('to', $address, $name);
+	}
+
+	/**
+	 * Add a "CC" address.
+	 *
+	 * @param string      $address The email address to send to
+	 * @param string|null $name
+	 *
+	 * @return bool true on success, false if address already used or invalid in some way
+	 */
+	public function addCC(string $address, string $name = null):bool{
+		return $this->addAnAddress('cc', $address, $name);
+	}
+
+	/**
+	 * Add a "BCC" address.
+	 *
+	 * @param string      $address The email address to send to
+	 * @param string|null $name
+	 *
+	 * @return bool true on success, false if address already used or invalid in some way
+	 */
+	public function addBCC(string $address, string $name = null):bool{
+		return $this->addAnAddress('bcc', $address, $name);
+	}
+
+	/**
+	 * Add a "Reply-To" address.
+	 *
+	 * @param string      $address The email address to reply to
+	 * @param string|null $name
+	 *
+	 * @return bool true on success, false if address already used or invalid in some way
+	 */
+	public function addReplyTo(string $address, string $name = null):bool{
+		return $this->addAnAddress('replyTo', $address, $name);
+	}
+
+	/**
+	 * Allows for public read access to 'to' property.
+	 *
+	 * @return array
+	 */
+	public function getTOs():array{
+		return $this->to;
+	}
+
+	/**
+	 * Allows for public read access to 'cc' property.
+	 *
+	 * @return array
+	 */
+	public function getCCs():array{
+		return $this->cc;
+	}
+
+	/**
+	 * Allows for public read access to 'bcc' property.
+	 *
+	 * @return array
+	 */
+	public function getBCCs():array{
+		return $this->bcc;
+	}
+
+	/**
+	 * Allows for public read access to 'ReplyTo' property.
+	 *
+	 * @return array
+	 */
+	public function getReplyTos():array{
+		return $this->replyTo;
+	}
+
+	/**
+	 * Clear all To recipients.
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailerInterface
+	 */
+	public function clearTOs():PHPMailerInterface{
+		return $this->clearRecipientArray('to');
+	}
+
+	/**
+	 * Clear all CC recipients.
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailerInterface
+	 */
+	public function clearCCs():PHPMailerInterface{
+		return $this->clearRecipientArray('cc');
+	}
+
+	/**
+	 * Clear all BCC recipients.
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailerInterface
+	 */
+	public function clearBCCs():PHPMailerInterface{
+		return $this->clearRecipientArray('bcc');
+	}
+
+	/**
+	 * Clear all ReplyTo recipients.
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailerInterface
+	 */
+	public function clearReplyTos():PHPMailerInterface{
+		return $this->clearRecipientArray('replyTo');
+	}
+
+	/**
+	 * Allows for public read access to 'all_recipients' property.
+	 * Before the send() call, queued addresses (i.e. with IDN) are not yet included.
+	 *
+	 * @return array
+	 */
+	public function getAllRecipients():array{
+		return $this->allRecipients;
+	}
+
+	/**
+	 * Clear all recipient types.
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailerInterface
+	 */
+	public function clearAllRecipients():PHPMailerInterface{
+		$this->to              = [];
+		$this->cc              = [];
+		$this->bcc             = [];
+		$this->allRecipients   = [];
+
+		return $this;
+	}
+
+	/**
+	 * Add an address to one of the recipient arrays or to the replyTo array.
+	 * Addresses that have been added already return false, but do not throw exceptions.
+	 *
+	 * @param string      $type    One of 'to', 'cc', 'bcc' or 'replyTo'
+	 * @param string      $address The email address to send, resp. to reply to
+	 * @param string|null $name
+	 *
+	 * @return bool true on success, false if address already used or invalid in some way
+	 */
+	protected function addAnAddress(string $type, string $address, string $name = null):bool{
+
+		if(!in_array($type, ['to', 'cc', 'bcc', 'replyTo'])){
+			$this->logger->error(sprintf($this->lang->string('invalid_recipient_type'), $type));
+
+			return false;
+		}
+
+		$addr = $this->cleanAndValidateAddress($address);
+
+		if($addr === null){
+			$this->logger->error(sprintf($this->lang->string('invalid_address'), $type, $address));
+
+			return false;
+		}
+
+		if($name !== null){
+			$name = trim(preg_replace('/[\r\n]+/', '', $name));
+		}
+
+		if($type === 'replyTo'){
+			if(!array_key_exists($addr, $this->replyTo)){
+				$this->replyTo[$addr] = [$addr, $name];
+
+				return true;
+			}
+
+			return false;
+		}
+
+		if(!array_key_exists($addr, $this->allRecipients)){
+			$this->{$type}[]            = [$addr, $name];
+			$this->allRecipients[$addr] = true;
+
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * @param string     $type to, cc, bcc, replyTo
+	 *
+	 * @return \PHPMailer\PHPMailer\PHPMailerInterface
+	 */
+	protected function clearRecipientArray(string $type):PHPMailerInterface{
+
+		if($type !== 'replyTo'){
+			foreach($this->{$type} as $recipient){
+				unset($this->allRecipients[$recipient[0]]);
+			}
+		}
+
+		$this->{$type} = [];
+
+		return $this;
+	}
+
+	/**
 	 * @param string $address
 	 *
 	 * @return string|null
 	 */
 	protected function cleanAndValidateAddress(string $address):?string{
-		$address = trim($address); // @todo: clean other stuff? egulias/email-validator
+		$address = mb_strtolower(trim($address), $this->options->charSet); // @todo: clean other stuff? egulias/email-validator
 
 		if(!validateAddress($address, $this->options->validator)){
 			// if we fail on the first try, check if punycode works
@@ -506,7 +755,7 @@ abstract class MailerAbstract implements PHPMailerInterface, LoggerAwareInterfac
 			}
 		}
 
-		return strtolower($address);
+		return $address;
 	}
 
 	/**

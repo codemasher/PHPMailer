@@ -595,10 +595,10 @@ class UnitTest extends TestAbstract{
 		// Addresses with IDN are returned by get*Addresses() after send() call.
 		$domain = punyencodeAddress($domain);
 
-		$this->assertSame([['test'.$domain, '']], $this->mailer->getTOs(), 'Bad "to" recipients');
-		$this->assertSame([['test+cc'.$domain, '']], $this->mailer->getCCs(), 'Bad "cc" recipients');
+		$this->assertSame([['test'.$domain, null]], $this->mailer->getTOs(), 'Bad "to" recipients');
+		$this->assertSame([['test+cc'.$domain, null]], $this->mailer->getCCs(), 'Bad "cc" recipients');
 		$this->assertEmpty($this->mailer->getBCCs(), 'Bad "bcc" recipients');
-		$this->assertSame(['test+replyto'.$domain => ['test+replyto'.$domain, '']], $this->mailer->getReplyTos(), 'Bad "reply-to" addresses');
+		$this->assertSame(['test+replyto'.$domain => ['test+replyto'.$domain, null]], $this->mailer->getReplyTos(), 'Bad "reply-to" addresses');
 	}
 
 }
