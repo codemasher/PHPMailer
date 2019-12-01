@@ -117,7 +117,6 @@ class SMTPMailer extends PHPMailer{
 			throw new PHPMailerException(sprintf($this->lang->string('from_failed'), $smtp_from));
 		}
 
-		$callbacks = [];
 		// Attempt to send to all recipients
 		foreach([$this->to, $this->cc, $this->bcc] as $togroup){
 			foreach($togroup as $to){
@@ -128,7 +127,10 @@ class SMTPMailer extends PHPMailer{
 					$isSent = false;
 				}
 
-				$callbacks[] = ['issent' => $isSent, 'to' => $to[0]];
+				$this->doCallback($isSent, [$to[0]], [], [], $this->subject, $this->mimeBody, $this->from, [
+					'smtp_last_reply'     => $this->last_reply,
+					'smtp_transaction_id' => $this->last_smtp_transaction_id,
+				]);
 			}
 		}
 
@@ -143,19 +145,6 @@ class SMTPMailer extends PHPMailer{
 		else{
 			$this->quit();
 			$this->close();
-		}
-
-		foreach($callbacks as $cb){
-			$this->doCallback(
-				$cb['issent'],
-				[$cb['to']],
-				[],
-				[],
-				$this->subject,
-				$this->mimeBody,
-				$this->from,
-				['smtp_transaction_id' => $this->last_smtp_transaction_id]
-			);
 		}
 
 		//Create error message for any bad addresses

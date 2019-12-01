@@ -86,7 +86,7 @@ class PHPMailerOptions extends SettingsContainerAbstract{
 	protected $hostname = null;
 
 	/**
-	 * The character set of the message.
+	 * The character set of the message. (mbstring)
 	 *
 	 * @var string
 	 */
